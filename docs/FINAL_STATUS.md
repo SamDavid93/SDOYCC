@@ -1,6 +1,6 @@
 # SDOYCC – Abschlussstand
 
-Stand: **03.10.2026**. Der lokale Funktionsumfang umfasst den Sammel-Hub, Admin A1–A7, den Kartenhandel und den kostenlosen Saisonpass. Der Quellcode ist in `SamDavid93/SDOYCC` veröffentlicht. GitHub Pages ist für `https://samdavid93.github.io/SDOYCC/` mit GitHub Actions und HTTPS aktiviert. Die Auslieferung der Website wartet auf die öffentliche HTTPS-Adresse des lokalen Backends und die dazugehörige Build-Konfiguration.
+Stand: **03.10.2026**. Der Sammel-Hub mit Admin A1–A7, Kartenhandel und kostenlosem Saisonpass ist unter [samdavid93.github.io/SDOYCC](https://samdavid93.github.io/SDOYCC/) veröffentlicht. Der lokale Server läuft im Produktionsmodus hinter einem vorübergehenden Cloudflare Quick Tunnel. Demo-Zugang ist deaktiviert. Der Testbetrieb benötigt weiterhin diesen eingeschalteten PC und den laufenden Tunnel; eine feste Backend-Adresse wurde nicht eingerichtet.
 
 ## Funktionsübersicht
 
@@ -30,6 +30,7 @@ Stand: **03.10.2026**. Der lokale Funktionsumfang umfasst den Sammel-Hub, Admin 
 - **Handel**: Kartenpakete anbieten und tauschen (`/#/trade`).
 - **Saisonpass**: veröffentlichte Saisons und persönliche Belohnungen (`/#/battle-pass`).
 - `check-system.bat` prüft den lokalen Zustand ohne Änderungen; `check-system.bat --public` prüft zusätzlich Produktionsmodus und öffentliche Frontend-/CORS-Adressen.
+- Für den öffentlichen Testbetrieb auf diesem PC `start-public-test.bat` verwenden. Die BAT übernimmt eine neue Tunnel-Adresse und stößt den Pages-Build an. `stop-public-test.bat` beendet den Tunnel. [Betriebsanleitung](PUBLISHING.md).
 
 `samdavidofficial` bleibt Hauptadministrator. Die Abschlussarbeiten führen keine Vergaben, Rücksetzungen, Testtausche oder Test-Saisons auf echten Konten aus. Beispielwerte im Saisonformular sind editierbare Entwurfshilfen und keine veröffentlichte Saison.
 
@@ -55,13 +56,13 @@ Die automatisierten Prüfungen verwenden isolierte SQLite-Datenbanken und separa
 
 Aktuelle Ergebnisse: `artifacts/final-tests.log`, `artifacts/final-browser.log`, `artifacts/final-release-check.json`. Screenshots beginnen mit `artifacts/final-`. PostgreSQL ist konfigurierbar, aber dieser Abschluss wird auf der tatsächlich verwendeten SQLite-Installation geprüft; ein PostgreSQL-Betrieb braucht eine eigene Abnahme.
 
-## Für den öffentlichen Start noch erforderlich
+## Öffentlicher Testbetrieb und verbleibende Abnahme
 
-Die konkrete Einrichtung ist in [PUBLISHING.md](PUBLISHING.md) beschrieben. `configure-public.bat` zeigt die sechs benötigten Einstellungen an und übernimmt sie nur mit `--apply`, inklusive Sicherung der bisherigen `.env`. Die Zieladressen und der externe Funktionstest bleiben offen.
+Die konkrete Einrichtung ist in [PUBLISHING.md](PUBLISHING.md) beschrieben. Pages-Deployment, öffentliche Backend-Health-Prüfung, Produktionskonfiguration und CORS sind erfolgreich. Die Browserprüfung verwendet die echte Pages-Adresse ohne Kontoanmeldung. Echte Twitch-Einlösungen und Login mit dem Betreiberkonto bleiben getrennt abzunehmen.
 
-1. Die öffentliche HTTPS-Adresse zum lokalen Backend festlegen. Quellcode-Upload und Aktivierung von Pages für `https://samdavid93.github.io/SDOYCC/` sind abgeschlossen; die Website selbst ist noch nicht ausgeliefert.
-2. `FRONTEND_URL`, `CORS_ORIGINS`, `VITE_API_BASE_URL`, `VITE_BASE_PATH`, `APP_ENV=production` und `ENABLE_DEMO_AUTH=false` passend setzen. Backend-Schlüssel ausschließlich lokal behalten; keine Datenbank, `.env` oder Sicherung ins Repository aufnehmen.
-3. `check-system.bat --public` ausführen und den Frontend-Build mit den endgültigen Werten erstellen. Der Pages-Workflow verweigert Builds mit fehlender/platzhalterhafter oder lokaler Backend-Adresse.
+1. Pages ist veröffentlicht, der Quick Tunnel ohne eigene Domain läuft. Für einen späteren dauerhaften Betrieb den vorübergehenden Tunnel durch eine feste Backend-Adresse ersetzen.
+2. `FRONTEND_URL`, `CORS_ORIGINS`, `VITE_API_BASE_URL`, `VITE_BASE_PATH`, `APP_ENV=production` und `ENABLE_DEMO_AUTH=false` sind gesetzt. Backend-Schlüssel, Datenbank und Sicherungen bleiben lokal.
+3. `check-system.bat --public` und Pages-Build waren erfolgreich. Nach einem Tunnel-Neustart die neue Adresse mit `start-public-test.bat` übernehmen und den Abschluss des Pages-Workflows abwarten.
 4. Aktuelle C#-Kopien und Trigger in Streamer.bot prüfen. Einen echten Registrierungsablauf und eine echte Reward-Einlösung einschließlich automatischem Queue-Abschluss abnehmen. Automatisierte Tests simulieren Twitch; sie ersetzen diesen Nachweis nicht.
 5. Zugriff von einem anderen Gerät, Login, Einlösung, Kauf und Öffnung prüfen. Die erste echte Saison bewusst im Admin-Bereich konfigurieren und veröffentlichen; es wurde keine Testsaison auf der echten Datenbank angelegt.
 

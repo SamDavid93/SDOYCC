@@ -1,12 +1,22 @@
 # Veröffentlichung: GitHub Pages und lokaler Server
 
-Stand: 03.10.2026. Der Hub ist lokal abgenommen. Der Quellcode ist in [SamDavid93/SDOYCC](https://github.com/SamDavid93/SDOYCC) hochgeladen. GitHub Pages ist mit GitHub Actions und HTTPS für `https://samdavid93.github.io/SDOYCC/` aktiviert. Die öffentliche Backend-Adresse und damit die Repository-Variable `VITE_API_BASE_URL` fehlen noch; deshalb ist die Website noch nicht ausgeliefert. Der erste Deployment-Versuch wird durch die fehlende API-Adresse blockiert.
+Stand: 03.10.2026. Die Website ist unter [samdavid93.github.io/SDOYCC](https://samdavid93.github.io/SDOYCC/) veröffentlicht. Der lokale Server ist über einen vorübergehenden Cloudflare Quick Tunnel ohne eigene Domain angebunden. Produktionsmodus, deaktivierter Demo-Zugang und CORS sind geprüft. Der Testzugang bleibt vom laufenden PC, Backend und Tunnel abhängig.
+
+## Testzugang auf diesem PC starten und beenden
+
+**`start-public-test.bat`** startet den vollständigen Testbetrieb. Die BAT prüft die lokale Installation und GitHub-Anmeldung, verwendet einen noch laufenden eigenen Tunnel wieder oder erstellt einen neuen, übernimmt die HTTPS-Adresse mit `.env`-Sicherung, startet das eigene Backend im Produktionsmodus und prüft Health sowie CORS. Anschließend setzt sie `VITE_API_BASE_URL` im Repository und startet den Pages-Workflow. Warten, bis der Workflow erfolgreich ist; erst dann verwendet die Website die neue Adresse.
+
+Backend und Tunnel laufen im Hintergrund. **`stop-public-test.bat`** beendet den verifizierten Tunnel dieses Projekts; das lokale Backend bleibt für Streamer.bot verfügbar. Nach einem PC-Neustart wieder `start-public-test.bat` ausführen. Die Website-Adresse bei GitHub Pages bleibt gleich, obwohl sich die Backend-Adresse ändern kann. Die BAT erkennt fremde Prozesse auf Port 8002 und beendet sie nicht. Gleichzeitige Starts der BAT vermeiden.
+
+Die auf diesem PC installierten Programme liegen außerhalb von Git unter `artifacts/tools/github-cli/gh.exe` und `artifacts/tools/cloudflared/cloudflared.exe`; sie wurden aus offiziellen Releases mit SHA-256-Prüfung heruntergeladen. Beim Umzug auf einen anderen PC die Windows-Programme aus [GitHub CLI](https://github.com/cli/cli/releases) und [Cloudflare](https://github.com/cloudflare/cloudflared/releases) erneut dort installieren, die Python-Umgebung einrichten, lokale `.env` und Datenbanksicherung übernehmen und mit `gh auth login --hostname github.com --git-protocol https --web --scopes workflow` anmelden. Keine gespeicherten GitHub-Tokens kopieren oder veröffentlichen.
+
+Aktuelle Tunnel-Adresse und Prozesskennung stehen in `artifacts/public-test/tunnel.json`; Logs liegen im selben Ordner. Bei einem Startfehler die Meldung prüfen und die BAT nach Behebung erneut ausführen. Eine gestartete GitHub-Veröffentlichung allein bestätigt noch nicht ihren Abschluss; der Status steht unter [Actions](https://github.com/SamDavid93/SDOYCC/actions).
 
 ## 1. Ziel festlegen
 
-Der erste GitHub-Prüflauf [Verify hub](https://github.com/SamDavid93/SDOYCC/actions/runs/37152987100) ist erfolgreich: 138 Backend-Tests und Frontend-Build. Der separate Deployment-Workflow benötigt noch die öffentliche Backend-Adresse; der erfolgreiche Prüfbuild allein veröffentlicht keine Website.
+Der erste GitHub-Prüflauf [Verify hub](https://github.com/SamDavid93/SDOYCC/actions/runs/37152987100) ist erfolgreich: 138 Backend-Tests und Frontend-Build. Nach Einrichtung des Tunnels war auch die [erste Pages-Veröffentlichung](https://github.com/SamDavid93/SDOYCC/actions/runs/37153468541) erfolgreich. Die folgenden Abschnitte beschreiben die Einrichtung und den späteren Wechsel auf eine feste Adresse.
 
-Festgelegt: GitHub-Benutzer **SamDavid93**, Repository **SDOYCC**, Sichtbarkeit **Public**. Benötigt wird noch eine öffentliche HTTPS-Adresse für den lokalen Server. GitHub Pages ist mit GitHub Free für öffentliche Repositories verfügbar. [GitHub-Dokumentation](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site)
+Festgelegt: GitHub-Benutzer **SamDavid93**, Repository **SDOYCC**, Sichtbarkeit **Public**; Backend für den Test über einen Cloudflare Quick Tunnel. GitHub Pages ist mit GitHub Free für öffentliche Repositories verfügbar. [GitHub-Dokumentation](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site)
 
 Für dieses Projekt lautet die Website `https://samdavid93.github.io/SDOYCC/`. Die Großschreibung von **SDOYCC** im Pfad beibehalten. Ein Repository namens `BENUTZER.github.io` würde den Wurzelpfad `/` verwenden; der vorhandene Pages-Workflow berücksichtigt beide Varianten. Die Anwendung verwendet Hash-Routen unter dem jeweiligen Basispfad.
 

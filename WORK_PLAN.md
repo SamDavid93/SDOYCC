@@ -18,8 +18,9 @@ Aktueller Stand (03.10.2026): Der lokale Ausbau ist abgeschlossen: Admin A1–A7
 - [x] GitHub-Ziel bestätigt: `SamDavid93/SDOYCC`, Public. Vorgesehene Pages-Adresse `https://samdavid93.github.io/SDOYCC/`; Produktionsbuild mit exakt diesem Groß-/Kleinschreibungspfad erfolgreich.
 - [x] GitHub-Geräteanmeldung als `SamDavid93` abgeschlossen; Quellcode hochgeladen und Pages mit GitHub Actions sowie HTTPS aktiviert. Website-Bereitstellung benötigt weiterhin `VITE_API_BASE_URL`.
 - [x] GitHub-Prüflauf `37152987100` erfolgreich: 138 Backend-Tests einschließlich sechs Konfigurationstests sowie Frontend-Build. Deployment `37152987041` wegen fehlender API-Adresse gestoppt.
-- [ ] Domain oder vorübergehenden HTTPS-Testzugang für das Backend festlegen.
-- [ ] Tatsächliche HTTPS-Adresse einrichten, Konfiguration übernehmen, veröffentlichen und extern mit Twitch abnehmen. Keine öffentliche Bereitstellung erfolgt; lokale Konfiguration bleibt aktiv.
+- [x] Betreiberwahl „ohne Domain“ umgesetzt: Cloudflare Quick Tunnel eingerichtet, lokale Konfiguration mit Sicherung auf Produktionsmodus umgestellt, Demo deaktiviert und Pages veröffentlicht.
+- [x] `start-public-test.bat` und `stop-public-test.bat` für den Betrieb ergänzt. Erststart und Wiederverwendung desselben Tunnels erfolgreich, Health und CORS geprüft; lokaler Schlüssel und Bestände nicht verändert.
+- [ ] Echte Twitch-Registrierung/Einlösung und Login durch den Betreiber öffentlich abnehmen; erste Saison bewusst konfigurieren. Der Tunnel bleibt ein vorübergehender Testzugang.
 
 - [x] Atomare Käufe/Öffnungen, Buchungsjournal, Schutz vor doppelten Buchungen.
 - [x] Echte Sammlung/Kontodaten, Katalogsuche und Import mit stabilen IDs.
