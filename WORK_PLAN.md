@@ -2,7 +2,7 @@
 
 Ziel: SamDavidOfficial – 1.000 Kanalpunkte → 100 Tradingpoints → Booster kaufen → kostenlos öffnen → Karten sammeln.
 
-Aktueller Stand (03.10.2026): Der lokale Ausbau ist abgeschlossen: Admin A1–A7, Kartenhandel T1–T6 und kostenloser Saisonpass S1–S6 sind umgesetzt und geprüft. 132 Backend-Tests, 57 Browser-Prüfpunkte und Produktionsbuild erfolgreich. Nach Sicherung und Probeübernahme lokal gestartet; bestehende Konten und Bestände unverändert. Offen bleiben öffentliche GitHub-Pages-/HTTPS-Adressen, Produktionskonfiguration, echte Twitch-Abnahme und die Veröffentlichung einer bewusst konfigurierten ersten Saison. Maßgebliche Übersicht: `docs/FINAL_STATUS.md`. Frühere offene Planungsstände weiter unten sind Entwicklungshistorie.
+Aktueller Stand (03.10.2026): Admin A1–A7, Kartenhandel T1–T6 und kostenloser Saisonpass S1–S6 sind umgesetzt und geprüft. 138 Backend-Tests einschließlich Konfigurationsprüfungen, 57 lokale Browser-Prüfpunkte und Produktionsbuild erfolgreich. Die Website ist unter `https://samdavid93.github.io/SDOYCC/` veröffentlicht; das lokale Backend läuft im Produktionsmodus über einen vorübergehenden Cloudflare-Tunnel ohne eigene Domain. Offen bleiben die echte Twitch-Abnahme, Login durch den Betreiber und die Veröffentlichung einer bewusst konfigurierten ersten Saison. Maßgebliche Übersicht: `docs/FINAL_STATUS.md`. Frühere offene Planungsstände weiter unten sind Entwicklungshistorie.
 
 ## Abgeschlossen
 
