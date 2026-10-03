@@ -1,8 +1,10 @@
 # Veröffentlichung: GitHub Pages und lokaler Server
 
-Stand: 03.10.2026. Der Hub ist lokal abgenommen. Das öffentliche Ziel-Repository ist [SamDavid93/SDOYCC](https://github.com/SamDavid93/SDOYCC). Die vorgesehene Website-Adresse ist `https://samdavid93.github.io/SDOYCC/`. Die öffentliche Backend-Adresse fehlt noch; diese Anleitung bedeutet nicht, dass die Website bereits veröffentlicht ist.
+Stand: 03.10.2026. Der Hub ist lokal abgenommen. Der Quellcode ist in [SamDavid93/SDOYCC](https://github.com/SamDavid93/SDOYCC) hochgeladen. GitHub Pages ist mit GitHub Actions und HTTPS für `https://samdavid93.github.io/SDOYCC/` aktiviert. Die öffentliche Backend-Adresse und damit die Repository-Variable `VITE_API_BASE_URL` fehlen noch; deshalb ist die Website noch nicht ausgeliefert. Der erste Deployment-Versuch wird durch die fehlende API-Adresse blockiert.
 
 ## 1. Ziel festlegen
+
+Der erste GitHub-Prüflauf [Verify hub](https://github.com/SamDavid93/SDOYCC/actions/runs/37152987100) ist erfolgreich: 138 Backend-Tests und Frontend-Build. Der separate Deployment-Workflow benötigt noch die öffentliche Backend-Adresse; der erfolgreiche Prüfbuild allein veröffentlicht keine Website.
 
 Festgelegt: GitHub-Benutzer **SamDavid93**, Repository **SDOYCC**, Sichtbarkeit **Public**. Benötigt wird noch eine öffentliche HTTPS-Adresse für den lokalen Server. GitHub Pages ist mit GitHub Free für öffentliche Repositories verfügbar. [GitHub-Dokumentation](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site)
 
