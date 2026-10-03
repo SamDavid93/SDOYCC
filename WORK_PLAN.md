@@ -8,14 +8,16 @@ Aktueller Stand (03.10.2026): Der lokale Ausbau ist abgeschlossen: Admin A1–A7
 
 ### Veröffentlichung vorbereitet (03.10.2026)
 
-- [x] Lokales Git-Repository auf `main` initialisiert; noch kein Remote, Commit oder Upload.
+- [x] Lokales Git-Repository auf `main` initialisiert; erster Commit erstellt und `origin` mit `https://github.com/SamDavid93/SDOYCC.git` verbunden. Upload wartet auf GitHub-Anmeldung.
 - [x] Git-Ausschlüsse für SQLite-WAL/SHM/Journal ergänzt; lokale `.env`, Datenbank, Cache und Sicherungen ausgeschlossen.
 - [x] `configure-public.bat`: Vorschau und ausdrückliche Übernahme von sechs öffentlichen Einstellungen, atomarer Dateiaustausch und unveränderte Sicherung der bisherigen `.env`.
 - [x] Sechs Konfigurationstests erfolgreich; Vorschau verändert die echte `.env` nicht. Lokaler Streamer.bot-Schlüssel in keiner für Git vorgesehenen Datei gefunden.
 - [x] Pages-Workflow unterstützt Projekt-Unterpfad und `BENUTZER.github.io`; Cloud-Katalogimport für lokale SQLite-Installation standardmäßig deaktiviert.
 - [x] Isolierter Produktionsbuild mit `/sdoycc/` erfolgreich; Asset-Pfade geprüft. Ergebnis: `artifacts/publishing-preparation.json`.
 - [x] Konkrete Anleitung einschließlich Tunnel, Pages-Einstellungen und externer Abnahme: `docs/PUBLISHING.md`.
-- [ ] GitHub-Benutzername, Repository-Sichtbarkeit und Domain vom Betreiber erhalten; Anmeldungen bei den Hosting-Anbietern herstellen.
+- [x] GitHub-Ziel bestätigt: `SamDavid93/SDOYCC`, Public. Vorgesehene Pages-Adresse `https://samdavid93.github.io/SDOYCC/`; Produktionsbuild mit exakt diesem Groß-/Kleinschreibungspfad erfolgreich.
+- [ ] GitHub-Geräteanmeldung abschließen; anschließend Quellcode hochladen und Pages konfigurieren.
+- [ ] Domain oder vorübergehenden HTTPS-Testzugang für das Backend festlegen.
 - [ ] Tatsächliche HTTPS-Adresse einrichten, Konfiguration übernehmen, veröffentlichen und extern mit Twitch abnehmen. Keine öffentliche Bereitstellung erfolgt; lokale Konfiguration bleibt aktiv.
 
 - [x] Atomare Käufe/Öffnungen, Buchungsjournal, Schutz vor doppelten Buchungen.

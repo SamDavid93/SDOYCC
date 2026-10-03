@@ -1,6 +1,6 @@
 # SDOYCC – Abschlussstand
 
-Stand: **03.10.2026**. Der lokale Funktionsumfang umfasst den Sammel-Hub, Admin A1–A7, den Kartenhandel und den kostenlosen Saisonpass. Die öffentliche Bereitstellung ist noch offen: GitHub-Repository/Pages-Adresse und HTTPS-Adresse des lokalen Backends sind laut Betreiber noch nicht vorhanden.
+Stand: **03.10.2026**. Der lokale Funktionsumfang umfasst den Sammel-Hub, Admin A1–A7, den Kartenhandel und den kostenlosen Saisonpass. Das öffentliche Ziel-Repository ist `SamDavid93/SDOYCC`, die vorgesehene Pages-Adresse `https://samdavid93.github.io/SDOYCC/`. Die Veröffentlichung und die HTTPS-Adresse des lokalen Backends sind noch offen.
 
 ## Funktionsübersicht
 
@@ -59,7 +59,7 @@ Aktuelle Ergebnisse: `artifacts/final-tests.log`, `artifacts/final-browser.log`,
 
 Die konkrete Einrichtung ist in [PUBLISHING.md](PUBLISHING.md) beschrieben. `configure-public.bat` zeigt die sechs benötigten Einstellungen an und übernimmt sie nur mit `--apply`, inklusive Sicherung der bisherigen `.env`. Die Zieladressen und der externe Funktionstest bleiben offen.
 
-1. GitHub-Repository und Pages-Adresse einrichten sowie eine beständige öffentliche HTTPS-Adresse zum lokalen Backend festlegen. Keine dieser Adressen ist derzeit vorhanden.
+1. Code in das bestätigte öffentliche Repository `SamDavid93/SDOYCC` hochladen und Pages aktivieren. Anschließend die vorgesehene Adresse `https://samdavid93.github.io/SDOYCC/` prüfen. Die öffentliche HTTPS-Adresse zum lokalen Backend ist noch festzulegen.
 2. `FRONTEND_URL`, `CORS_ORIGINS`, `VITE_API_BASE_URL`, `VITE_BASE_PATH`, `APP_ENV=production` und `ENABLE_DEMO_AUTH=false` passend setzen. Backend-Schlüssel ausschließlich lokal behalten; keine Datenbank, `.env` oder Sicherung ins Repository aufnehmen.
 3. `check-system.bat --public` ausführen und den Frontend-Build mit den endgültigen Werten erstellen. Der Pages-Workflow verweigert Builds mit fehlender/platzhalterhafter oder lokaler Backend-Adresse.
 4. Aktuelle C#-Kopien und Trigger in Streamer.bot prüfen. Einen echten Registrierungsablauf und eine echte Reward-Einlösung einschließlich automatischem Queue-Abschluss abnehmen. Automatisierte Tests simulieren Twitch; sie ersetzen diesen Nachweis nicht.
