@@ -1,0 +1,1 @@
+Alembic migration configuration is reserved here; production deployments should generate the initial revision before switching DATABASE_URL to PostgreSQL.

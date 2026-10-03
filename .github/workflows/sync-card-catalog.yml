@@ -1,0 +1,33 @@
+name: Sync YGOPRODeck card and pack catalog
+
+concurrency:
+  group: card-catalog-sync
+  cancel-in-progress: false
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    # The normal deployment uses SQLite on the streamer's PC. Enable this only
+    # for a separately configured database reachable from GitHub Actions.
+    if: vars.ENABLE_REMOTE_CATALOG_SYNC == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install backend dependencies
+        run: python -m pip install -r backend/requirements.txt
+      - name: Synchronize catalog
+        env:
+          PYTHONPATH: backend
+          DATABASE_URL: ${{ secrets.CARD_DATABASE_URL }}
+        run: |
+          test -n "$DATABASE_URL" || { echo "CARD_DATABASE_URL is required"; exit 1; }
+          python backend/scripts/sync_catalog.py
