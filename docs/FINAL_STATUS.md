@@ -58,13 +58,15 @@ Aktuelle Ergebnisse: `artifacts/final-tests.log`, `artifacts/final-browser.log`,
 
 ## Öffentlicher Testbetrieb und verbleibende Abnahme
 
-Die konkrete Einrichtung ist in [PUBLISHING.md](PUBLISHING.md) beschrieben. Pages-Deployment, öffentliche Backend-Health-Prüfung, Produktionskonfiguration und CORS sind erfolgreich. Die Browserprüfung verwendet die echte Pages-Adresse ohne Kontoanmeldung. Echte Twitch-Einlösungen und Login mit dem Betreiberkonto bleiben getrennt abzunehmen.
+Die konkrete Einrichtung ist in [PUBLISHING.md](PUBLISHING.md) beschrieben. Pages-Deployment, öffentliche Backend-Health-Prüfung, Produktionskonfiguration und CORS sind erfolgreich. Die automatisierte Browserprüfung verwendet die echte Pages-Adresse ohne Kontoanmeldung.
+
+**Vom Betreiber am 03.10.2026 praktisch bestätigt:** Kanalpunkte einlösen, Gutschrift erhalten, Packs kaufen und öffnen sowie die gezogenen Karten gutgeschrieben bekommen. Damit ist der zentrale Sammelablauf live bestätigt. Der automatische Abschluss der Twitch-Warteschlange und der genaue Vorher-/Nachher-Betrag wurden in dieser Rückmeldung nicht gesondert bestätigt. Neuregistrierung mit einem zweiten Konto und Handel zwischen zwei Konten bleiben offen.
 
 1. Pages ist veröffentlicht, der Quick Tunnel ohne eigene Domain läuft. Für einen späteren dauerhaften Betrieb den vorübergehenden Tunnel durch eine feste Backend-Adresse ersetzen.
 2. `FRONTEND_URL`, `CORS_ORIGINS`, `VITE_API_BASE_URL`, `VITE_BASE_PATH`, `APP_ENV=production` und `ENABLE_DEMO_AUTH=false` sind gesetzt. Backend-Schlüssel, Datenbank und Sicherungen bleiben lokal.
 3. `check-system.bat --public` und Pages-Build waren erfolgreich. Nach einem Tunnel-Neustart die neue Adresse mit `start-public-test.bat` übernehmen und den Abschluss des Pages-Workflows abwarten.
-4. Aktuelle C#-Kopien und Trigger in Streamer.bot prüfen. Einen echten Registrierungsablauf und eine echte Reward-Einlösung einschließlich automatischem Queue-Abschluss abnehmen. Automatisierte Tests simulieren Twitch; sie ersetzen diesen Nachweis nicht.
-5. Zugriff von einem anderen Gerät, Login, Einlösung, Kauf und Öffnung prüfen. Die erste echte Saison bewusst im Admin-Bereich konfigurieren und veröffentlichen; es wurde keine Testsaison auf der echten Datenbank angelegt.
+4. Neuregistrierung eines zweiten Kontos über `!register` und `!confirm` sowie Handel zwischen beiden Konten prüfen. Bei der bestätigten Reward-Einlösung noch den automatischen Queue-Abschluss und den genauen Betrag kontrollieren.
+5. Zugriff von einem anderen Gerät und erneute Passwort-Anmeldung prüfen. Einlösung, Kauf, Öffnung und Gutschrift sind vom Betreiber bestätigt. Die erste echte Saison bewusst im Admin-Bereich konfigurieren und veröffentlichen; es wurde keine Testsaison auf der echten Datenbank angelegt.
 
 Verpasste Twitch-Ereignisse werden weiterhin nicht automatisch nachgeladen. Bei einem fehlgeschlagenen Hub-Aufruf denselben Redemption-Vorgang erneut ausführen und die ID beibehalten. Eigenständige Passwort-Wiederherstellung ohne Admin, bezahlte Saisonspuren, Teiltausche und automatische Rückabwicklung bereits weitergetauschter Karten gehören nicht zur definierten ersten Version.
 

@@ -63,6 +63,8 @@ Backend neu starten und `check-system.bat --public` ausführen. Die Prüfung ist
 
 ## 5. Tatsächliche Abnahme
 
+**Rückmeldung des Betreibers vom 03.10.2026:** Kanalpunkte-Einlösung, Gutschrift, Packkauf, Öffnung und Kartengutschrift funktionieren im Praxistest. Der zentrale Sammelablauf ist damit bestätigt. Noch gesondert zu prüfen: genauer Guthabenunterschied und Queue-Abschluss, neue Registrierung mit einem zweiten Konto, Handel zwischen beiden Konten und Zugriff von einem anderen Gerät. Die folgende Liste bleibt als vollständiger Ablauf für spätere Wiederholungen erhalten.
+
 - Auf einem anderen Gerät über Mobilfunk Pages aufrufen; Logo, Banner, Katalog und Kartenbilder prüfen.
 - Backend-Health unter der öffentlichen Adresse mit `/api/health` prüfen. Browser-Konsole darf keine CORS- oder Mixed-Content-Fehler melden.
 - Registrierung über `!register`, browsergebundenen Code und `!confirm CODE` abschließen; danach Passwort-Login testen. Bestehende Konten können sich direkt anmelden.

@@ -2,7 +2,7 @@
 
 Ziel: SamDavidOfficial – 1.000 Kanalpunkte → 100 Tradingpoints → Booster kaufen → kostenlos öffnen → Karten sammeln.
 
-Aktueller Stand (03.10.2026): Admin A1–A7, Kartenhandel T1–T6 und kostenloser Saisonpass S1–S6 sind umgesetzt und geprüft. 138 Backend-Tests einschließlich Konfigurationsprüfungen, 57 lokale Browser-Prüfpunkte und Produktionsbuild erfolgreich. Die Website ist unter `https://samdavid93.github.io/SDOYCC/` veröffentlicht; das lokale Backend läuft im Produktionsmodus über einen vorübergehenden Cloudflare-Tunnel ohne eigene Domain. Offen bleiben die echte Twitch-Abnahme, Login durch den Betreiber und die Veröffentlichung einer bewusst konfigurierten ersten Saison. Maßgebliche Übersicht: `docs/FINAL_STATUS.md`. Frühere offene Planungsstände weiter unten sind Entwicklungshistorie.
+Aktueller Stand (03.10.2026): Admin A1–A7, Kartenhandel T1–T6 und kostenloser Saisonpass S1–S6 sind umgesetzt und geprüft. 138 Backend-Tests einschließlich Konfigurationsprüfungen, 57 lokale Browser-Prüfpunkte und Produktionsbuild erfolgreich. Die Website ist unter `https://samdavid93.github.io/SDOYCC/` veröffentlicht; das lokale Backend läuft im Produktionsmodus über einen vorübergehenden Cloudflare-Tunnel ohne eigene Domain. Der Betreiber bestätigt Kanalpunkte-Einlösung, Gutschrift, Packkauf und Öffnung im Live-Test. Offen bleiben unter anderem Queue-Abschluss, Neuregistrierung und Handel mit zweitem Konto sowie die erste bewusst konfigurierte Saison. Maßgebliche Übersicht: `docs/FINAL_STATUS.md`. Frühere offene Planungsstände weiter unten sind Entwicklungshistorie.
 
 ## Abgeschlossen
 
@@ -20,7 +20,8 @@ Aktueller Stand (03.10.2026): Admin A1–A7, Kartenhandel T1–T6 und kostenlose
 - [x] GitHub-Prüflauf `37152987100` erfolgreich: 138 Backend-Tests einschließlich sechs Konfigurationstests sowie Frontend-Build. Deployment `37152987041` wegen fehlender API-Adresse gestoppt.
 - [x] Betreiberwahl „ohne Domain“ umgesetzt: Cloudflare Quick Tunnel eingerichtet, lokale Konfiguration mit Sicherung auf Produktionsmodus umgestellt, Demo deaktiviert und Pages veröffentlicht.
 - [x] `start-public-test.bat` und `stop-public-test.bat` für den Betrieb ergänzt. Erststart und Wiederverwendung desselben Tunnels erfolgreich, Health und CORS geprüft; lokaler Schlüssel und Bestände nicht verändert.
-- [ ] Echte Twitch-Registrierung/Einlösung und Login durch den Betreiber öffentlich abnehmen; erste Saison bewusst konfigurieren. Der Tunnel bleibt ein vorübergehender Testzugang.
+- [x] Betreiber bestätigt am 03.10.2026 den echten Ablauf: Kanalpunkte einlösen, Gutschrift, Packs erwerben, öffnen und Karten gutgeschrieben bekommen.
+- [ ] Genauen Guthabenunterschied und automatischen Reward-Queue-Abschluss gesondert bestätigen; Neuregistrierung mit zweitem Konto, Handel und erneuten Login öffentlich abnehmen; erste Saison bewusst konfigurieren. Der Tunnel bleibt ein vorübergehender Testzugang.
 
 - [x] Atomare Käufe/Öffnungen, Buchungsjournal, Schutz vor doppelten Buchungen.
 - [x] Echte Sammlung/Kontodaten, Katalogsuche und Import mit stabilen IDs.
