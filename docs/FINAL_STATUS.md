@@ -9,6 +9,7 @@ Stand: **03.10.2026**. Der Sammel-Hub mit Admin A1–A7, Kartenhandel und kosten
 | Twitch & Anmeldung | Streamer.bot-Brücke; öffentlicher Registrierungslink, browsergebundene `!confirm`-Bestätigung, Passwort-Login, Sitzungen und Anmelde-Zurücksetzung durch Admins |
 | Sammelpunkte | 1.000 Kanalpunkte → 100 Sammelpunkte; einmalige Gutschrift je Einlösung; C# schließt die Reward-Warteschlange nach erfolgreicher Buchung |
 | Booster | Standardpreis 100; Kaufbeleg, Pack-Tresor, kostenlose animierte Öffnung, Historie und Wiederholungsschutz |
+| Kartenvorschau beim Öffnen (04.10.2026) | Aufgedeckte Karten und Karten in der Ergebnisübersicht sind anklickbar: großes Bild, gezogene Seltenheit, Herkunftspack, Kartenwerte und Kartentext; Deutsch mit gekennzeichnetem englischem Ersatz. Vorschau schließt per Escape oder Schaltfläche, die Öffnung bleibt erhalten. |
 | Booster-Fortschritt (04.10.2026) | Anzahl, Prozentwert und Balken auf Kacheln, in Details und im Tresor; unterschiedliche aktuell besessene Karten aus dem gültigen Pool, inklusive Deck-Bonusmöglichkeiten |
 | Seltene Funde (04.10.2026) | Chat-Warteschlange ab Ultraselten, mit Karte, Seltenheit und Pack; Streamer.bot-Timer-Aktion vorbereitet. Einrichtung und tatsächliche Chat-Zustellung noch offen: [Anleitung](RARE_FINDS.md) |
 | Structure Decks | Preis 600; vollständige hinterlegte Decklisten einschließlich Mehrfachexemplaren/Bonusregeln; höchstens drei Bezüge je Konto/Deck, einschließlich Geschenken |

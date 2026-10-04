@@ -6,6 +6,13 @@ Aktueller Stand (03.10.2026): Admin A1–A7, Kartenhandel T1–T6 und kostenlose
 
 ## Abgeschlossen
 
+### Kartenvorschau bei der Pack-Öffnung (04.10.2026)
+
+- [x] Erster Klick deckt eine Karte auf; weiterer Klick öffnet ihre Detailvorschau. Auch die Ergebnisübersicht bietet anklickbare Karten mit sichtbarem Hinweis.
+- [x] Großes Kartenbild, tatsächlich gezogene Seltenheit, Herkunftspack, Kartenwerte und vollständiger Kartentext aus der vorhandenen Öffnungsantwort. Englischer Ersatztext wird gekennzeichnet; fehlender Text erhält einen verständlichen Hinweis.
+- [x] Mobile Darstellung, Tastaturbedienung und Fokus-Rückgabe geprüft. Escape schließt nur die Vorschau; aufgedeckte Karten und Öffnung bleiben erhalten, kein weiterer Öffnungsauftrag.
+- [x] Produktionsbuild und vollständiger isolierter Browserlauf einschließlich der neuen Vorschau-Prüfungen erfolgreich, keine JavaScript-Fehler. Bildschirmaufnahmen unter `artifacts/opening-preview-desktop.png` und `artifacts/opening-preview-mobile.png` geprüft.
+
 ### Booster-Fortschritt und öffentliche Fundmeldungen (04.10.2026)
 
 - [x] Sammelfortschritt pro Booster: unterschiedliche aktuell besessene Karten, Duplikate ausgeschlossen, gültiger Pool und Deck-Bonusmöglichkeiten berücksichtigt; gebündelte Datenbankabfrage statt einzelner Anfrage pro Kachel.
