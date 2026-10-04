@@ -42,7 +42,7 @@ def run():
     flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
     with tempfile.TemporaryDirectory() as temporary:
         env = {**os.environ, "DATABASE_URL": f"sqlite:///{Path(temporary) / 'browser.db'}", "APP_ENV": "development",
-               "ENABLE_DEMO_AUTH": "true", "CORS_ORIGINS": ui_url, "VITE_API_BASE_URL": api_url + "/api",
+               "ENABLE_DEMO_AUTH": "true", "CORS_ORIGINS": ui_url, "VITE_API_BASE_URL": api_url + "/api", "VITE_BASE_PATH": "/",
                "FRONTEND_URL": ui_url + "/", "STREAMERBOT_API_KEY": "browser-test-bridge-key-12345678901234567890", "TWITCH_REWARD_ID": "browser-reward"}
         with open(Path(temporary) / "servers.log", "w", encoding="utf8") as log:
             backend = subprocess.Popen([sys.executable, "-m", "uvicorn", "app.main:app", "--app-dir", "backend", "--port", str(api_port)], cwd=ROOT, env=env, stdout=log, stderr=log, creationflags=flags)
@@ -78,6 +78,12 @@ def run():
                     page.get_by_role("link", name="Booster", exact=True).first.click()
                     expect(page.locator(".booster-tile .booster-cover img").first).to_have_attribute("src", "https://example.com/test-pack.svg")
                     assert api_requests.count(api_url + "/api/boosters") == 1, "Concurrent/page navigation reads should share cached booster data"
+                    progress = page.request.get(api_url + '/api/boosters', headers={'Authorization': 'Bearer demo-token'}).json()[0]['collection_progress']
+                    meter = page.locator('.booster-tile .booster-collection-progress').first
+                    expect(meter.locator('progress')).to_have_attribute('value', str(progress['owned']))
+                    expect(meter.locator('progress')).to_have_attribute('max', str(progress['total']))
+                    expect(meter).to_contain_text(f"{progress['owned']} von {progress['total']}")
+                    page.screenshot(path=str(ROOT / 'artifacts/booster-progress-desktop.png'), full_page=True)
                     page.route("**/api/boosters/1/purchase", lambda route: route.fulfill(status=400, content_type="application/json", body='{"detail":"Test: Kauf abgelehnt"}'))
                     page.get_by_role("button", name="Kaufen", exact=True).first.click()
                     expect(page.get_by_role("alert").filter(has_text="Test: Kauf abgelehnt")).to_be_visible()

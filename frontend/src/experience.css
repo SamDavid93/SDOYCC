@@ -259,3 +259,16 @@
   .brand-hero .hub-hero-actions { margin-top: 18px; }
   .auth-brand-logo { width: 155px; }
 }
+.booster-collection-progress { display: grid; gap: 7px; padding: 14px 18px; color: var(--ink); font-size: 12px; min-width: 0; }
+.booster-progress-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 11px; }
+.booster-progress-heading > strong { color: #7251c7; font-size: 15px; white-space: nowrap; }
+.booster-collection-progress > small { color: var(--muted); font-size: 10px; line-height: 1.45; }
+.booster-collection-progress progress { appearance: none; width: 100%; height: 8px; border: 0; border-radius: 999px; overflow: hidden; background: #dce1eb; }
+.booster-collection-progress progress::-webkit-progress-bar { background: #dce1eb; border-radius: 999px; }
+.booster-collection-progress progress::-webkit-progress-value { background: linear-gradient(90deg, #7354c8, #d38fdf); border-radius: 999px; transition: width .4s ease; }
+.booster-collection-progress progress::-moz-progress-bar { background: linear-gradient(90deg, #7354c8, #d38fdf); border-radius: 999px; }
+.booster-collection-progress.is-complete .booster-progress-heading > strong { color: #15705d; }
+.booster-collection-progress.is-complete progress::-webkit-progress-value { background: linear-gradient(90deg, #15705d, #41c5a2); }
+.booster-collection-progress.is-complete progress::-moz-progress-bar { background: linear-gradient(90deg, #15705d, #41c5a2); }
+.booster-detail-copy > .booster-collection-progress, .vault-stack-copy > .booster-collection-progress { padding: 14px 0; }
+@media (prefers-reduced-motion: reduce) { .booster-collection-progress progress::-webkit-progress-value { transition: none; } }

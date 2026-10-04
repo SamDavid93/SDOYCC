@@ -6,6 +6,15 @@ Aktueller Stand (03.10.2026): Admin A1–A7, Kartenhandel T1–T6 und kostenlose
 
 ## Abgeschlossen
 
+### Booster-Fortschritt und öffentliche Fundmeldungen (04.10.2026)
+
+- [x] Sammelfortschritt pro Booster: unterschiedliche aktuell besessene Karten, Duplikate ausgeschlossen, gültiger Pool und Deck-Bonusmöglichkeiten berücksichtigt; gebündelte Datenbankabfrage statt einzelner Anfrage pro Kachel.
+- [x] Anzahl, Prozent und Balken im Shop, in Details und im Tresor; Aktualisierung nach Öffnungen.
+- [x] Öffnungen erzeugen ab Ultraselten eine transaktionale Chat-Warteschlange mit Karte, Seltenheit und Pack. Idempotente Öffnungen, zeitlich begrenzte Reservierung, Quittierung, Ablauf nach zehn Minuten.
+- [x] Streamer.bot-C#-Aktion für den Broadcaster vorbereitet, gegen Version 1.0.7 kompiliert; vier isolierte Versand-/Wiederholungstests bestanden.
+- [x] 149 Backend-Tests, vollständiger Browserlauf einschließlich Fortschrittsanzeige und Frontend-Build erfolgreich. Keine echten Twitch-Nachrichten oder Testbuchungen auf echten Konten ausgelöst.
+- [ ] Timer-Aktion in Streamer.bot aktivieren und echte Chat-Zustellung prüfen. Anleitung: `docs/RARE_FINDS.md`.
+
 ### Veröffentlichung vorbereitet (03.10.2026)
 
 - [x] Lokales Git-Repository auf `main` initialisiert und `origin` mit `https://github.com/SamDavid93/SDOYCC.git` verbunden. Quellcode nach GitHub-Anmeldung hochgeladen.

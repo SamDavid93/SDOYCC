@@ -9,6 +9,8 @@ Stand: **03.10.2026**. Der Sammel-Hub mit Admin A1–A7, Kartenhandel und kosten
 | Twitch & Anmeldung | Streamer.bot-Brücke; öffentlicher Registrierungslink, browsergebundene `!confirm`-Bestätigung, Passwort-Login, Sitzungen und Anmelde-Zurücksetzung durch Admins |
 | Sammelpunkte | 1.000 Kanalpunkte → 100 Sammelpunkte; einmalige Gutschrift je Einlösung; C# schließt die Reward-Warteschlange nach erfolgreicher Buchung |
 | Booster | Standardpreis 100; Kaufbeleg, Pack-Tresor, kostenlose animierte Öffnung, Historie und Wiederholungsschutz |
+| Booster-Fortschritt (04.10.2026) | Anzahl, Prozentwert und Balken auf Kacheln, in Details und im Tresor; unterschiedliche aktuell besessene Karten aus dem gültigen Pool, inklusive Deck-Bonusmöglichkeiten |
+| Seltene Funde (04.10.2026) | Chat-Warteschlange ab Ultraselten, mit Karte, Seltenheit und Pack; Streamer.bot-Timer-Aktion vorbereitet. Einrichtung und tatsächliche Chat-Zustellung noch offen: [Anleitung](RARE_FINDS.md) |
 | Structure Decks | Preis 600; vollständige hinterlegte Decklisten einschließlich Mehrfachexemplaren/Bonusregeln; höchstens drei Bezüge je Konto/Deck, einschließlich Geschenken |
 | Sammlung & Katalog | Suche, Filter, Varianten, Mengen/Reservierungen, Kartenjournal; deutsche Texte/Bilder mit englischem Original als Ersatz |
 | Gestaltung | Original-SDOYCC-Logo und Banner; mobile Ansichten, animierte Kartenrückseiten, Seltenheitsanzeige und Pack-Opening |
@@ -49,6 +51,8 @@ Ein vollständiges Set bedeutet je eine Kartenidentität der beim Anlegen festge
 **Korrekturen:** Punkte und Karten beziehen sich auf positive Journalzeilen, ungeöffnete geschenkte Packs auf die ursprüngliche Vergabeposition. Structure-Deck-Bezugszähler werden nicht zurückgesetzt. Nach einem Weiterverkauf/Weiter-Tausch derselben Variante erfolgt keine automatische Rücknahme bei einem anderen Besitzer. Solche Fälle benötigen eine begründete manuelle Klärung.
 
 ## Prüfung und Grenzen
+
+Ergänzung vom **04.10.2026**: 149 Backend-Tests erfolgreich; vollständiger bisheriger Browserlauf samt neuer Fortschrittsanzeige und vier C#-Ablauftests erfolgreich. Die neue Fundmeldungs-Aktion kompiliert gegen Streamer.bot 1.0.7. Keine Testnachrichten im echten Chat versendet. Prüfprotokolle: `artifacts/booster-features-tests.log`, `artifacts/booster-features-browser.log`. Die ursprüngliche Abnahme steht nachfolgend zur Einordnung.
 
 Die automatisierten Prüfungen verwenden isolierte SQLite-Datenbanken und separate lokale Server. Sie prüfen unter anderem acht gleichzeitige Veröffentlichungen, doppelte Tauschannahmen, Annahme gegen Stornierung, veraltete Bedingungen, Ablauf, Sperren, Reservierungen, Rollback zwischen Abbuchung und Gutschrift, begrenzte Sonderauflagen, fortsetzbare Sammelvergaben, Saisonfristen und doppelte Belohnungsabholung. Der Browserdurchlauf bedient die Funktionen mit getrennten Testkonten einschließlich Mobilansicht.
 

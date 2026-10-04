@@ -95,3 +95,6 @@ app.include_router(art_router)
 app.include_router(trading_router)
 app.include_router(seasons_router)
 app.include_router(season_admin_router)
+
+from app.modules.rare_pulls import router as rare_pulls_router
+app.include_router(rare_pulls_router)

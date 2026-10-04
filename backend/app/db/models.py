@@ -254,6 +254,21 @@ class TradeListing(Base):
     card: Mapped[Card] = relationship()
 
 
+class RarePullAnnouncement(Base):
+    __tablename__ = "rare_pull_announcements"
+    __table_args__ = (UniqueConstraint("opening_id", "card_id", "rarity", name="uq_rare_pull_announcement"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    opening_id: Mapped[int] = mapped_column(ForeignKey("booster_openings.id"))
+    card_id: Mapped[int] = mapped_column(ForeignKey("cards.id"))
+    rarity: Mapped[str] = mapped_column(String(50))
+    message: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    claim_token: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    claimed_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+
+
 class BattlePassProgress(Base):
     __tablename__ = "battle_pass_progress"
     __table_args__ = (UniqueConstraint("user_id", "season_key", name="uq_battle_pass_user_season"),)

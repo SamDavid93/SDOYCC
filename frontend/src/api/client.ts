@@ -80,7 +80,7 @@ export async function getSetCards(id: number): Promise<CardRecord[]> {
 }
 
 export type PackSummary = { id: number; name: string; code: string | null; release_date: string | null; card_count: number | null; cover_image_url: string | null }
-export type BoosterSummary = { id: number; key: string; name: string; set_id?: number | null; set_name?: string | null; set_code?: string | null; image_url?: string | null; cards_per_pack: number; cost: number; owned: number; pool_size: number; fixed_cards: number; bonus_cards: number; content_notes: string | null; product_type: string; purchase_limit: number | null; purchased_total: number; purchases_remaining: number | null }
+export type BoosterSummary = { id: number; key: string; name: string; set_id?: number | null; set_name?: string | null; set_code?: string | null; image_url?: string | null; cards_per_pack: number; cost: number; owned: number; pool_size: number; collection_progress?: { owned: number; total: number; percent: number }; fixed_cards: number; bonus_cards: number; content_notes: string | null; product_type: string; purchase_limit: number | null; purchased_total: number; purchases_remaining: number | null }
 export type BoosterOpening = { opening_id: number; booster_id: number; cards: CardRecord[]; remaining: number; credits_remaining: number }
 
 export async function getPacks(search = ''): Promise<PackSummary[]> {

@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { ArrowRight, Layers3, PackageOpen, Search, Sparkles } from 'lucide-react'
 import { getBoosters, type BoosterSummary } from '../api/client'
-import { BoosterCover, DiscoveryNav } from '../components/BoosterDisplay'
+import { BoosterCover, BoosterProgress, DiscoveryNav } from '../components/BoosterDisplay'
 import { usePackOpening } from '../components/PackOpening'
 import { useSession } from '../Session'
 
 export function MyPacksPage() {
-  const { user } = useSession()
+  const { user, revision } = useSession()
   const { openPack } = usePackOpening()
   const [packs, setPacks] = useState<BoosterSummary[]>([])
   const [query, setQuery] = useState('')
@@ -18,7 +18,7 @@ export function MyPacksPage() {
     let active = true
     getBoosters().then(items => { if (active) { setPacks(items.filter(pack => pack.owned > 0)); setError('') } }).catch(cause => { if (active) setError(cause.message) }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [user])
+  }, [user?.id, revision])
   const total = packs.reduce((sum, pack) => sum + pack.owned, 0)
   const cards = packs.reduce((sum, pack) => sum + pack.owned * pack.cards_per_pack, 0)
   const visible = packs.filter(pack => `${pack.name} ${pack.set_code || ''}`.toLowerCase().includes(query.toLowerCase())).sort((a, b) => b.owned - a.owned)
@@ -34,7 +34,7 @@ export function MyPacksPage() {
     {error && <div className="api-notice" role="alert">{error}</div>}
     <div className="section-heading"><div><p className="eyebrow accent">DEINE BOOSTER-STAPEL</p><h2>Womit fängst du an?</h2></div><NavLink className="back-link" to="/boosters/history">Bisherige Öffnungen <ArrowRight size={15} /></NavLink></div>
     <label className="search-field vault-search"><Search size={17} /><input aria-label="Meine Packs durchsuchen" placeholder="In deinen gekauften Packs suchen …" value={query} onChange={event => setQuery(event.target.value)} /></label>
-    <div className="vault-grid">{visible.map(pack => <article className="vault-stack" key={pack.id}><div className="vault-stack-art"><div className="stack-shadow stack-shadow-one" /><div className="stack-shadow stack-shadow-two" /><BoosterCover name={pack.name} imageUrl={pack.image_url} /><span className="vault-quantity">×{pack.owned}<small>{pack.owned === 1 ? 'PACK' : 'PACKS'}</small></span><span className="vault-ready"><span />BEREIT ZUM ÖFFNEN</span></div><div className="vault-stack-copy"><p className="eyebrow">{pack.set_code || 'SAMMELEDITION'} · {pack.cards_per_pack} KARTEN PRO PACK</p><h3>{pack.name}</h3><p>{pack.owned * pack.cards_per_pack} Karten warten in diesem Stapel.</p><button className="primary-button" disabled={busy || !pack.cards_per_pack} onClick={() => void open(pack)}><Sparkles size={17} />Pack öffnen <ArrowRight size={17} /></button><NavLink to={`/boosters/${pack.id}`}>Kartenpool ansehen</NavLink></div></article>)}</div>
+    <div className="vault-grid">{visible.map(pack => <article className="vault-stack" key={pack.id}><div className="vault-stack-art"><div className="stack-shadow stack-shadow-one" /><div className="stack-shadow stack-shadow-two" /><BoosterCover name={pack.name} imageUrl={pack.image_url} /><span className="vault-quantity">×{pack.owned}<small>{pack.owned === 1 ? 'PACK' : 'PACKS'}</small></span><span className="vault-ready"><span />BEREIT ZUM ÖFFNEN</span></div><div className="vault-stack-copy"><p className="eyebrow">{pack.set_code || 'SAMMELEDITION'} · {pack.cards_per_pack} KARTEN PRO PACK</p><h3>{pack.name}</h3><p>{pack.owned * pack.cards_per_pack} Karten warten in diesem Stapel.</p><BoosterProgress booster={pack} /><button className="primary-button" disabled={busy || !pack.cards_per_pack} onClick={() => void open(pack)}><Sparkles size={17} />Pack öffnen <ArrowRight size={17} /></button><NavLink to={`/boosters/${pack.id}`}>Kartenpool ansehen</NavLink></div></article>)}</div>
     {!loading && !error && !visible.length && <div className="vault-empty"><PackageOpen size={44} /><h2>{query ? 'Kein passender Stapel gefunden.' : 'Hier beginnt deine nächste Öffnung.'}</h2><p>{query ? 'Versuche einen anderen Namen oder ein Set-Kürzel.' : 'Kaufe im Shop einen Booster für 100 Sammelpunkte. Dein Pack erscheint anschließend hier.'}</p>{!query && <NavLink className="primary-button" to="/boosters">Booster entdecken <ArrowRight size={16} /></NavLink>}</div>}
   </div>
 }

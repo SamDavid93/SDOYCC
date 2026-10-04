@@ -77,7 +77,7 @@ Jede gültige Einlösungs-ID bringt genau einmal 100 Tradingpoints. Bereits stor
 
 ## GitHub Pages und lokales Backend
 
-Aktuell sind weder GitHub Pages noch ein öffentlicher HTTPS-Tunnel eingerichtet. **Localhost-Links funktionieren nur auf deinem Server-PC**, auch wenn sie im öffentlichen Chat stehen. Für externe Zuschauer später konfigurieren:
+GitHub Pages ist unter `https://samdavid93.github.io/SDOYCC/` veröffentlicht; das Backend ist über einen vorübergehenden HTTPS-Tunnel erreichbar. Streamer.bot verwendet weiterhin die lokale API. Aktueller Betrieb und Neustart: [Veröffentlichungsanleitung](../../docs/PUBLISHING.md). Für einen anderen Hosting-Stand die Adressen passend konfigurieren:
 
 ```dotenv
 APP_ENV=production
@@ -87,6 +87,10 @@ CORS_ORIGINS=https://ACCOUNT.github.io
 ```
 
 Im Frontend-Build: `VITE_API_BASE_URL=https://OEFFENTLICHE-BACKEND-ADRESSE/api`. Vorlage: [.env.production.example](../../.env.production.example). Streamer.bot spricht weiterhin lokal mit Port 8002. Nur die Hub-API benötigt eine öffentliche HTTPS-Adresse; die Streamer.bot-Steuerung muss nicht öffentlich erreichbar sein.
+
+## Seltene Kartenfunde öffentlich ankündigen
+
+Zusätzlich zur bisherigen Hub-Aktion die Datei [RarePullAnnouncements.cs](RarePullAnnouncements.cs) als eigene C#-Aktion mit einem 15-Sekunden-Timer einrichten. Der Timer verwendet den bestehenden Hub-Schlüssel und sendet über den Broadcaster. Er verarbeitet neue Funde ab Ultraselten mit Kartenname, Seltenheit und Packname. Einrichtung, Grenzen und Prüfungen: [Seltene Funde und Sammelfortschritt](../../docs/RARE_FINDS.md).
 
 ## Fehler eingrenzen
 

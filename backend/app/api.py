@@ -210,20 +210,31 @@ def boosters(database: Database, user: User = Depends(current_user), set_id: int
         BoosterPoolEntry.booster_id,
         func.count(func.distinct(case((and_(valid_weight, BoosterPoolEntry.weight > 0), BoosterPoolEntry.card_id)))),
         func.sum(case((valid_weight, 0), else_=1)),
-    ).group_by(BoosterPoolEntry.booster_id)).all()
-    pool_sizes = {pack_id: count if invalid == 0 else 0 for pack_id, count, invalid in sizes}
+        func.count(func.distinct(case((and_(valid_weight, BoosterPoolEntry.weight > 0, InventoryItem.quantity > 0), BoosterPoolEntry.card_id)))),
+    ).outerjoin(InventoryItem, and_(InventoryItem.card_id == BoosterPoolEntry.card_id, InventoryItem.user_id == user.id))
+        .group_by(BoosterPoolEntry.booster_id)).all()
+    pool_sizes = {pack_id: count if invalid == 0 else 0 for pack_id, count, invalid, collected in sizes}
+    collected_counts = {pack_id: collected if invalid == 0 else 0 for pack_id, count, invalid, collected in sizes}
     purchased = dict(database.execute(select(ProductPurchaseCounter.booster_id, ProductPurchaseCounter.quantity).where(ProductPurchaseCounter.user_id == user.id)).all())
     sets = {item.id: item for item in database.scalars(select(CardSet))}
     deck_sizes = {pack.id: deck_size(pack) for pack in packs if pack.product_type == "structure_deck"}
+    owned_cards = set(database.scalars(select(InventoryItem.card_id).where(InventoryItem.user_id == user.id, InventoryItem.quantity > 0))) if deck_sizes else set()
     for pack in packs:
         if pack.product_type == "structure_deck":
-            pool_sizes[pack.id] = len({item.card_id for item in deck_candidates(pack)})
+            candidates = {item.card_id for item in deck_candidates(pack)}
+            pool_sizes[pack.id] = len(candidates)
+            collected_counts[pack.id] = len(candidates & owned_cards)
     return [{"id": pack.id, "key": pack.key, "name": pack.name, "set_id": pack.set_id,
              "set_name": sets[pack.set_id].name if pack.set_id in sets else None,
              "set_code": sets[pack.set_id].code if pack.set_id in sets else None,
              "image_url": pack.image_url, "cards_per_pack": deck_sizes[pack.id] if pack.id in deck_sizes else effective_pack_size(pack.cards_per_pack, pool_sizes.get(pack.id, 0)), "cost": product_price(pack.product_type),
              **product_rules(pack, purchased.get(pack.id, 0)),
-             "owned": stock.get(pack.id, 0), "pool_size": pool_sizes.get(pack.id, 0)} for pack in packs]
+             "owned": stock.get(pack.id, 0), "pool_size": pool_sizes.get(pack.id, 0),
+             "collection_progress": collection_progress(collected_counts.get(pack.id, 0), pool_sizes.get(pack.id, 0))} for pack in packs]
+
+
+def collection_progress(owned: int, total: int) -> dict:
+    return {"owned": owned, "total": total, "percent": round(100 * owned / total, 1) if total else 0}
 
 
 def booster_payload(pack: BoosterPack, owned: int = 0, purchased: int = 0) -> dict:
@@ -243,6 +254,10 @@ def booster_detail(booster_id: int, database: Database, user: User = Depends(cur
     stock = database.scalar(select(UserBooster).where(UserBooster.user_id == user.id, UserBooster.booster_id == booster_id))
     counter = database.scalar(select(ProductPurchaseCounter).where(ProductPurchaseCounter.user_id == user.id, ProductPurchaseCounter.booster_id == pack.id))
     payload = booster_payload(pack, stock.quantity if stock else 0, counter.quantity if counter else 0)
+    candidates = {entry.card_id for entry in (deck_candidates(pack) if pack.product_type == "structure_deck" else drawable_entries(pack.entries))}
+    collected = database.scalar(select(func.count()).select_from(InventoryItem).where(
+        InventoryItem.user_id == user.id, InventoryItem.quantity > 0, InventoryItem.card_id.in_(candidates)))
+    payload["collection_progress"] = collection_progress(collected, len(candidates))
     card_set = database.get(CardSet, pack.set_id) if pack.set_id else None
     printings = {}
     if card_set:
@@ -360,6 +375,8 @@ def open_booster(booster_id: int, database: Database, user: User = Depends(curre
     database.flush()
     from app.modules.seasons import process_opening
     process_opening(database, opening)
+    from app.modules.rare_pulls import enqueue_rare_pulls
+    enqueue_rare_pulls(database, opening, user, booster, results)
     return finish(database, user, idempotency_key, action, {"opening_id": opening.id, "booster_id": booster_id, "cards": results, "remaining": stock.quantity, "credits_remaining": user.credits, "diamonds_remaining": user.credits})
 
 

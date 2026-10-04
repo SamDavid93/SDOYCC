@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { ArrowLeft, ChevronLeft, ChevronRight, Search } from 'lucide-react'
-import { ProductLimit, buyLabel, BoosterCover, BoosterTile, DiscoveryNav } from '../components/BoosterDisplay'
+import { ProductLimit, buyLabel, BoosterCover, BoosterTile, BoosterProgress, DiscoveryNav } from '../components/BoosterDisplay'
 import { PurchaseFeedback, usePurchaseFeedback } from '../components/PurchaseFeedback'
 import { usePackOpening } from '../components/PackOpening'
 import { label } from '../i18n'
@@ -112,7 +112,7 @@ export function InventoryPage() {
 
 export function BoostersPage() {
   const { openPack } = usePackOpening()
-  const { user } = useSession()
+  const { user, revision } = useSession()
   const [boosters, setBoosters] = useState<BoosterSummary[]>([])
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
@@ -125,7 +125,7 @@ export function BoostersPage() {
     let active = true
     getBoosters().then(items => { if (active) { setBoosters(items); setError('') } }).catch(cause => { if (active) setError(cause.message) }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [])
+  }, [revision, user?.id])
   const buy = (booster: BoosterSummary) => run(async () => {
     const purchased = await purchase.buyPack(booster)
     setBoosters(current => current.map(pack => pack.id === booster.id ? { ...pack, owned: purchased.owned, purchased_total: purchased.purchased_total, purchases_remaining: purchased.purchases_remaining } : pack))
@@ -157,7 +157,7 @@ export function BoostersPage() {
 
 export function BoosterDetailPage({ boosterId }: { boosterId: number }) {
   const { openPack } = usePackOpening()
-  const { user } = useSession()
+  const { user, revision } = useSession()
   const [booster, setBooster] = useState<Awaited<ReturnType<typeof getBooster>> | null>(null)
   const [result, setResult] = useState<Awaited<ReturnType<typeof openBooster>> | null>(null)
   const purchase = usePurchaseFeedback()
@@ -165,10 +165,13 @@ export function BoosterDetailPage({ boosterId }: { boosterId: number }) {
   const [page, setPage] = useState(1)
   const { busy, error, setError, run } = useAction()
   useEffect(() => {
-    let active = true; setBooster(null); setResult(null); setQuery(''); setPage(1); purchase.dismiss()
+    setBooster(null); setResult(null); setQuery(''); setPage(1); purchase.dismiss()
+  }, [boosterId])
+  useEffect(() => {
+    let active = true
     getBooster(boosterId).then(item => { if (active) { setBooster(item); setError('') } }).catch(cause => { if (active) setError(cause.message) })
     return () => { active = false }
-  }, [boosterId])
+  }, [boosterId, revision, user?.id])
   const buy = () => run(async () => {
     if (!booster) return
     const purchased = await purchase.buyPack(booster)
@@ -187,7 +190,7 @@ export function BoosterDetailPage({ boosterId }: { boosterId: number }) {
   const totalWeight = booster?.pool.reduce((sum, entry) => sum + entry.weight, 0) || 0
   return <PageFrame eyebrow="BOOSTERDETAILS" title={booster?.name || 'Booster wird geladen …'} description="Prüfe vor dem Kauf, welche Karten du in diesem Booster ziehen kannst.">
     <NavLink className="back-link" to="/boosters"><ArrowLeft size={15} />Alle Booster</NavLink><Notice message={error} />
-    {booster && <section className="booster-detail-hero"><BoosterCover name={booster.name} imageUrl={booster.image_url} /><div className="booster-detail-copy"><p className="eyebrow accent">DEIN PACK AUF EINEN BLICK</p><h2>{booster.cards_per_pack} {booster.product_type === 'structure_deck' ? (booster.bonus_cards ? 'Karten inklusive Bonus' : 'garantierte Karten') : 'zufällige Karten'} für {booster.cost} Punkte</h2><ProductLimit booster={booster} /><p>{booster.product_type === 'structure_deck' ? (booster.bonus_cards ? `Du erhältst ${booster.fixed_cards} feste Karten einschließlich Mehrfachexemplaren und ${booster.bonus_cards} zusätzliche Bonuskarte.` : 'Du erhältst die feste Deckliste einschließlich aller Mehrfachexemplare.') : `Aus einem Pool von ${booster.pool_size} Karten.`} Nach dem Kauf gehört das Pack dir – du kannst es jederzeit kostenlos öffnen.</p><p><strong>{booster.owned} ungeöffnete Packs</strong> in deinem Bestand</p><div className="booster-detail-buttons"><button className="outline-button" disabled={busy || !booster.cards_per_pack || booster.purchases_remaining === 0 || (user?.diamonds || 0) < booster.cost} onClick={() => void buy()} aria-busy={purchase.purchasingId === boosterId}>{purchase.purchasingId === boosterId ? 'Wird gekauft …' : buyLabel(booster)}</button><button className="primary-button" disabled={busy || !booster.cards_per_pack || booster.owned < 1} onClick={() => void open()}>Kostenlos öffnen</button></div>{(user?.diamonds || 0) < booster.cost && <NavLink className="back-link" to="/account">Sammelpunkte im Stream sammeln</NavLink>}{booster.set_id && <NavLink className="back-link" to={`/sets/${booster.set_id}`}>Zugehöriges Kartenset ansehen →</NavLink>}</div></section>}
+    {booster && <section className="booster-detail-hero"><BoosterCover name={booster.name} imageUrl={booster.image_url} /><div className="booster-detail-copy"><p className="eyebrow accent">DEIN PACK AUF EINEN BLICK</p><h2>{booster.cards_per_pack} {booster.product_type === 'structure_deck' ? (booster.bonus_cards ? 'Karten inklusive Bonus' : 'garantierte Karten') : 'zufällige Karten'} für {booster.cost} Punkte</h2><ProductLimit booster={booster} /><BoosterProgress booster={booster} /><p>{booster.product_type === 'structure_deck' ? (booster.bonus_cards ? `Du erhältst ${booster.fixed_cards} feste Karten einschließlich Mehrfachexemplaren und ${booster.bonus_cards} zusätzliche Bonuskarte.` : 'Du erhältst die feste Deckliste einschließlich aller Mehrfachexemplare.') : `Aus einem Pool von ${booster.pool_size} Karten.`} Nach dem Kauf gehört das Pack dir – du kannst es jederzeit kostenlos öffnen.</p><p><strong>{booster.owned} ungeöffnete Packs</strong> in deinem Bestand</p><div className="booster-detail-buttons"><button className="outline-button" disabled={busy || !booster.cards_per_pack || booster.purchases_remaining === 0 || (user?.diamonds || 0) < booster.cost} onClick={() => void buy()} aria-busy={purchase.purchasingId === boosterId}>{purchase.purchasingId === boosterId ? 'Wird gekauft …' : buyLabel(booster)}</button><button className="primary-button" disabled={busy || !booster.cards_per_pack || booster.owned < 1} onClick={() => void open()}>Kostenlos öffnen</button></div>{(user?.diamonds || 0) < booster.cost && <NavLink className="back-link" to="/account">Sammelpunkte im Stream sammeln</NavLink>}{booster.set_id && <NavLink className="back-link" to={`/sets/${booster.set_id}`}>Zugehöriges Kartenset ansehen →</NavLink>}</div></section>}
     <PurchaseFeedback {...purchase} busy={busy} onOpen={() => void open()} />{result && <OpeningResult result={result} />}
     {booster?.bonus_slots.map((slot, index) => <section className="pool-panel deck-bonus-panel" key={index} aria-label="Bonusauswahl"><h2>{slot.name}</h2><p>Du erhältst genau eine der folgenden Karten zusätzlich zum festen Deckinhalt. Die Auswahl erfolgt einmal beim Öffnen.</p>{booster.content_notes && <p className="deck-content-note">{booster.content_notes}</p>}<div className="catalog-grid bonus-card-grid">{slot.choices.filter(choice => choice.card.name.toLowerCase().includes(query.trim().toLowerCase())).map((choice, choiceIndex) => <div key={choiceIndex}><NavLink className="card-link" to={`/cards/${choice.card.id}`}><CardVisual card={choice.card} /></NavLink><small>{(choice.probability * 100).toLocaleString('de-DE', { maximumFractionDigits: 2 })}% Bonuschance im Hub · nicht garantiert</small></div>)}</div></section>)}
     <section className="pool-panel"><h2>{booster?.product_type === 'structure_deck' ? 'Garantierter Deckinhalt' : 'Welche Karten kann ich ziehen?'}</h2><p>{booster?.product_type === 'structure_deck' ? 'Jede aufgeführte Karte ist in der angegebenen Stückzahl enthalten.' : 'Jede Karte wird unabhängig gezogen. Doppelte Exemplare sind möglich; eine bestimmte Karte ist nicht garantiert.'}</p><label className="search-field"><Search size={16} /><input aria-label="Karten in diesem Booster suchen" placeholder="Wunschkarte in diesem Booster suchen …" value={query} onChange={event => { setQuery(event.target.value); setPage(1) }} /></label><div className="catalog-result-meta">{booster?.product_type === 'structure_deck' ? `${pool.length} Karteneinträge im festen Inhalt` : `${pool.length} von ${booster?.pool_size || 0} möglichen Karten`}</div><div className="catalog-grid">{pool.slice((page - 1) * 24, page * 24).map((entry, index) => <div key={`${entry.card.id}-${entry.rarity}-${index}`}><NavLink className="card-link" to={`/cards/${entry.card.id}`}><CardVisual card={entry.card} /></NavLink><small>{entry.quantity != null ? `${entry.quantity} × garantiert enthalten` : `Chance je Ziehung: ${(totalWeight > 0 ? entry.weight / totalWeight * 100 : 0).toLocaleString('de-DE', { maximumFractionDigits: 2 })}%`}</small></div>)}</div>{booster && !pool.length && !booster.bonus_slots.some(slot => slot.choices.some(choice => choice.card.name.toLowerCase().includes(query.trim().toLowerCase()))) && <Empty>{booster.product_type === 'structure_deck' && !booster.cards_per_pack ? 'Die vollständige Deckliste wird noch geprüft.' : 'Diese Karte ist in diesem Booster nicht enthalten.'} <NavLink to="/cards">Im gesamten Katalog suchen</NavLink></Empty>}<Pagination page={page} pages={Math.max(1, Math.ceil(pool.length / 24))} change={setPage} /></section>
