@@ -263,6 +263,23 @@ def run():
                     expect(page.locator(".sdoycc-pack-art").first).to_have_attribute("aria-label", "SDOYCC-Cover: SDOYCC Origins")
                     expect(page.locator(".booster-cover img")).to_have_count(0)
                     page.screenshot(path=str(ROOT / "artifacts/sdoycc-custom-covers-desktop.png"), full_page=True)
+                    # Official locally cached cover takes precedence; a missing local image falls back to the same pack's custom cover.
+                    def official_pack_fixture(route):
+                        response = route.fetch()
+                        payload = response.json()
+                        payload[0]['name'] = 'Legend of Blue Eyes White Dragon Booster'
+                        route.fulfill(response=response, json=payload)
+                    page.route('**/api/boosters', official_pack_fixture)
+                    page.reload()
+                    expect(page.locator('.booster-cover img').first).to_have_attribute('alt', 'Offizielles Cover: Legend of Blue Eyes White Dragon Booster')
+                    page.wait_for_function("document.querySelector('.booster-cover img').naturalWidth >= 240")
+                    page.screenshot(path=str(ROOT / 'artifacts/official-pack-cover-desktop.png'), full_page=True)
+                    page.route('**/booster-covers/*', lambda route: route.abort())
+                    page.reload()
+                    expect(page.locator('.sdoycc-pack-art').first).to_have_attribute('aria-label', 'SDOYCC-Cover: Legend of Blue Eyes White Dragon Booster')
+                    page.unroute('**/booster-covers/*')
+                    page.unroute('**/api/boosters')
+                    page.reload()
                     page.set_viewport_size({"width": 390, "height": 844})
                     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), "Booster shop mobile horizontal overflow"
                     page.get_by_role("link", name="Enthaltene Karten ansehen").first.click()

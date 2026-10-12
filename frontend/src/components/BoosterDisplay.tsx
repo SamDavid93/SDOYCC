@@ -1,10 +1,19 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { ArrowRight, Gem } from 'lucide-react'
 import type { BoosterSummary } from '../api/client'
 import { BoosterArtwork } from './BoosterArtwork'
+import officialCovers from '../data/officialBoosterCovers.json'
+
+const coverIdentity = (name: string) => name.replace(/\s+Booster$/i, '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '')
 
 export function BoosterCover({ name, code }: { name: string; code?: string | null }) {
-  return <div className="booster-cover"><BoosterArtwork name={name} code={code} /></div>
+  const cover = (officialCovers as Record<string, { file: string; width: number; height: number }>)[coverIdentity(name)]
+  const url = cover ? import.meta.env.BASE_URL + cover.file : null
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+  return <div className="booster-cover">{cover && url && failedUrl !== url
+    ? <img src={url} width={cover.width} height={cover.height} alt={`Offizielles Cover: ${name}`} loading="lazy" decoding="async" onError={() => setFailedUrl(url)} />
+    : <BoosterArtwork name={name} code={code} />}</div>
 }
 
 export function DiscoveryNav() {
