@@ -8,6 +8,13 @@ set "BACKEND_PYTHON=python"
 if exist "%~dp0.venv\Scripts\python.exe" set "BACKEND_PYTHON=%~dp0.venv\Scripts\python.exe"
 set "PYTHONPATH=%~dp0backend"
 
+powershell.exe -NoProfile -Command "try { $r = Invoke-RestMethod -Uri 'http://127.0.0.1:8002/api/health' -TimeoutSec 3; if ($r.status -eq 'ok') { exit 0 } } catch { }; exit 1" >nul 2>&1
+if not errorlevel 1 (
+    echo Backend laeuft bereits auf http://127.0.0.1:8002
+    popd
+    exit /b 0
+)
+
 if not exist ".env" (
     echo FEHLER: .env fehlt. Bitte zuerst .env.example als .env kopieren und konfigurieren.
     goto failed

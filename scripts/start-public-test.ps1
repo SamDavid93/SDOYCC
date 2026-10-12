@@ -1,4 +1,11 @@
 $ErrorActionPreference = 'Stop'
+$startLock = [System.Threading.Mutex]::new($false, 'Local\SDOYCCPublicStart8002')
+try { $lockAcquired = $startLock.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $lockAcquired = $true }
+if (-not $lockAcquired) {
+    Write-Host 'Ein oeffentlicher Start laeuft bereits. Bitte dessen Abschluss abwarten.'
+    $startLock.Dispose()
+    exit 1
+}
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location -LiteralPath $root
 $python = Join-Path $root '.venv\Scripts\python.exe'
@@ -112,4 +119,7 @@ try {
     Write-Host ('Start nicht abgeschlossen: ' + $_.Exception.Message) -ForegroundColor Red
     Write-Host 'Der Pages-Stand wurde nur bei erfolgreicher Backend-Pruefung aktualisiert. Logs: artifacts/public-test/'
     exit 1
+} finally {
+    $startLock.ReleaseMutex()
+    $startLock.Dispose()
 }

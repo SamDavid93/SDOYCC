@@ -23,6 +23,10 @@ SOURCES = {
     4343: 'L26D/L26D-DES05-a89f84087a-500.webp',
     4861: 'RA02/RA02-DE075-SCR-e35e1bbb48-500.webp',
     14741: 'LAVD/LAVD-DES10-bb0c810c95-500.webp',
+    4064: 'HAC1/HAC1-DE005-C-12f1b3b704-500.webp',
+    4835: 'STAS/STAS-DE022-f3c13eacda-500.webp',
+    4909: 'RA05/RA05-DE112-UR-ALT2-276c37ccb5-500.webp',
+    4386: 'SDWD/SDWD-DE034-62330eee9b-500.webp',
 }
 CACHE = Path(__file__).resolve().parents[3] / 'cache/cards-cardcluster-de'
 _locks = {}
