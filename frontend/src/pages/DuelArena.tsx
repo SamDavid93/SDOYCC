@@ -17,7 +17,7 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
     const entry = sides[owner].field.find(value => value.zone === zone && value.sequence === sequence)
     const zoneChoice = prompt?.kind === 'zones' ? prompt.choices.findIndex(choice => choice.location?.owner === owner && choice.location.zone === zone && choice.location.sequence === sequence) ?? -1 : -1
     const canDrop = !disabled && owner === seat && !entry && (zone === 4 || zone === 8) && dragging !== null && actions(dragging, zone).length > 0
-    return <div key={`${zone}:${sequence}`} className={'arena-slot' + (entry && (entry.position & 12) ? ' defense-position' : '') + (entry?.disabled ? ' zone-disabled' : '') + (zoneChoice >= 0 && !disabled ? ' zone-selectable' : '') + (zoneSelection.includes(zoneChoice) ? ' zone-selected' : '') + (canDrop ? ' zone-droppable' : '')}
+    return <div key={`${zone}:${sequence}`} className={'arena-slot' + (zone === 4 && entry && (entry.position & 12) ? ' defense-position' : '') + (entry?.disabled ? ' zone-disabled' : '') + (zoneChoice >= 0 && !disabled ? ' zone-selectable' : '') + (zoneSelection.includes(zoneChoice) ? ' zone-selected' : '') + (canDrop ? ' zone-droppable' : '')}
       onDragOver={event => { if (canDrop) { event.preventDefault(); event.dataTransfer.dropEffect = 'move' } }}
       onDrop={event => { event.preventDefault(); if (canDrop && dragging !== null) setDrop({ index: dragging, target: { owner, zone, sequence } }); setDragging(null) }}
       data-duel-owner={owner} data-duel-zone={zone} data-duel-sequence={sequence} aria-label={`${owner === seat ? 'Deine' : 'Gegnerische'} ${label}`}>

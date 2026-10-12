@@ -76,6 +76,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     socket.current.send(JSON.stringify({ type: kind, ...body }))
   }
   const board = result?.board, prompt = board?.prompt
+  const chainReaction = prompt?.kind === 'chain' || prompt?.title === 'Auf die Kette reagieren'
   useEffect(() => { setZoneSelection([]) }, [prompt?.id])
   useEffect(() => {
     if (!placement.current || busy || !connected) return
@@ -106,7 +107,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
           {preview ? <><button className="outline-button" onClick={() => setPreview(null)}>Vorschau schließen</button><h2>{preview.name}</h2>
             {preview.image_url && <img key={preview.image_url} src={API_BASE_URL.replace(/\/api\/?$/, '') + preview.image_url} alt={preview.name} onError={event => imageFailed(event, preview)} />}
             {preview.atk !== undefined && <p>ATK {preview.atk} · DEF {preview.defense ?? '—'}</p>}
-            <small>Englischer Originaltext</small><p className="duel-card-description">{preview.description || 'Für diese Karte ist kein Text verfügbar.'}</p></>
+            <small>Kartentext</small><p className="duel-card-description">{preview.description || 'Für diese Karte ist kein Text verfügbar.'}</p></>
             : <div className="duel-inspector-empty"><span>◇</span><h2>Kartenvorschau</h2><p>Klicke eine sichtbare Karte an, um Bild und Kartentext hier zu lesen.</p></div>}
         </aside>
         <DuelArena sides={board.boards} seat={board.seat} card={card} prompt={prompt} disabled={busy || !connected || Boolean(result && terminal(result))}
@@ -120,7 +121,10 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
             send('answer', { prompt: prompt.id, selected: [index] })
           }} />
       </div>
-      {result && !terminal(result) && <DuelDecisions prompt={prompt} disabled={busy || !connected} send={send} zoneSelection={zoneSelection} onZoneSelection={setZoneSelection} />}
+      {result && !terminal(result) && <div className={chainReaction ? 'duel-chain-overlay' : undefined} role={chainReaction ? 'region' : undefined} aria-label={chainReaction ? 'Kettenreaktion' : undefined}>
+        {chainReaction && <div className="duel-chain-notice"><span aria-hidden="true">∞</span><strong>Deine Kettenreaktion</strong></div>}
+        <DuelDecisions prompt={prompt} disabled={busy || !connected} send={send} zoneSelection={zoneSelection} onZoneSelection={setZoneSelection} />
+      </div>}
     </>}
 
   </section>
