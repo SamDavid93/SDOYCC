@@ -54,15 +54,42 @@ class Projection:
         self.seen = set()
         self.query_boards = None
         self.disabled = 0
+        self.chain_cards = {}
+        self.attack_cards = []
 
     def card(self, code):
         return {'code': code, **{key: value for key, value in self.catalog[code].items() if key != 'options'}}
 
     def public_events(self, owner):
-        return [{key: value for key, value in event.items() if not key.startswith('_')}
+        return [{**{key: value for key, value in event.items() if not key.startswith('_')},
+                 **({'affected_cards': event['_cards_by_seat'][owner]} if '_cards_by_seat' in event else {})}
             for event in self.events[-100:] if '_audience' not in event or owner in event['_audience']]
 
+    @staticmethod
+    def location_visible(location, seat):
+        zone = location['zone']
+        return (location['owner'] == seat and zone in (2, 4, 8, 16, 32, 64)) or (zone in (4, 8, 16, 32, 64) and bool(location.get('position', 0) & 5))
+
+    def named_card(self, role, code, locations):
+        return [(role, code, {seat for seat in (0, 1) if any(self.location_visible(location, seat) for location in locations)})]
+
+    def named_location(self, role, location):
+        owner, zone, sequence = location['owner'], location['zone'], location['sequence']
+        entry = self.field[owner].get((zone, sequence)) if zone in (4, 8) else None
+        if entry is None and self.query_boards:
+            entries = self.query_boards[owner]['zones'].get(str(zone), [])
+            entry = entries[sequence] if sequence < len(entries) else None
+        if entry:
+            seats = {seat for seat in (0, 1) if not entry.get('hidden') and (entry.get('public') or self.location_visible({**location, 'position': entry.get('position', 0)}, seat))}
+            return [(role, entry.get('code', 0), seats)]
+        return [(role, 0, set())]
+
     def event(self, kind, **data):
+        affected = data.pop('_affected', None)
+        if affected is not None:
+            # Snapshot names now: later flips, shuffles and moves must not rewrite history.
+            data['_cards_by_seat'] = {seat: [{'role': role, 'name': self.catalog[code]['name'] if seat in visible and code in self.catalog else 'Verdeckte Karte'}
+                for role, code, visible in affected] for seat in (0, 1)}
         self.event_sequence += 1
         self.events.append({'id': self.event_sequence, 'kind': kind, **data})
         if len(self.events) > 3000: del self.events[:-3000]
@@ -234,10 +261,12 @@ class Projection:
                 self.new_prompt(owner, self.description(description), [self.choice('Ja', struct.pack('<i', 1)), self.choice('Nein', struct.pack('<i', 0))])
             elif msg == 90:
                 owner, count = r.read('BI')
+                drawn = []
                 for _ in range(count):
                     code, position = r.read('II'); self.hands[owner].append(code)
+                    drawn.append(('Karte', code, {owner}))
                 self.deck_count[owner] -= count
-                self.event('draw', player=owner, count=count)  # never codes
+                self.event('draw', player=owner, count=count, _affected=drawn)
             elif msg == 50:
                 code = r.read('I'); before, after = r.loc(), r.loc(); reason = r.read('I')
                 owner = before['owner']; zone = before['zone']; seq = before['sequence']
@@ -250,11 +279,11 @@ class Projection:
                 elif zone == 16: self.grave[owner].append(code)
                 elif zone not in (0, 1) and 'query_boards' not in packet: raise UnsupportedMessage('Zone outside laboratory pool')
                 kind = 'destroy' if reason & 1 and zone == 16 else 'banish' if zone == 32 else 'control' if before['owner'] != owner and zone in (4, 8) else 'material' if before['zone'] & 128 or zone & 128 else 'token' if before['zone'] == 0 and self.catalog.get(code, {}).get('type', 0) & 0x4000 else 'move'
-                self.event(kind, player=owner, zone=zone, before=before, after=after)
+                self.event(kind, player=owner, zone=zone, before=before, after=after, _affected=self.named_card('Karte', code, [before, after]))
             elif msg == 53:
                 code, owner, zone, seq, old, new = r.read('IBBBBB')
                 self.field[owner][(zone, seq)] = {'code': code, 'position': new}
-                self.event('position', player=owner)
+                self.event('position', player=owner, _affected=self.named_card('Karte', code, [{'owner': owner, 'zone': zone, 'position': old}, {'owner': owner, 'zone': zone, 'position': new}]))
             elif msg == 40:
                 self.turn = r.read('B'); self.turn_number += 1
                 self.event('turn', player=self.turn, number=self.turn_number)
@@ -276,25 +305,39 @@ class Projection:
                 code = r.read('I'); info = r.loc()
                 bits = self.catalog.get(code, {}).get('type', 0)
                 method = 'covered' if not info['position'] & 5 else 'flip' if msg == 64 else 'normal' if msg == 60 else 'fusion' if bits & 0x40 else 'synchro' if bits & 0x2000 else 'xyz' if bits & 0x800000 else 'link' if bits & 0x4000000 else 'ritual' if bits & 0x80 else 'pendulum' if bits & 0x1000000 else 'special'
-                self.event('summon', player=info['owner'], location=info, method=method)
+                self.event('summon', player=info['owner'], location=info, method=method, _affected=self.named_card('Karte', code, [info]))
             elif msg == 70:
                 code = r.read('I'); source = r.loc(); player, zone, sequence, description, number = r.read('BBIQI')
                 options = self.catalog.get(code, {}).get('options', [])
                 effect = self.strings.get(description) or (options[description & 15] if description >> 4 == code and description & 15 < len(options) else None)
                 # An activated card is public to both seats; other hidden cards stay private.
                 self.event('chain', source=source, number=number, card=self.card(code), effect=effect)
-            elif msg in (71, 72, 73, 74, 75, 76): self.event('chain_step', step=msg, number=r.read('B') if msg != 74 else 0)
-            elif msg == 110: self.event('attack', attacker=r.loc(), defender=r.loc())
+                self.chain_cards[number] = code
+            elif msg in (71, 72, 73, 74, 75, 76):
+                number = r.read('B') if msg != 74 else 0
+                codes = [self.chain_cards[number]] if number in self.chain_cards else list(self.chain_cards.values()) if msg == 74 else []
+                self.event('chain_step', step=msg, number=number, _affected=[('Effektkarte', code, {0, 1}) for code in codes])
+                if msg == 74: self.chain_cards.clear()
+            elif msg == 110:
+                attacker, defender = r.loc(), r.loc()
+                affected = self.named_location('Angreifer', attacker)
+                if defender['zone']: affected += self.named_location('Ziel', defender)
+                self.attack_cards = affected
+                self.event('attack', attacker=attacker, defender=defender, direct=not defender['zone'], _affected=affected)
             elif msg == 56:
                 self.disabled = r.read('I'); self.event('zones', disabled=self.disabled)
             elif msg == 170:
                 r.read('I'); self.match_kill = True
             elif msg in (93, 96, 97):
-                self.event('equip' if msg == 93 else 'target' if msg == 96 else 'untarget', source=r.loc(), target=r.loc())
-            elif msg == 95: self.event('unequip', source=r.loc())
+                source, target = r.loc(), r.loc()
+                self.event('equip' if msg == 93 else 'target' if msg == 96 else 'untarget', source=source, target=target,
+                           _affected=self.named_location('Karte', source) + self.named_location('Ziel', target))
+            elif msg == 95:
+                source = r.loc(); self.event('unequip', source=source, _affected=self.named_location('Karte', source))
             elif msg in (101, 102):
                 counter, player, zone, sequence, count = r.read('HBBBH')
-                self.event('counter', player=player, zone=zone, sequence=sequence, counter=counter, count=count, added=msg == 101)
+                self.event('counter', player=player, zone=zone, sequence=sequence, counter=counter, count=count, added=msg == 101,
+                           _affected=self.named_location('Karte', {'owner': player, 'zone': zone, 'sequence': sequence}))
             elif msg in (30, 31, 42):
                 recipient, count = r.read('BI')
                 cards = []
@@ -309,7 +352,7 @@ class Projection:
                 player, count = r.read('BB')
                 values = [r.read('B') for _ in range(count)]
                 self.event('coin' if msg == 130 else 'dice', player=player, values=values)
-            elif msg == 112: self.event('negate')
+            elif msg == 112: self.event('negate', _affected=self.attack_cards)
             elif msg in (30, 31, 34, 35, 37, 38, 42, 55, 56, 81, 93, 95, 96, 97, 101, 102, 120, 121, 122, 123, 133, 170, 190) and 'query_boards' in packet:
                 # Full authoritative queries apply movement/stat/zone changes.
                 # Raw private informational packets are never forwarded.
@@ -321,6 +364,9 @@ class Projection:
         self.revision += 1
         if 'query_boards' in packet:
             self.query_boards = packet['query_boards']
+            self.field = [{(zone, sequence): dict(entry) for zone in (4, 8)
+                for sequence, entry in enumerate(board['zones'][str(zone)]) if entry}
+                for board in self.query_boards]
         if self.prompt: self.prompt['id'] = self.revision
         if packet['status'] == 1 and not self.prompt:
             raise UnsupportedMessage('Waiting without supported prompt')

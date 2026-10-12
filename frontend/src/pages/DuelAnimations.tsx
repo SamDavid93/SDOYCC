@@ -3,7 +3,7 @@ import { API_BASE_URL } from '../api/transport'
 import type { EngineCard } from './DuelWorkerTable'
 
 type Location = { owner: number; zone: number; sequence: number }
-export type DuelEvent = { id: number; kind: string; card?: EngineCard; effect?: string | null; player?: number; count?: number; value?: number; phase?: number; number?: number; step?: number; code?: number; text?: string; method?: string; values?: number[]; cards?: { name: string }[]; before?: Location; after?: Location; source?: Location; target?: Location; attacker?: Location; defender?: Location; location?: Location }
+export type DuelEvent = { id: number; kind: string; affected_cards?: { role: string; name: string }[]; direct?: boolean; card?: EngineCard; effect?: string | null; player?: number; count?: number; value?: number; phase?: number; number?: number; step?: number; code?: number; text?: string; method?: string; values?: number[]; cards?: { name: string }[]; before?: Location; after?: Location; source?: Location; target?: Location; attacker?: Location; defender?: Location; location?: Location }
 type Mode = 'full' | 'fast' | 'reduced'
 const captions: Record<string, string> = { draw: 'Karte gezogen', move: 'Karte bewegt', position: 'Position geändert',
   turn: 'Neuer Spielzug', phase: 'Phasenwechsel', lp: 'Lebenspunkte geändert', summon: 'Beschwörung',
@@ -12,6 +12,7 @@ const captions: Record<string, string> = { draw: 'Karte gezogen', move: 'Karte b
   control: 'Kontrolle gewechselt', material: 'Material bewegt', token: 'Spielmarke erzeugt', counter: 'Zählmarken geändert',
   equip: 'Ausrüstung verbunden', unequip: 'Ausrüstung gelöst', target: 'Ziel markiert', untarget: 'Ziel gelöst', reveal: 'Karten aufgedeckt', zones: 'Zonensperre geändert', hint: 'Engine-Hinweis' }
 const methods: Record<string, string> = { normal: 'Normal-/Tributbeschwörung', flip: 'Flippbeschwörung', special: 'Spezialbeschwörung', fusion: 'Fusion', synchro: 'Synchro', xyz: 'Xyz', link: 'Link', ritual: 'Ritual', pendulum: 'Pendel', covered: 'Verdeckte Beschwörung' }
+const chainSteps: Record<number, string> = { 71: 'Kette fortgesetzt', 72: 'Effekt wird aufgelöst', 73: 'Effekt aufgelöst', 74: 'Kette beendet', 75: 'Aktivierung negiert', 76: 'Effekt negiert' }
 
 function Motion({ event, mode }: { event: DuelEvent; mode: Mode }) {
   if (mode === 'reduced') return null
@@ -85,7 +86,7 @@ export function DuelAnimations({ events, runId, onEffect, seat, disabled, surren
     </div>
     {surrender && <button className="duel-surrender" disabled={disabled} onClick={surrender}>Duell aufgeben</button>}
     <button onClick={event => { const field=event.currentTarget.closest('.duel-worker-table'); if (document.fullscreenElement) void document.exitFullscreen(); else if(field) void field.requestFullscreen().catch(()=>{}) }}>Spielfeld im Vollbild</button>
-    <details><summary>Bestätigtes Duellprotokoll</summary><ol className="duel-event-log">{events.filter(event => event.kind !== 'information').map(event => <li key={event.id}>#{event.id} {event.kind === 'summon' ? methods[event.method || 'special'] : captions[event.kind] || event.kind}{event.number ? ` · ${event.number}` : ''}{event.value !== undefined ? ` · ${event.value}` : ''}{event.values ? ` · ${event.values.join(', ')}` : ''}{event.text ? ` · ${event.text}` : ''}{event.card ? ` · ${event.card.name}` : ''}{event.cards ? ` · ${event.cards.map(card => card.name).join(', ')}` : ''}</li>)}</ol></details>
+    <details><summary>Bestätigtes Duellprotokoll</summary><ol className="duel-event-log">{events.filter(event => event.kind !== 'information').map(event => <li key={event.id}>#{event.id} {event.kind === 'summon' ? methods[event.method || 'special'] : event.kind === 'chain_step' ? chainSteps[event.step || 0] || 'Kette' : captions[event.kind] || event.kind}{event.number ? ` · ${event.number}` : ''}{event.value !== undefined ? ` · ${event.value}` : ''}{event.values ? ` · ${event.values.join(', ')}` : ''}{event.text ? ` · ${event.text}` : ''}{event.card ? ` · ${event.card.name}` : ''}{event.affected_cards?.map((card,index) => <span key={index}> · {card.role}: {card.name}</span>)}{event.direct ? ' · Direkter Angriff' : ''}{event.cards ? ` · ${event.cards.map(card => card.name).join(', ')}` : ''}</li>)}</ol></details>
     </div></details>
     {active && <Motion key={`motion:${active.id}`} event={active} mode={mode} />}
     {active?.kind === 'chain' && active.card && <section className="duel-effect-reveal" role="status" aria-label="Aktivierter Karteneffekt" key={`effect:${active.id}`}>

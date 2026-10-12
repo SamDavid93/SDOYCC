@@ -138,6 +138,9 @@ def run(manual=False):
                     expect(destination.locator('.arena-zone-choice')).to_be_enabled(timeout=10000)
                     destination.locator('.arena-zone-choice').click()
                     expect(destination.locator('.duel-playing-card')).to_be_visible(timeout=10000)
+                    summoned_name = destination.locator('.duel-playing-card').get_attribute('aria-label').removesuffix(' ansehen')
+                    for page in (host, guest):
+                        expect(page.locator('.duel-event-log li').filter(has_text='Normal-/Tributbeschwörung').last).to_contain_text('Karte: ' + summoned_name)
                     expect(host.locator('.duel-player-field')).to_have_count(2)
                     host.screenshot(path=str(artifacts / 'desktop.png'), full_page=True)
                     guest.reload()
@@ -216,7 +219,7 @@ def run(manual=False):
                     expect(host.get_by_text('Keine aktive Duellsperre', exact=True)).to_be_visible()
                     assert not errors, errors
                     report = {'status': 'passed', 'native_core': True, 'production_modified': False,
-                        'tests': ['two-hub-sessions', 'explicit-two-player-consent', 'snapshot-worker-start', 'private-hands', 'native-answer', 'card-preview', 'browser-reload', 'mobile-layout', 'cancel-surrender', 'surrender-and-result', 'reservation-release', 'no-inventory-or-journal-change', 'one-worker-run', 'authenticated-websocket', 'credentials-not-in-urls', 'private-history-playback', 'cancel-maintenance', 'admin-pause-admission', 'admin-resume-admission', 'versioned-rule-review', 'duel-only-restriction', 'duel-restriction-revocation'], 'console_errors': errors}
+                        'tests': ['two-hub-sessions', 'explicit-two-player-consent', 'snapshot-worker-start', 'private-hands', 'native-answer','named-summon-log-for-both-seats', 'card-preview', 'browser-reload', 'mobile-layout', 'cancel-surrender', 'surrender-and-result', 'reservation-release', 'no-inventory-or-journal-change', 'one-worker-run', 'authenticated-websocket', 'credentials-not-in-urls', 'private-history-playback', 'cancel-maintenance', 'admin-pause-admission', 'admin-resume-admission', 'versioned-rule-review', 'duel-only-restriction', 'duel-restriction-revocation'], 'console_errors': errors}
                     (artifacts / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf8')
                     print(json.dumps(report)); browser.close()
             finally:

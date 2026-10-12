@@ -14,6 +14,53 @@ CATALOG = {101: {'name': 'Testkarte', 'description': 'Privater Text', 'atk': 100
 
 
 class BoundaryTests(unittest.TestCase):
+    def consume_message(self, message):
+        self.p.consume({'status': 0, 'messages': [base64.b64encode(message).decode()]})
+
+    def test_draw_log_names_are_private_and_do_not_change_after_reveal(self):
+        self.consume_message(bytes([90, 0]) + struct.pack('<III', 1, 101, 1))
+        self.assertEqual(self.p.public_events(0)[-1]['affected_cards'][0]['name'], 'Testkarte')
+        hidden = self.p.public_events(1)[-1]
+        self.assertEqual(hidden['affected_cards'][0]['name'], 'Verdeckte Karte')
+        self.assertNotIn('101', str(hidden))
+        self.consume_message(bytes([60]) + struct.pack('<IBBII', 101, 0, 4, 0, 1))
+        self.assertEqual(self.p.public_events(1)[0], hidden)
+        self.assertEqual(self.p.public_events(1)[-1]['affected_cards'][0]['name'], 'Testkarte')
+
+    def test_covered_summon_names_only_for_owner(self):
+        self.consume_message(bytes([62]) + struct.pack('<IBBII', 101, 0, 4, 0, 8))
+        self.assertEqual(self.p.public_events(0)[-1]['affected_cards'][0]['name'], 'Testkarte')
+        self.assertEqual(self.p.public_events(1)[-1]['affected_cards'][0]['name'], 'Verdeckte Karte')
+
+    def test_attack_log_names_attacker_and_hides_set_target(self):
+        self.p.field[0][(4, 0)] = {'code': 101, 'position': 1}
+        self.consume_message(bytes([110]) + struct.pack('<BBIIBBII', 0, 4, 0, 1, 1, 4, 0, 8))
+        own = self.p.public_events(0)[-1]['affected_cards']
+        self.assertEqual(own, [{'role': 'Angreifer', 'name': 'Testkarte'}, {'role': 'Ziel', 'name': 'Verdeckte Karte'}])
+        self.assertEqual(self.p.public_events(1)[-1]['affected_cards'][1]['name'], 'Testkarte')
+
+    def test_chain_resolution_retains_activated_card_name(self):
+        self.consume_message(bytes([70]) + struct.pack('<IBBIIBBIQI', 101, 0, 8, 0, 1, 0, 8, 0, 101 << 4, 1))
+        self.consume_message(bytes([72, 1]))
+        self.consume_message(bytes([74]))
+        for seat in (0, 1):
+            self.assertEqual(self.p.public_events(seat)[-1]['affected_cards'][0]['name'], 'Testkarte')
+            self.assertEqual(self.p.public_events(seat)[-2]['affected_cards'][0]['name'], 'Testkarte')
+
+    def test_destroy_log_names_card_revealed_in_graveyard(self):
+        self.consume_message(bytes([50]) + struct.pack('<IBBIIBBIII', 101, 1, 4, 0, 8, 1, 16, 0, 1, 1))
+        for seat in (0, 1):
+            self.assertEqual(self.p.public_events(seat)[-1]['affected_cards'][0]['name'], 'Testkarte')
+
+    def test_attack_log_uses_latest_query_visibility(self):
+        self.p.field[0][(4, 0)] = {'code': 101, 'position': 1}
+        boards = [{'zones': {'4': [{'code': 101, 'position': 8}], '8': []}}, {'zones': {'4': [], '8': []}}]
+        self.p.consume({'status': 0, 'messages': [], 'query_boards': boards})
+        self.consume_message(bytes([110]) + struct.pack('<BBIIBBII', 0, 4, 0, 8, 1, 0, 0, 0))
+        self.assertEqual(self.p.public_events(0)[-1]['affected_cards'][0]['name'], 'Testkarte')
+        self.assertEqual(self.p.public_events(1)[-1]['affected_cards'][0]['name'], 'Verdeckte Karte')
+        self.assertTrue(self.p.public_events(0)[-1]['direct'])
+
     def test_public_activation_carries_card_for_both_seats_without_revealing_hand(self):
         message = bytes([70]) + struct.pack('<I', 101) + struct.pack('<BBII', 0, 8, 1, 1)
         message += struct.pack('<BBIQI', 0, 8, 1, 101 << 4, 1)
