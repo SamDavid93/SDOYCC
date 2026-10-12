@@ -2,11 +2,12 @@ import { useEffect, useState, type ReactNode } from 'react'
 import type { EngineCard, Side } from './DuelWorkerTable'
 import type { DuelLocation, WorkerPrompt } from './DuelDecisions'
 import cardBack from '../assets/card-back.jpg'
+import { DuelPhaseControl } from './DuelPhaseControl'
 
 type Props = { sides: Side[]; seat: number; card: (value: EngineCard | null, key: string, covered?: boolean) => ReactNode;
   prompt?: WorkerPrompt | null; disabled: boolean; zoneSelection: number[]; chooseZone: (index: number) => void;
-  chooseAction: (index: number, target?: DuelLocation) => void }
-export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, chooseZone, chooseAction }: Props) {
+  chooseAction: (index: number, target?: DuelLocation) => void; phase: number; turn: number; turnNumber: number }
+export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, chooseZone, chooseAction, phase, turn, turnNumber }: Props) {
   const [dragging, setDragging] = useState<number | null>(null)
   const [drop, setDrop] = useState<{ index: number; target: DuelLocation } | null>(null)
   useEffect(() => { setDrop(null); setDragging(null) }, [prompt?.id])
@@ -63,6 +64,6 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
       const ownAvailable = prompt?.choices.some(choice => choice.location?.owner === seat && choice.location.zone === 4 && choice.location.sequence === ownSequence)
       const owner = ownAvailable || sides[seat].field.some(value => value.zone === 4 && value.sequence === ownSequence) ? seat : 1 - seat
       return slot(owner, 4, owner === seat ? ownSequence : otherSequence, `Extra-Monsterzone ${index + 1}`)
-    })}</div>
+    })}<DuelPhaseControl phase={phase} turnNumber={turnNumber} active={turn === seat} disabled={disabled} prompt={prompt} choose={chooseAction} /></div>
   </div>
 }

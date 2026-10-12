@@ -39,6 +39,7 @@ close(){this.readyState=3}
 }
 window.WebSocket=Socket
 window.__showChain=()=>{frame.board.prompt={id:8,title:'Auf die Kette reagieren',choices:[{label:'Effekt: Testkarte',card},{label:'Nicht anketten',card:null}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__showPhase=(turn=0,phase=4)=>{frame.board.turn=turn;frame.board.phase=phase;frame.board.prompt={id:20+frame.board.revision,title:'Aktion wählen',choices:[{label:'Aktivieren: Testkarte',card,action:'activate'}, {label:phase===4?'Kampfphase':'Hauptphase 2',card:null},{label:'Zug beenden',card:null}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="presentation" onExit={()=>{}} />)
 ''', encoding='utf8')
         env = {**os.environ, 'VITE_BASE_PATH': '/'}
@@ -76,9 +77,45 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     page.get_by_role('button',name='Nicht anketten',exact=True).click()
                     expect(page.locator('.duel-chain-overlay')).to_have_count(0)
                     assert page.evaluate('window.__answers[1]') == {'type':'answer','prompt':8,'selected':[1]}
+                    page.set_viewport_size({'width':1440,'height':1000})
+                    page.evaluate('window.__showPhase()')
+                    orb = page.locator('.arena-phase-orb')
+                    expect(orb).to_be_enabled()
+                    expect(orb).to_contain_text('Hauptphase 1')
+                    zone = page.get_by_label('Gegnerische Extra-Monsterzone 2', exact=True).bounding_box()
+                    dial = orb.bounding_box()
+                    assert zone and dial and dial['x'] > zone['x'] + zone['width']
+                    orb.click()
+                    expect(page.get_by_role('group',name='Erlaubte Phasenwechsel')).to_be_visible()
+                    page.screenshot(path=str(ROOT / 'artifacts/duel-phase-desktop.png'))
+                    page.get_by_role('group',name='Erlaubte Phasenwechsel').get_by_role('button',name='Kampfphase',exact=True).click()
+                    assert page.evaluate('window.__answers[2].selected') == [1]
+                    expect(page.locator('.arena-phase-options')).to_have_count(0)
+                    page.evaluate('window.__showPhase(0,16)')
+                    expect(orb).to_contain_text('Kampfphase')
+                    orb.click()
+                    page.get_by_role('group',name='Erlaubte Phasenwechsel').get_by_role('button',name='Hauptphase 2',exact=True).click()
+                    assert page.evaluate('window.__answers[3].selected') == [1]
+                    page.evaluate('window.__showPhase(1,512)')
+                    expect(orb).to_be_disabled()
+                    expect(orb).to_contain_text('Endphase')
+                    page.evaluate('window.__showPhase(0,4)')
+                    page.set_viewport_size({'width':390,'height':844})
+                    orb.click()
+                    dial = orb.bounding_box()
+                    assert dial and abs(dial['width'] - dial['height']) < 1
+                    menu = page.locator('.arena-phase-options').bounding_box()
+                    assert menu and menu['x'] >= 0 and menu['x'] + menu['width'] <= 390
+                    page.screenshot(path=str(ROOT / 'artifacts/duel-phase-mobile.png'))
+                    page.keyboard.press('Escape')
+                    expect(page.locator('.arena-phase-options')).to_have_count(0)
+                    expect(orb).to_be_focused()
+                    orb.click()
+                    page.get_by_role('group',name='Erlaubte Phasenwechsel').get_by_role('button',name='Endphase · Zug beenden',exact=True).click()
+                    assert page.evaluate('window.__answers[4].selected') == [2]
                     assert not errors, errors
                     browser.close()
-                print(json.dumps({'browser':'passed','checks':['both seats: set monsters sideways, set spells/traps upright','chain image and keyboard focus','effect/pass preserve original prompt indexes','overlay visible on scrolled mobile viewport','overlay disappears after response'],'console_errors':errors}))
+                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus'],'console_errors':errors}))
             finally:
                 process.terminate()
                 try: process.wait(timeout=10)

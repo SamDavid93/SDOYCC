@@ -5,6 +5,7 @@ import { DuelAnimations, type DuelEvent } from './DuelAnimations'
 import { DuelDecisions, type WorkerPrompt, type DuelLocation } from './DuelDecisions'
 import { DuelSideboard, type MatchProgress } from './DuelSideboard'
 import { DuelArena } from './DuelArena'
+import { duelPhaseName } from './DuelPhaseControl'
 import './duel-arena.css'
 import cardBack from '../assets/card-back.jpg'
 
@@ -101,7 +102,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     {result?.match?.phase === 'sideboarding' && <DuelSideboard match={result.match} seat={result.seat} disabled={busy || !connected} send={send} />}
     {board && result?.match?.phase !== 'sideboarding' && <>
       <DuelAnimations events={board.events} runId={runId} />
-      <div className="duel-turn-line" role="status">Zug {board.turn_number} · {board.turn === board.seat ? 'Du bist am Zug' : 'Dein Gegner ist am Zug'} · {({ 1: 'Ziehphase', 2: 'Vorbereitungsphase', 4: 'Hauptphase 1', 8: 'Kampfphase', 16: 'Kampfphase', 32: 'Kampfphase', 64: 'Kampfphase', 256: 'Hauptphase 2', 512: 'Endphase' } as Record<number, string>)[board.phase] || 'Phasenwechsel'}</div>
+      <div className="duel-turn-line" role="status">Zug {board.turn_number} · {board.turn === board.seat ? 'Du bist am Zug' : 'Dein Gegner ist am Zug'} · {duelPhaseName(board.phase)}</div>
       <div className="duel-arena-shell">
         <aside className="duel-card-inspector" aria-label="Kartenvorschau">
           {preview ? <><button className="outline-button" onClick={() => setPreview(null)}>Vorschau schließen</button><h2>{preview.name}</h2>
@@ -111,6 +112,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
             : <div className="duel-inspector-empty"><span>◇</span><h2>Kartenvorschau</h2><p>Klicke eine sichtbare Karte an, um Bild und Kartentext hier zu lesen.</p></div>}
         </aside>
         <DuelArena sides={board.boards} seat={board.seat} card={card} prompt={prompt} disabled={busy || !connected || Boolean(result && terminal(result))}
+          phase={board.phase} turn={board.turn} turnNumber={board.turn_number}
           zoneSelection={zoneSelection} chooseZone={index => {
             if (!prompt) return
             if (prompt.select) setZoneSelection(old => old.includes(index) ? old.filter(value => value !== index) : [...old, index])
