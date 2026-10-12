@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type CSSPropert
 import { createPortal } from 'react-dom'
 import { NavLink } from 'react-router-dom'
 import { ArrowRight, Check, SkipForward, Sparkles, Volume2, VolumeX, X } from 'lucide-react'
-import { openBooster, type BoosterOpening, type BoosterSummary } from '../api/client'
+import { openBooster, confirmBoosterReveal, type BoosterOpening, type BoosterSummary } from '../api/client'
 import { BoosterCover } from './BoosterDisplay'
 import { label } from '../i18n'
 import { CardVisual } from './CardVisual'
@@ -110,6 +110,7 @@ function OpeningShow({ opening, close, next, nextBusy, nextError }: { opening: O
   const dialog = useRef<HTMLDialogElement>(null)
   const [phase, setPhase] = useState<'loading' | 'charge' | 'burst' | 'reveal' | 'summary'>('loading')
   const [revealed, setRevealed] = useState<number[]>([])
+  const revealOpening = useRef<number | null>(null)
   const [latest, setLatest] = useState<number | null>(null)
   const [spotlight, setSpotlight] = useState<number | null>(null)
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
@@ -117,6 +118,18 @@ function OpeningShow({ opening, close, next, nextBusy, nextError }: { opening: O
   const sound = useOpeningSound()
   const soundRef = useRef(sound.play)
   soundRef.current = sound.play
+  useEffect(() => {
+    if (!result || !revealed.length || revealOpening.current !== result.opening_id) return
+    let cancelled = false
+    let timer: number
+    const confirm = async () => {
+      try { await confirmBoosterReveal(result.opening_id, revealed) }
+      catch { if (!cancelled) timer = window.setTimeout(confirm, 2000) }
+    }
+    // The flip transition lasts 850 ms. Summary/reduced motion show faces immediately.
+    timer = window.setTimeout(confirm, phase === 'summary' || reduced ? 0 : 900)
+    return () => { cancelled = true; window.clearTimeout(timer) }
+  }, [result, revealed, phase, reduced])
   useEffect(() => {
     const element = dialog.current!
     const previousFocus = document.activeElement as HTMLElement | null
@@ -127,6 +140,7 @@ function OpeningShow({ opening, close, next, nextBusy, nextError }: { opening: O
   }, [])
   useEffect(() => {
     if (!result) return
+    revealOpening.current = null
     setRevealed([]); setLatest(null); setSpotlight(null); setPreviewIndex(null)
     setPhase(reduced ? 'reveal' : 'charge')
   }, [result])
@@ -145,10 +159,11 @@ function OpeningShow({ opening, close, next, nextBusy, nextError }: { opening: O
   }, [spotlight])
   const reveal = (index: number) => {
     if (revealed.includes(index)) { setSpotlight(null); setPreviewIndex(index); return }
+    revealOpening.current = result!.opening_id
     setRevealed(current => [...current, index]); setLatest(index); sound.play('reveal')
     if (!reduced && result && rarityStyle(result.cards[index].rarity) !== 'cyan') setSpotlight(index)
   }
-  const skip = () => { if (result) { setRevealed(result.cards.map((_, index) => index)); setPhase('summary') } }
+  const skip = () => { if (result) { revealOpening.current = result.opening_id; setRevealed(result.cards.map((_, index) => index)); setPhase('summary') } }
   const allRevealed = !!result && revealed.length === result.cards.length
   const aura = latest === null || !result ? 'cyan' : rarityStyle(result.cards[latest].rarity)
   return createPortal(<dialog ref={dialog} className={`opening-show phase-${phase} aura-${aura}`} aria-labelledby="opening-title" onCancel={event => { event.preventDefault(); close() }}>

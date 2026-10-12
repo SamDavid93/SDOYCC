@@ -9,7 +9,8 @@ from sqlalchemy import select, update, or_
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.db.models import RarePullAnnouncement
+from app.db.models import RarePullAnnouncement, BoosterOpening, BoosterOpeningCard, User
+from app.api import current_user
 from app.db.session import get_db
 from app.modules.streamerbot import bridge_auth
 
@@ -54,6 +55,36 @@ def enqueue_rare_pulls(database, opening, user, booster, cards):
 
 router = APIRouter(prefix="/api/integrations/streamerbot/announcements", dependencies=[Depends(bridge_auth)])
 Database = Annotated[Session, Depends(get_db)]
+reveal_router = APIRouter(prefix='/api/booster-openings')
+
+
+class RevealedCards(BaseModel):
+    indices: list[Annotated[int, Field(ge=0, strict=True)]] = Field(max_length=100)
+
+
+@reveal_router.post('/{opening_id}/reveal')
+def reveal_cards(opening_id: int, payload: RevealedCards, database: Database,
+                 user: User = Depends(current_user)):
+    opening = database.get(BoosterOpening, opening_id)
+    if opening is None or opening.user_id != user.id:
+        raise HTTPException(404, 'Öffnung nicht gefunden')
+    cards = database.scalars(select(BoosterOpeningCard).where(
+        BoosterOpeningCard.opening_id == opening_id).order_by(BoosterOpeningCard.id)).all()
+    indices = set(payload.indices)
+    if any(index >= len(cards) for index in indices):
+        raise HTTPException(422, 'Ungültige Kartenposition')
+    timestamp = datetime.utcnow()
+    for alert in database.scalars(select(RarePullAnnouncement).where(
+            RarePullAnnouncement.opening_id == opening_id, RarePullAnnouncement.revealed_at.is_(None))):
+        positions = {index for index, card in enumerate(cards)
+                     if card.card_id == alert.card_id and card.rarity.lower().replace(' ', '_') == alert.rarity}
+        # Grouped duplicate quantities must not reveal another still covered copy.
+        if positions and positions <= indices:
+            database.execute(update(RarePullAnnouncement).where(
+                RarePullAnnouncement.id == alert.id, RarePullAnnouncement.revealed_at.is_(None))
+                .values(revealed_at=timestamp, expires_at=timestamp + timedelta(minutes=10)))
+    database.commit()
+    return {'confirmed': True}
 
 
 class Channel(BaseModel):
@@ -79,7 +110,8 @@ def claim(payload: Channel, database: Database):
 
 def claim_next(database, overlay=False):
     timestamp = datetime.utcnow()
-    available = (RarePullAnnouncement.sent_at.is_(None), RarePullAnnouncement.expires_at > timestamp,
+    available = (RarePullAnnouncement.sent_at.is_(None), RarePullAnnouncement.revealed_at.is_not(None),
+                 RarePullAnnouncement.expires_at > timestamp,
                  or_(RarePullAnnouncement.claimed_until.is_(None), RarePullAnnouncement.claimed_until <= timestamp))
     # The conditional UPDATE arbitrates concurrent pollers on SQLite as well as
     # PostgreSQL. A claim response lost in transit becomes available again.

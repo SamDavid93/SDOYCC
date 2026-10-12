@@ -26,6 +26,10 @@ def migrate_local_schema() -> None:
     """Apply small additive migrations for the local development database."""
     Base.metadata.create_all(bind=engine)
     inspector = inspect(engine)
+    alert_columns = {column['name'] for column in inspector.get_columns('rare_pull_announcements')}
+    if 'revealed_at' not in alert_columns:
+        with engine.begin() as connection:
+            connection.execute(text('ALTER TABLE rare_pull_announcements ADD COLUMN revealed_at DATETIME'))
     deck_columns = {column["name"] for column in inspector.get_columns("structure_deck_definitions")}
     if "notes" not in deck_columns:
         with engine.begin() as connection:

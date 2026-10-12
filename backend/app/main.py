@@ -109,8 +109,9 @@ app.include_router(trading_router)
 app.include_router(seasons_router)
 app.include_router(season_admin_router)
 
-from app.modules.rare_pulls import router as rare_pulls_router
+from app.modules.rare_pulls import router as rare_pulls_router, reveal_router
 app.include_router(rare_pulls_router)
+app.include_router(reveal_router)
 from app.modules.stream_overlay import router as stream_overlay_router
 app.include_router(stream_overlay_router)
 

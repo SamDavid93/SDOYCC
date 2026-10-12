@@ -126,6 +126,13 @@ export async function openBooster(id: number): Promise<BoosterOpening> {
   return { ...payload, cards: payload.cards.map(toCardRecord) }
 }
 
+export async function confirmBoosterReveal(openingId: number, indices: number[]): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/booster-openings/${openingId}/reveal`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ indices }),
+  })
+  if (!response.ok) throw new Error('Aufdecken konnte noch nicht bestätigt werden')
+}
+
 export async function getBoosterHistory(): Promise<{ id: number; booster_id: number; booster_name: string; credits_spent: number; created_at: string; cards: { rarity: string; is_new: boolean; card: CardRecord }[] }[]> {
   const response = await fetch(`${API_BASE_URL}/boosters/me/history`)
   if (!response.ok) throw new Error('Öffnungshistorie konnte nicht geladen werden')

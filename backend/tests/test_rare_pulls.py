@@ -31,11 +31,36 @@ class RarePullTests(HubTestCase):
         settings.rare_pull_delivery = self.old_delivery
         super().tearDown()
 
-    def open_pack(self):
+    def open_pack(self, reveal=True):
         self.assertEqual(self.buy().status_code, 200)
         result = self.client.post('/api/boosters/1/open', headers={**self.headers, 'Idempotency-Key': 'rare-open'})
         self.assertEqual(result.status_code, 200, result.text)
+        if reveal:
+            self.reveal(result.json(), list(range(len(result.json()['cards']))))
         return result
+
+    def reveal(self, result, indices, headers=None):
+        return self.client.post(f'/api/booster-openings/{result["opening_id"]}/reveal',
+            headers=headers or self.headers, json={'indices': indices})
+
+    def test_covered_cards_cannot_be_claimed_and_reveal_is_owner_bound(self):
+        result = self.open_pack(reveal=False).json()
+        self.assertIsNone(self.claim().json()['announcement'])
+        with self.sessions() as db:
+            user = User(username='other-viewer', display_name='Other', password_hash='fixture')
+            db.add(user); db.flush()
+            other = {'Authorization': 'Bearer ' + create_session(db, user)}
+            db.commit()
+        self.assertEqual(self.reveal(result, [0], other).status_code, 404)
+        self.assertEqual(self.reveal(result, [999]).status_code, 422)
+        self.assertIsNone(self.claim().json()['announcement'])
+        self.assertEqual(self.reveal(result, [0]).status_code, 200)
+        with self.sessions() as db:
+            first = db.scalar(select(RarePullAnnouncement)).revealed_at
+        self.assertEqual(self.reveal(result, [0]).status_code, 200)
+        with self.sessions() as db:
+            self.assertEqual(db.scalar(select(RarePullAnnouncement)).revealed_at, first)
+        self.assertIsNotNone(self.claim().json()['announcement'])
 
     def claim(self):
         return self.client.post('/api/integrations/streamerbot/announcements/claim', headers=self.bridge, json=self.channel)
@@ -149,7 +174,12 @@ class RarePullTests(HubTestCase):
         self.assertEqual(self.buy().status_code, 200)
         with patch('app.api.random.SystemRandom') as random:
             random.return_value.choices.side_effect = lambda entries, **kwargs: [next(e for e in entries if e.card_id == 1)] * 2
-            self.assertEqual(self.client.post('/api/boosters/1/open', headers=self.headers).status_code, 200)
+            result = self.client.post('/api/boosters/1/open', headers=self.headers)
+            self.assertEqual(result.status_code, 200)
+        self.assertIsNone(self.claim().json()['announcement'])
+        self.assertEqual(self.reveal(result.json(), [0]).status_code, 200)
+        self.assertIsNone(self.claim().json()['announcement'])
+        self.assertEqual(self.reveal(result.json(), [0, 1]).status_code, 200)
         item = self.claim().json()['announcement']
         self.assertIn('2 ×', item['message'])
         self.assertNotIn('\n', item['message'])

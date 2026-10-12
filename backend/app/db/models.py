@@ -466,6 +466,7 @@ class RarePullAnnouncement(Base):
     claim_token: Mapped[str | None] = mapped_column(String(80), nullable=True)
     claimed_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    revealed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class BattlePassProgress(Base):
