@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react'
 import { API_BASE_URL, sessionToken } from '../api/transport'
 import { ErrorBox } from '../components/Workflow'
 import { DuelAnimations, type DuelEvent } from './DuelAnimations'
@@ -8,7 +8,14 @@ import { DuelArena } from './DuelArena'
 import './duel-arena.css'
 import cardBack from '../assets/card-back.jpg'
 
-export type EngineCard = { code: number; name: string; description?: string; image_url?: string; atk?: number; defense?: number }
+export type EngineCard = { code: number; name: string; description?: string; image_url?: string; fallback_image_url?: string; atk?: number; defense?: number }
+function imageFailed(event: SyntheticEvent<HTMLImageElement>, card: EngineCard) {
+  const image = event.currentTarget
+  if (card.fallback_image_url && !image.dataset.fallbackAttempted) {
+    image.dataset.fallbackAttempted = 'true'
+    image.src = API_BASE_URL.replace(/\/api\/?$/, '') + card.fallback_image_url
+  } else image.hidden = true
+}
 export type Side = { lp: number; deck: number; hand: (EngineCard | null)[]; field: { zone: number; sequence: number; position: number; card: EngineCard | null; materials?: EngineCard[]; counters?: number[]; disabled?: boolean; equip?: { owner: number; zone: number; sequence: number } | null; targets?: { owner: number; zone: number; sequence: number }[] }[]; grave: (EngineCard | null)[]; extra?: (EngineCard | null)[]; removed?: (EngineCard | null)[] }
 type Board = { revision: number; seat: number; boards: Side[]; turn: number; turn_number: number; phase: number; ended: boolean; events: DuelEvent[]; prompt: WorkerPrompt | null }
 export type WorkerResult = { id: string; state: string; seat: number; reason: string | null; winner_seat: number | null; board: Board | null; match?: MatchProgress | null; clock?: { remaining: number[]; active: number | null; side_remaining: number | null } }
@@ -80,7 +87,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     placement.current = null
     if (index >= 0) send('answer', { prompt: prompt.id, selected: [index] })
   }, [prompt?.id, connected, busy])
-  const card = (value: EngineCard | null, key: string, covered = false) => <button key={key} className={'duel-playing-card' + (!value || covered ? ' covered' : '')} disabled={!value} onClick={() => value && setPreview(value)} aria-label={value ? value.name + ' ansehen' : 'Verdeckte Karte'}>{!value || covered ? <img src={cardBack} alt="Kartenrückseite" draggable={false} /> : <>{value.image_url && <img src={API_BASE_URL.replace(/\/api\/?$/, '') + value.image_url} alt="" loading="lazy" onError={event => { event.currentTarget.hidden = true }} />}<strong>{value.name}</strong><small>{value.atk !== undefined ? `ATK ${value.atk} · DEF ${value.defense}` : 'Kartentext ansehen'}</small></>}</button>
+  const card = (value: EngineCard | null, key: string, covered = false) => <button key={key} className={'duel-playing-card' + (!value || covered ? ' covered' : '')} disabled={!value} onClick={() => value && setPreview(value)} aria-label={value ? value.name + ' ansehen' : 'Verdeckte Karte'}>{!value || covered ? <img src={cardBack} alt="Kartenrückseite" draggable={false} /> : <>{value.image_url && <img key={value.image_url} src={API_BASE_URL.replace(/\/api\/?$/, '') + value.image_url} alt="" loading="lazy" onError={event => imageFailed(event, value)} />}<strong>{value.name}</strong><small>{value.atk !== undefined ? `ATK ${value.atk} · DEF ${value.defense}` : 'Kartentext ansehen'}</small></>}</button>
   return <section className="duel-worker-table">
     <header className="duel-arena-toolbar"><div><p className="eyebrow accent">SDOYCC · DUELL</p><h1>Duellarena</h1></div><small>Verbindungsfrist: 60 Sekunden</small></header>
     <ErrorBox message={error} />
@@ -97,7 +104,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
       <div className="duel-arena-shell">
         <aside className="duel-card-inspector" aria-label="Kartenvorschau">
           {preview ? <><button className="outline-button" onClick={() => setPreview(null)}>Vorschau schließen</button><h2>{preview.name}</h2>
-            {preview.image_url && <img src={API_BASE_URL.replace(/\/api\/?$/, '') + preview.image_url} alt={preview.name} onError={event => { event.currentTarget.hidden = true }} />}
+            {preview.image_url && <img key={preview.image_url} src={API_BASE_URL.replace(/\/api\/?$/, '') + preview.image_url} alt={preview.name} onError={event => imageFailed(event, preview)} />}
             {preview.atk !== undefined && <p>ATK {preview.atk} · DEF {preview.defense ?? '—'}</p>}
             <small>Englischer Originaltext</small><p className="duel-card-description">{preview.description || 'Für diese Karte ist kein Text verfügbar.'}</p></>
             : <div className="duel-inspector-empty"><span>◇</span><h2>Kartenvorschau</h2><p>Klicke eine sichtbare Karte an, um Bild und Kartentext hier zu lesen.</p></div>}

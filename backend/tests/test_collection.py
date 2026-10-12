@@ -18,14 +18,16 @@ class CollectionTests(HubTestCase):
         self.assertEqual(result['total'], 1)
         self.assertEqual(result['total_quantity'], 3)
         self.assertEqual(result['items'][0]['card']['name'], 'Prüfdrache')
-        self.assertEqual(result['items'][0]['card']['image_url'], '/api/cards/1/art/de')
+        self.assertEqual(result['items'][0]['card']['image_url'], '/api/cards/1/art/original')
+        self.assertEqual(result['items'][0]['card']['fallback_image_url'], '/api/cards/1/art/de')
+        self.assertEqual(result['items'][0]['card']['image_language'], 'original')
         self.assertEqual(self.client.get('/api/collection', params={'atk': 0}, headers=self.headers).json()['total'], 0)
         facets = self.client.get('/api/collection/filters', headers=self.headers).json()
         self.assertEqual(facets['level'], [8])
         self.assertEqual(facets['race'], ['Dragon'])
         self.assertEqual(self.client.get('/api/cards', params={'search': 'Prüf'}).json()['total'], 1)
 
-    def test_missing_translation_keeps_original_name_and_german_image_candidate(self):
+    def test_missing_translation_keeps_original_name_and_high_quality_image(self):
         with self.sessions() as db:
             db.get(CardDetails, 1).name_de = None
             original_name = db.get(Card, 1).name
@@ -34,7 +36,7 @@ class CollectionTests(HubTestCase):
         self.assertEqual(card['name'], original_name)
         self.assertFalse(card['localized'])
         self.assertTrue(card['image_available'])
-        self.assertEqual(card['image_url'], '/api/cards/1/art/de')
+        self.assertEqual(card['image_url'], '/api/cards/1/art/original')
 
     def test_empty_and_placeholder_translations_fall_back_to_english(self):
         for invalid in [None, '', '  ', 'Karte 123', 'Karte [123]', 'karte 123']:
@@ -59,6 +61,26 @@ class CollectionTests(HubTestCase):
         result = self.client.get('/api/cards/1').json()
         self.assertEqual(result['description'], 'Ein deutscher Text.')
         self.assertEqual(result['description_language'], 'de')
+
+    def test_duel_artwork_uses_full_original_but_preserves_german_text_on_refresh(self):
+        from app.modules.duel_worker import NativeAdapter, WorkerService
+        with self.sessions() as db:
+            card = db.get(Card, 1)
+            card.external_id = '89631139'
+            card.external_provider = 'ygoprodeck'
+            card.image_url = 'https://images.ygoprodeck.com/images/cards/89631139.jpg'
+            db.commit()
+            code, name = int(card.external_id), card.name
+        adapter = object.__new__(NativeAdapter)
+        adapter.catalog = {code: {'name': name, 'description': 'English effect'}}
+        service = WorkerService(self.sessions, adapter)
+        for _ in range(2):
+            service.refresh_artwork()
+            entry = adapter.catalog[code]
+            self.assertEqual(entry['name'], 'Prüfdrache')
+            self.assertEqual(entry['description'], 'Ein deutscher Text.')
+            self.assertEqual(entry['image_url'], '/api/cards/1/art/original')
+            self.assertEqual(entry['fallback_image_url'], '/api/cards/1/art/de')
 
     def test_supplemental_names_preserve_existing_translations_and_wallet(self):
         self.assertEqual(fill_missing_names({'Anderer Name': [4007]}, self.sessions), 0)

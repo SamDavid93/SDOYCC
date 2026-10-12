@@ -1,5 +1,22 @@
 # Deutsche Kartenbilder
 
+## Aktuelle Bildpriorität
+
+Auf Wunsch des Nutzers werden englische YGOProDeck-Vollbilder bevorzugt.
+Katalog, Sammlung, Deckeditor und Packöffnung erhalten diese Bilder über
+`/api/cards/{id}/art/original`; deutsche Namen und Effekttexte bleiben erhalten.
+Die Vollbilder werden lokal unter `cache/cards-original` zwischengespeichert,
+entsprechend https://ygoprodeck.com/api-guide/. Ein geprüftes Beispiel hat
+813 × 1185 Pixel. Kleine Vorschaubilder und reine Artwork-Ausschnitte werden
+nicht als Kartenabbildungen verwendet.
+
+Wenn das Originalbild nicht geladen werden kann, verwendet die Oberfläche den
+bisherigen deutschen Bildendpunkt. Gemeinschaftskarten behalten ihre eigenen
+Bilder. Im Duell werden ebenfalls die lokal zwischengespeicherten Originalbilder
+verwendet.
+
+## Deutsche Rückfallquelle
+
 Der Endpunkt `/api/cards/{id}/art/de` bevorzugt eindeutig geprüfte deutsche
 Cardcluster-Scans (500 Pixel breit). Derzeit sind sechzehn Karten hinterlegt:
 Blauäugiger weißer Drache, Dunkler Magier, Aschenblüte & Freudiger Frühling,

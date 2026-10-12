@@ -138,15 +138,20 @@ class WorkerService:
             from sqlalchemy import select
             from sqlalchemy.orm import joinedload
             from app.db.models import Card
-            from app.modules.cardcluster_images import SOURCES
+            from app.api import translated_text
             from app.modules.duel_rules import canonical
             with self.sessions() as db:
                 for card in db.scalars(select(Card).options(joinedload(Card.details)).where(Card.external_provider.in_(['ygoprodeck', 'local-demo']))):
                     code = int(card.external_id) if card.external_id.isdecimal() else None
                     entry = self.adapter.catalog.get(code)
-                    if entry and card.image_url and canonical(card.name) == canonical(entry['name']):
-                        german = card.details and card.details.konami_id in SOURCES
-                        entry['image_url'] = '/api/cards/' + str(card.id) + ('/art/de' if german else '/art/original')
+                    if entry and card.image_url and canonical(card.name) == canonical(entry.get('name_en', entry['name'])):
+                        entry['image_url'] = '/api/cards/' + str(card.id) + '/art/original'
+                        details = card.details
+                        entry['fallback_image_url'] = '/api/cards/' + str(card.id) + '/art/de' if details and details.konami_id else None
+                        entry.setdefault('name_en', entry['name'])
+                        entry.setdefault('description_en', entry.get('description', ''))
+                        entry['name'] = (translated_text(details.name_de) if details else None) or entry['name_en']
+                        entry['description'] = (translated_text(details.description_de) if details else None) or entry['description_en']
 
     async def consume_packet(self, live, packet):
         # Only an optional chain with zero legal effects is deterministic.

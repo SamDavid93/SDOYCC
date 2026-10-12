@@ -15,13 +15,13 @@ export function CardVisual({ card, compact = false, showQuantity = false }: { ca
   const source = useFallback ? card.fallbackImageUrl! : card.imageUrl
   const loaded = !!source && loadedUrl === source
   const failed = card.image_available === false || !source || failedUrls.includes(source)
-  const original = useFallback || card.image_language === 'original'
+  const original = useFallback ? card.image_language !== 'original' : card.image_language === 'original'
   const rarity = rarityInfo(card.rarity)
   return <article className={`card-visual ${compact ? 'compact' : ''}`} aria-busy={!loaded && !failed}>
     <div className={`card-image-wrap ${card.tone} ${loaded ? 'card-loaded' : 'card-loading'}`}>
       {!loaded && <CardBack failed={failed} />}
       {!failed && <img key={source} ref={element => { image.current = element; if (element?.complete && element.naturalWidth && loadedUrl !== source) setLoadedUrl(source) }} src={source} alt={`${original ? 'Originalabbildung' : 'Deutsche Karte'}: ${card.name}`} loading="lazy" decoding="async" width="199" height="290" onLoad={() => setLoadedUrl(source)} onError={() => setFailedUrls(current => [...current, source])} />}
-      {loaded && original && <span className="image-language-label" title="Deutsches Bild nicht verfügbar. Die Originalabbildung kann eine andere Sprache enthalten.">Originalbild</span>}
+      {loaded && original && <span className="image-language-label" title="Originalabbildung. Die Karteninformationen werden separat auf Deutsch angezeigt, sofern eine Übersetzung vorliegt.">Originalbild</span>}
       <span className={`card-rarity-badge rarity-badge-${rarity.tone}`} aria-label={`Seltenheit: ${rarity.name}`} title={card.collected_rarities?.length ? `Gesammelte Seltenheiten: ${card.collected_rarities.map(value => rarityInfo(value).name).join(', ')}` : rarity.name}>{rarity.code}</span>
       {showQuantity && <span className="quantity-badge">×{card.quantity}</span>}
     </div>
