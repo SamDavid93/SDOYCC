@@ -57,6 +57,8 @@ class WorkerTests(PreparationFixture):
         super().setUp()
         self.adapter = FakeAdapter(); self.runtime = WorkerService(self.sessions, self.adapter)
         self.previous_flag = settings.enable_duel_worker_lab
+        self.previous_alpha = settings.enable_duel_alpha
+        settings.enable_duel_alpha = False
         self.previous_runtime = getattr(app.state, 'duel_worker', None)
         settings.enable_duel_worker_lab = True; app.state.duel_worker = self.runtime
         for headers in (self.headers, self.other_headers):
@@ -75,6 +77,7 @@ class WorkerTests(PreparationFixture):
         for engine in self.adapter.engines: engine.fail_close = False
         asyncio.run(self.runtime.close())
         app.state.duel_worker = self.previous_runtime; settings.enable_duel_worker_lab = self.previous_flag
+        settings.enable_duel_alpha = self.previous_alpha
         super().tearDown()
 
     def start_worker(self):

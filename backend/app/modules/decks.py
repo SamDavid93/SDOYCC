@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app.api import card_payload, current_user
 from app.db.models import Card, CardDetails, DuelCardRule, DuelRuleProfile, InventoryItem, PlayerDeck, SpecialCard
 from app.db.session import get_db
-from app.modules.duel_rules import digest, parse_ydk, profile_payload, rule_payload, stock_for, stock_query, validate_deck
+from app.modules.duel_rules import EXTRA_CARD_TYPES, MAIN_CARD_TYPES, digest, parse_ydk, profile_payload, rule_payload, stock_for, stock_query, validate_deck
 from app.modules.economy import finish, lock_wallet, replay
 
 router = APIRouter(prefix='/api/decks', tags=['Decks'])
@@ -137,8 +137,9 @@ def catalog(db: Database, user=Depends(current_user), profile_id: str | None = N
         term = '%' + search + '%'
         query = query.where(or_(Card.name.ilike(term), CardDetails.name_de.ilike(term), CardDetails.description_de.ilike(term), CardDetails.description_en.ilike(term), Card.external_id == search))
     if group in ('monster', 'spell', 'trap'):
-        query = query.where(DuelCardRule.type_bits.op('&')({'monster': 1, 'spell': 2, 'trap': 4}[group]) != 0)
-    elif group == 'extra': query = query.where(DuelCardRule.section == 'extra')
+        catalog_types = (MAIN_CARD_TYPES | EXTRA_CARD_TYPES) - {'Spell Card', 'Trap Card'} if group == 'monster' else {'Spell Card' if group == 'spell' else 'Trap Card'}
+        query = query.where(or_(DuelCardRule.type_bits.op('&')({'monster': 1, 'spell': 2, 'trap': 4}[group]) != 0, Card.card_type.in_(catalog_types)))
+    elif group == 'extra': query = query.where(or_(DuelCardRule.section == 'extra', Card.card_type.in_(EXTRA_CARD_TYPES)))
     elif group == 'unknown': query = query.where(or_(DuelCardRule.status.is_(None), DuelCardRule.status != 'mapped'))
     for column, value in [(Card.attribute, attribute), (CardDetails.race, race), (CardDetails.archetype, archetype),
                           (CardDetails.level, level), (CardDetails.atk, atk), (CardDetails.defense, defense),

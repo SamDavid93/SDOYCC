@@ -70,6 +70,35 @@ class DeckTestCase(HubTestCase):
 
 
 class DeckTests(DeckTestCase):
+    def test_unmapped_extra_types_have_placement_but_stay_unapproved(self):
+        from app.modules.duel_rules import EXTRA_CARD_TYPES, rule_payload
+        with self.sessions() as db:
+            card = db.get(Card, 22)
+            rule = db.get(DuelCardRule, (self.profile, 22))
+            rule.status = 'name_mismatch'; rule.section = None; rule.type_bits = 0
+            for kind in EXTRA_CARD_TYPES:
+                card.card_type = kind
+                payload = rule_payload(card, rule)
+                self.assertEqual(payload['section'], 'extra')
+                self.assertEqual(payload['status'], 'name_mismatch')
+            card.card_type = 'Synchro Monster'; db.commit()
+        result = self.validate({**self.body, 'entries': self.body['entries'] + [{'card_id': 22, 'section': 'main', 'quantity': 1}]})
+        self.assertIn('wrong_section', {i['code'] for i in result['issues']})
+        self.assertFalse(result['ready'])
+        catalog = self.client.get('/api/decks/catalog', params={'profile_id': self.profile, 'scope': 'owned', 'group': 'extra'}, headers=self.headers).json()
+        self.assertIn(22, [item['card']['id'] for item in catalog['items']])
+        monsters = self.client.get('/api/decks/catalog', params={'profile_id': self.profile, 'scope': 'owned', 'group': 'monster'}, headers=self.headers).json()
+        self.assertIn(22, [item['card']['id'] for item in monsters['items']])
+
+    def test_missing_profile_still_places_extra_and_ritual_correctly(self):
+        from app.modules.duel_rules import rule_payload
+        with self.sessions() as db:
+            card = db.get(Card, 22)
+            for kind, section in [('Fusion Monster', 'extra'), ('XYZ Pendulum Effect Monster', 'extra'), ('Ritual Effect Monster', 'main'), ('Pendulum Effect Ritual Monster', 'main'), ('Pendulum Effect Monster', 'main')]:
+                card.card_type = kind
+                self.assertEqual(rule_payload(card, None)['section'], section)
+                self.assertEqual(rule_payload(card, None)['status'], 'missing')
+
     def create(self, body=None, key='deck-create-test'):
         return self.client.post('/api/decks', json=body or self.body, headers={**self.headers, 'Idempotency-Key': key})
 

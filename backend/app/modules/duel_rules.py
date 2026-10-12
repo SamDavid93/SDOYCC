@@ -14,6 +14,24 @@ from sqlalchemy import select, func
 from app.db.models import Card, CardVariant, DuelCardRule, DuelRuleProfile, InventoryItem, VariantInventory
 
 EXTRA_TYPES = 0x40 | 0x2000 | 0x800000 | 0x4000000
+EXTRA_CARD_TYPES = frozenset({'Fusion Monster', 'Pendulum Effect Fusion Monster',
+    'Synchro Monster', 'Synchro Tuner Monster', 'Synchro Pendulum Effect Monster',
+    'XYZ Monster', 'XYZ Pendulum Effect Monster', 'Link Monster'})
+
+
+MAIN_CARD_TYPES = frozenset({'Normal Monster', 'Effect Monster', 'Flip Effect Monster',
+        'Tuner Monster', 'Normal Tuner Monster', 'Flip Tuner Effect Monster',
+        'Gemini Monster', 'Spirit Monster', 'Union Effect Monster', 'Toon Monster',
+        'Ritual Monster', 'Ritual Effect Monster', 'Pendulum Effect Ritual Monster', 'Pendulum Normal Monster',
+        'Pendulum Effect Monster', 'Pendulum Tuner Effect Monster',
+        'Pendulum Flip Effect Monster', 'Spell Card', 'Trap Card'})
+
+
+def catalog_section(card):
+    # Placement guidance only. Never upgrades an unverified engine identity.
+    if card.card_type in EXTRA_CARD_TYPES: return 'extra'
+    if card.card_type in MAIN_CARD_TYPES: return 'main'
+    return None
 TOKEN = 0x4000
 STATUS_TEXT = {
     "mapped": "Kartenzuordnung geprüft",
@@ -147,7 +165,8 @@ def rule_payload(card, rule):
     if rule and rule.catalog_fingerprint != fingerprint(card): status = 'stale'
     return {'status': status, 'message': STATUS_TEXT[status],
             'passcode': rule.passcode if rule and status not in ('stale', 'missing') else None,
-            'identity': rule.identity if rule else None, 'section': rule.section if rule else None,
+            'identity': rule.identity if rule else None,
+            'section': (rule.section if rule and status != 'stale' and rule.section else catalog_section(card)),
             'copy_limit': rule.copy_limit if rule else None, 'type_bits': rule.type_bits if rule else 0,
             'script_available': bool(rule and rule.script_available)}
 
@@ -175,12 +194,12 @@ def validate_deck(db, user_id, entries, profile):
             issue('rules', 'unknown_card', 'Diese Katalogkarte existiert nicht mehr.', card_id); continue
         name = (translated_text(card.details.name_de) if card.details else None) or card.name
         rule = rule_payload(card, rules.get(card_id))
+        for entry in entries:
+            if entry['card_id'] == card_id and rule['section'] and entry['section'] != 'side' and entry['section'] != rule['section']:
+                issue('rules', 'wrong_section', f'{name}: gehört ins {"Extra-Deck" if rule["section"] == "extra" else "Hauptdeck"}.', card_id)
         if rule['status'] != 'mapped': issue('rules', rule['status'], f'{name}: {rule["message"]}', card_id)
         else:
             families[rule['identity']].append((card_id, quantity, rule['copy_limit'], name))
-            for entry in entries:
-                if entry['card_id'] == card_id and entry['section'] != 'side' and entry['section'] != rule['section']:
-                    issue('rules', 'wrong_section', f'{name}: gehört ins {"Extra-Deck" if rule["section"] == "extra" else "Hauptdeck"}.', card_id)
             if not rule['script_available']: issue('engine', 'script_missing', f'{name}: Kartenskript fehlt.', card_id)
         if not rule['identity'] and quantity > 3:
             issue('rules', 'copy_limit', f'{name}: {quantity} Exemplare, höchstens 3 erlaubt.', card_id)
