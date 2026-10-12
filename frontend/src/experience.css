@@ -304,3 +304,4 @@
 .booster-collection-progress.is-complete progress::-moz-progress-bar { background: linear-gradient(90deg, #15705d, #41c5a2); }
 .booster-detail-copy > .booster-collection-progress, .vault-stack-copy > .booster-collection-progress { padding: 14px 0; }
 @media (prefers-reduced-motion: reduce) { .booster-collection-progress progress::-webkit-progress-value { transition: none; } }
+.opening-summary-footer{flex-wrap:wrap}.opening-summary-footer .opening-next-error{flex-basis:100%;padding:12px;border:1px solid #c18765;border-radius:8px;color:#ffcdb3;background:#512d2733;font-size:13px;line-height:1.6}.opening-summary-footer>p[role=status]{flex-basis:100%;font-size:13px;color:#baf1df}.opening-primary:disabled{opacity:.5;cursor:not-allowed}

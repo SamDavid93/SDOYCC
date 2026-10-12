@@ -386,9 +386,37 @@ def run():
                     page.get_by_role('button', name='Pack öffnen', exact=True).click()
                     page.get_by_role('dialog').get_by_role('button', name='Animation überspringen').click()
                     expect(page.locator('.opening-summary-grid .card-visual')).to_have_count(3)
-                    page.get_by_role('dialog').get_by_role('button', name='Zurück zum Hub', exact=True).click()
+                    opening = page.get_by_role('dialog')
+                    expect(opening.locator('.opening-summary-footer')).to_contain_text('2 Packs dieser Edition')
+                    before_next = api_requests.count(api_url + '/api/boosters/1/open')
+                    page.route('**/api/boosters/1/open', lambda route: route.fulfill(status=400, content_type='application/json', body='{"detail":"Test: Folgepack abgelehnt"}'))
+                    opening.get_by_role('button', name='N\u00e4chstes Pack \u00f6ffnen', exact=True).click()
+                    expect(opening.get_by_role('alert')).to_contain_text('Folgepack abgelehnt')
+                    expect(opening.locator('.opening-summary-grid .card-visual')).to_have_count(3)
+                    expect(opening.locator('.opening-summary-footer')).to_contain_text('2 Packs dieser Edition')
+                    page.unroute('**/api/boosters/1/open')
+                    # Two synchronous clicks must consume only one pack.
+                    opening.get_by_role('button', name='N\u00e4chstes Pack \u00f6ffnen', exact=True).evaluate('(button) => { button.click(); button.click() }')
+                    expect(opening.get_by_role('button', name='Karte 1 aufdecken', exact=True)).to_be_visible(timeout=10000)
+                    expect(opening.get_by_role('alert')).to_have_count(0)
+                    opening.get_by_role('button', name='Animation \u00fcberspringen', exact=True).click()
+                    expect(opening.locator('.opening-summary-footer')).to_contain_text('1 Packs dieser Edition')
+                    assert api_requests.count(api_url + '/api/boosters/1/open') == before_next + 2
+                    page.set_viewport_size({'width': 390, 'height': 844})
+                    assert opening.evaluate('e => e.scrollWidth <= e.clientWidth'), 'Next-pack footer mobile overflow'
+                    page.screenshot(path=str(ROOT / 'artifacts/pack-next-mobile.png'), full_page=True)
+                    opening.get_by_role('button', name='N\u00e4chstes Pack \u00f6ffnen', exact=True).click()
+                    expect(opening.get_by_role('button', name='Karte 1 aufdecken', exact=True)).to_be_visible(timeout=10000)
+                    opening.get_by_role('button', name='Animation \u00fcberspringen', exact=True).click()
+                    expect(opening.locator('.opening-summary-footer')).to_contain_text('0 Packs dieser Edition')
+                    expect(opening.get_by_role('button', name='Keine Packs \u00fcbrig', exact=True)).to_be_disabled()
+                    opening.get_by_role('button', name='Keine Packs \u00fcbrig', exact=True).evaluate('(button) => button.click()')
+                    assert api_requests.count(api_url + '/api/boosters/1/open') == before_next + 3
+                    page.set_viewport_size({'width': 1440, 'height': 1000})
+                    opening.get_by_role('button', name='Zur\u00fcck zum Hub', exact=True).click()
+
                     page.get_by_role('link', name='Meine Sammlung', exact=True).click()
-                    expect(page.locator('.inventory-summary strong').first).to_have_text('30')
+                    expect(page.locator('.inventory-summary strong').first).to_have_text('36')
                     # Fixed deck, purchase cap, and a long opening on mobile (isolated data).
                     with sqlite3.connect(Path(temporary) / 'browser.db') as db:
                         db.execute("INSERT INTO booster_packs (id,key,name,cards_per_pack,product_type,cost,active) VALUES (2000,'structure-test','Structure Deck: Test',42,'structure_deck',600,1)")
@@ -446,7 +474,7 @@ def run():
                     check_workflows(page, ui_url, api_url, Path(temporary) / "browser.db", ROOT / "artifacts")
                     assert not errors, errors
                     browser.close()
-                    print(json.dumps({"browser": "passed", "checks": ["revealed card preview and exact text", "preview keyboard and Escape preserve opening", "summary preview and text fallbacks", "preview mobile layout", "community card image upload and publication", "resumable batch grant", "original-linked correction", "two-account reserved trade and receipt", "season planning and publication", "opening XP and reward claim", "workflow mobile layout", "mixed admin grant preview and submission", "stored grant receipt", "recipient notification and read state", "grant mobile layout", "collection variant quantities", "personal and admin inventory journal", "variant mobile layout", "admin login reset preserves assets", "admin block and unblock", "admin confirmation dialog and audit", "admin sidebar mobile navigation", "admin role access and revocation", "admin search and account details", "admin desktop and mobile layout", "bonus card separated from guaranteed content", "43-card opening with exactly one bonus", "bonus mobile layout", "pack vault", "empty vault", "animated reveal", "rarity spotlight matches result", "keyboard reveal", "reduced motion", "skip animation", "close preserves cards", "failed opening preserves stock", "demo", "purchase", "purchase receipt", "no success receipt on failed purchase", "receipt mobile", "open from receipt", "free opening", "inventory", "wallet", "catalog search", "card-to-booster navigation", "pool search", "resolution-independent SDOYCC cover", "cover independent of external image failure", "owned filter", "mobile", "logout", "public registration link", "chat confirmation", "reload preserves browser challenge", "locked username", "password registration", "precredited balance", "password login"], "console_errors": errors}))
+                    print(json.dumps({"browser": "passed", "checks": ["revealed card preview and exact text", "preview keyboard and Escape preserve opening", "summary preview and text fallbacks", "preview mobile layout", "community card image upload and publication", "resumable batch grant", "original-linked correction", "two-account reserved trade and receipt", "season planning and publication", "opening XP and reward claim", "workflow mobile layout", "mixed admin grant preview and submission", "stored grant receipt", "recipient notification and read state", "grant mobile layout", "collection variant quantities", "personal and admin inventory journal", "variant mobile layout", "admin login reset preserves assets", "admin block and unblock", "admin confirmation dialog and audit", "admin sidebar mobile navigation", "admin role access and revocation", "admin search and account details", "admin desktop and mobile layout", "bonus card separated from guaranteed content", "43-card opening with exactly one bonus", "bonus mobile layout", "pack vault", "consecutive pack openings", "next pack failure preserves result", "double click consumes one pack", "exhausted pack disables continuation", "next pack mobile", "empty vault", "animated reveal", "rarity spotlight matches result", "keyboard reveal", "reduced motion", "skip animation", "close preserves cards", "failed opening preserves stock", "demo", "purchase", "purchase receipt", "no success receipt on failed purchase", "receipt mobile", "open from receipt", "free opening", "inventory", "wallet", "catalog search", "card-to-booster navigation", "pool search", "resolution-independent SDOYCC cover", "cover independent of external image failure", "owned filter", "mobile", "logout", "public registration link", "chat confirmation", "reload preserves browser challenge", "locked username", "password registration", "precredited balance", "password login"], "console_errors": errors}))
             except Exception:
                 log.flush()
                 print((Path(temporary) / "servers.log").read_text(encoding="utf8"))
