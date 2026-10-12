@@ -55,6 +55,35 @@ Die HTTP-DLL wurde aus dem lokalen Windows-.NET-Verzeichnis kopiert. Referenzen 
 
 ## Kanalpunkte-Belohnung
 
+### Zusätzliche Rewards: 1.000 und 5.000 TCG-Punkte
+
+Die lokale Backend-Konfiguration `TWITCH_REWARDS` ergänzt den bestehenden
+100-Punkte-Reward. Die Zuordnung ist:
+
+| Reward-ID | Twitch-Kanalpunktkosten | TCG-Gutschrift |
+| --- | ---: | ---: |
+| `473165f7-761c-4434-984b-0953d42fc13b` | 10.000 | 1.000 |
+| `3bf87e73-5228-4b0d-85ec-fcc824e5cd57` | 50.000 | 5.000 |
+
+In der bestehenden Aktion **TCG CHANNELPOINTS** für jede dieser beiden IDs je
+einen Trigger **Reward Redemption** und **Reward Redemption Updated** hinzufügen
+(insgesamt vier zusätzliche Trigger). Die vorhandenen Trigger bleiben bestehen.
+`hubAction=reward` und der vorhandene C#-Code gelten für alle drei Rewards.
+Die Backend-Konfiguration allein ergänzt die Streamer.bot-Trigger nicht.
+
+Beispiel für `.env` (eine Zeile):
+
+```dotenv
+TWITCH_REWARDS={"473165f7-761c-4434-984b-0953d42fc13b":{"cost":10000,"points":1000},"3bf87e73-5228-4b0d-85ec-fcc824e5cd57":{"cost":50000,"points":5000}}
+```
+
+Backend nach Änderungen neu starten. Die API prüft Reward-ID und Kanalpunktkosten
+und schreibt den konfigurierten TCG-Betrag genau einmal pro Einlösungs-ID gut.
+Unbekannte Rewards, falsche Kosten und dieselbe Einlösungs-ID mit einer anderen
+Reward-ID werden abgelehnt. Das automatische Erfüllen bleibt unverändert.
+
+### Bestehender 100-Punkte-Reward
+
 In `.env` die tatsächliche `TWITCH_REWARD_ID` aus Streamer.bot eintragen; `TWITCH_REWARD_COST=1000` und `TWITCH_REWARD_DIAMONDS=100` bleiben bestehen. Backend anschließend neu starten.
 
 Eine eigene Aktion **TCG Kanalpunkte** erstellen:

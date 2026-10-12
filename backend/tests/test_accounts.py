@@ -16,14 +16,15 @@ class AccountTests(HubTestCase):
 
     def setUp(self):
         super().setUp()
-        self.previous = (settings.streamerbot_api_key, settings.twitch_reward_id)
+        self.previous = (settings.streamerbot_api_key, settings.twitch_reward_id, settings.twitch_rewards)
+        settings.twitch_rewards = {}
         settings.streamerbot_api_key = "test-bridge-key-" + "x" * 32
         settings.twitch_reward_id = "reward-1"
         self.bridge_headers = {"X-Streamerbot-Key": settings.streamerbot_api_key}
         self.identity = {"user_id": "456", "username": "Viewer", "display_name": "Viewer", "broadcaster_login": "SamDavidOfficial"}
 
     def tearDown(self):
-        settings.streamerbot_api_key, settings.twitch_reward_id = self.previous
+        settings.streamerbot_api_key, settings.twitch_reward_id, settings.twitch_rewards = self.previous
         super().tearDown()
 
     def invite(self, identity=None):
@@ -51,6 +52,26 @@ class AccountTests(HubTestCase):
     def redeem(self, status="fulfilled", **extra):
         return self.client.post("/api/integrations/streamerbot/redemptions", headers=self.bridge_headers,
             json={**self.identity, "redemption_id": "redemption-1", "reward_id": "reward-1", "reward_cost": 1000, "status": status, **extra})
+
+    def test_multiple_rewards_credit_exact_amounts_once_and_reject_wrong_costs(self):
+        from app.core.config import TwitchReward
+        settings.twitch_rewards = {'reward-small': TwitchReward(cost=10000, points=1000),
+                                   'reward-large': TwitchReward(cost=50000, points=5000)}
+        for reward_id, cost, points in [('reward-small', 10000, 1000), ('reward-large', 50000, 5000)]:
+            self.assertEqual(self.redeem(reward_id=reward_id, reward_cost=1).status_code, 403)
+            args = dict(redemption_id=reward_id, reward_id=reward_id, reward_cost=cost)
+            first = self.redeem(status='unfulfilled', **args)
+            self.assertEqual(first.status_code, 200, first.text)
+            self.assertTrue(first.json()['credited'])
+            self.assertTrue(first.json()['fulfill_required'])
+            repeat = self.redeem(**args)
+            self.assertFalse(repeat.json()['credited'])
+            self.assertTrue(repeat.json()['duplicate'])
+        conflict = self.redeem(redemption_id='reward-small', reward_id='reward-large', reward_cost=50000)
+        self.assertEqual(conflict.status_code, 409)
+        with self.sessions() as db:
+            self.assertEqual(db.scalar(select(User).where(User.twitch_id == '456')).credits, 6000)
+        self.assertEqual(self.redeem().status_code, 200)  # Existing 100-point reward remains supported.
 
     def test_registration_and_password_login_preserve_precredited_balance(self):
         credit = self.redeem()

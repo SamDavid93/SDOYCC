@@ -90,8 +90,9 @@ def registration_link(database: Session, user: User) -> dict:
 
 @router.get("/status")
 def status() -> dict:
-    return {"status": "ok", "channel": settings.twitch_broadcaster_login, "reward_configured": bool(settings.twitch_reward_id),
-            "reward_cost": settings.twitch_reward_cost, "reward_points": settings.twitch_reward_diamonds}
+    return {"status": "ok", "channel": settings.twitch_broadcaster_login, "reward_configured": bool(settings.twitch_reward_id or settings.twitch_rewards),
+            "reward_cost": settings.twitch_reward_cost, "reward_points": settings.twitch_reward_diamonds,
+            "rewards": {key: reward.model_dump() for key, reward in settings.twitch_rewards.items()}}
 
 
 @router.post("/register")
@@ -133,19 +134,24 @@ def confirm_registration(payload: Confirmation, database: Database) -> dict:
 def reward_redemption(payload: Redemption, database: Database) -> dict:
     if payload.broadcaster_login != settings.twitch_broadcaster_login.lower():
         raise HTTPException(403, "Wrong Twitch channel")
-    if not settings.twitch_reward_id:
+    if not settings.twitch_reward_id and not settings.twitch_rewards:
         raise HTTPException(503, "Reward-ID ist noch nicht eingerichtet")
-    if payload.reward_id != settings.twitch_reward_id or payload.reward_cost != settings.twitch_reward_cost:
+    reward = settings.twitch_rewards.get(payload.reward_id)
+    expected_cost = reward.cost if reward else settings.twitch_reward_cost
+    reward_points = reward.points if reward else settings.twitch_reward_diamonds
+    if (not reward and payload.reward_id != settings.twitch_reward_id) or payload.reward_cost != expected_cost:
         raise HTTPException(403, "Wrong reward or channel-point cost")
     user = resolve_user(database, payload)
     existing = database.get(TwitchRedemption, payload.redemption_id)
     credited = False
     if existing and existing.user_id != user.id:
         raise HTTPException(409, "Einlösung gehört zu einem anderen Konto")
+    if existing and existing.reward_id != payload.reward_id:
+        raise HTTPException(409, "Einlösung gehört zu einer anderen Belohnung")
     if existing is None:
         # The initial redemption already spent the viewer's channel points.
         # Keep canceled IDs with amount 0 so a delayed initial event cannot credit them.
-        amount = 0 if payload.status == "canceled" else settings.twitch_reward_diamonds
+        amount = 0 if payload.status == "canceled" else reward_points
         database.add(TwitchRedemption(redemption_id=payload.redemption_id, user_id=user.id,
                                      reward_id=payload.reward_id, diamonds=amount))
         if amount:

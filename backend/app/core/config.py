@@ -1,5 +1,11 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class TwitchReward(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    cost: int = Field(gt=0, strict=True)
+    points: int = Field(gt=0, strict=True)
 
 
 class Settings(BaseSettings):
@@ -14,6 +20,7 @@ class Settings(BaseSettings):
     twitch_reward_id: str = ""
     twitch_reward_cost: int = Field(default=1000, gt=0)
     twitch_reward_diamonds: int = Field(default=100, gt=0)
+    twitch_rewards: dict[str, TwitchReward] = Field(default_factory=dict)
     session_hours: int = Field(default=24, ge=1, le=168)
     streamerbot_api_key: str = ""
     registration_minutes: int = Field(default=30, ge=5, le=120)
