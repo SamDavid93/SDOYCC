@@ -5,6 +5,7 @@ import App from './App'
 import './styles.css'
 import './experience.css'
 import './collection.css'
+import './catalog-density.css'
 import { PackOpeningProvider } from './components/PackOpening'
 import { SessionProvider } from './Session'
 
