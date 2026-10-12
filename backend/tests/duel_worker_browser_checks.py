@@ -54,7 +54,7 @@ def run(manual=False):
             backend = subprocess.Popen([sys.executable, '-m', 'uvicorn', 'app.main:app', '--app-dir', 'backend', '--port', str(api_port)], cwd=ROOT, env=env, stdout=log, stderr=log, creationflags=flags)
             frontend = subprocess.Popen([node, str(ROOT / 'node_modules/vite/bin/vite.js'), '--host', '127.0.0.1', '--port', str(ui_port), '--strictPort'], cwd=ROOT / 'frontend', env=env, stdout=log, stderr=log, creationflags=flags)
             try:
-                wait_ready(api_url + '/api/health', backend); wait_ready(ui_url, frontend)
+                wait_ready(api_url + '/api/health', backend, timeout=180); wait_ready(ui_url, frontend)
                 host_token, guest_token, host_deck, guest_deck, baseline = seed_worker_database(database_file)
                 with sync_playwright() as pw:
                     browser = pw.chromium.launch(channel='msedge', headless=not manual)
@@ -127,11 +127,13 @@ def run(manual=False):
                     host.locator('.arena-own .arena-hand-card').first.drag_to(host.locator('.arena-slot[data-duel-owner="0"][data-duel-zone="4"][data-duel-sequence="2"]'))
                     host.locator('.placement-open').get_by_role('button', name='Setzen', exact=True).click()
                     expect(host.locator('.arena-slot[data-duel-owner="0"][data-duel-zone="4"][data-duel-sequence="2"] .duel-playing-card')).to_be_visible(timeout=10000)
-                    host.get_by_role('button', name='Zug beenden', exact=True).click()
+                    host.locator('.arena-phase-orb').click()
+                    host.get_by_role('button', name='Endphase · Zug beenden', exact=True).click()
                     # The ordinary action buttons lead to the same clickable
                     # place prompt, including correct owner mapping on seat 1.
-                    expect(guest.locator('.duel-choice-list button').filter(has_text='Beschwören:').first).to_be_enabled(timeout=10000)
-                    guest.locator('.duel-choice-list button').filter(has_text='Beschwören:').first.click()
+                    expect(guest.locator('.arena-own .arena-hand-card.action-available').first).to_be_visible(timeout=10000)
+                    guest.locator('.arena-own .arena-hand-card.action-available').first.locator('.duel-playing-card').click()
+                    guest.locator('.placement-open').get_by_role('button', name='Beschwören', exact=True).click()
                     destination = guest.locator('.arena-slot[data-duel-owner="1"][data-duel-zone="4"][data-duel-sequence="4"]')
                     expect(destination.locator('.arena-zone-choice')).to_be_enabled(timeout=10000)
                     destination.locator('.arena-zone-choice').click()
@@ -144,6 +146,7 @@ def run(manual=False):
                     guest.wait_for_function("document.querySelector('.sidebar').getBoundingClientRect().right <= 0")
                     assert guest.evaluate('document.documentElement.scrollWidth <= innerWidth')
                     guest.screenshot(path=str(artifacts / 'mobile.png'), full_page=True)
+                    guest.get_by_label('Duellmenü', exact=True).click()
                     guest.once('dialog', lambda dialog: dialog.dismiss())
                     guest.get_by_role('button', name='Duell aufgeben', exact=True).click()
                     expect(guest.get_by_role('button', name='Duell aufgeben', exact=True)).to_be_visible()

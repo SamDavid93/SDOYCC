@@ -4,27 +4,38 @@ import type { DuelLocation, WorkerPrompt } from './DuelDecisions'
 import cardBack from '../assets/card-back.jpg'
 import { DuelPhaseControl } from './DuelPhaseControl'
 
-type Props = { sides: Side[]; seat: number; card: (value: EngineCard | null, key: string, covered?: boolean) => ReactNode;
+type Props = { sides: Side[]; seat: number; card: (value: EngineCard | null, key: string, covered?: boolean, location?: DuelLocation) => ReactNode;
+  activeLocation: DuelLocation | null; chooseLocation: (location: DuelLocation) => void; children?: ReactNode;
+  confirmSelection: () => void; selectionValid: boolean; selectionLabel: string;
   prompt?: WorkerPrompt | null; disabled: boolean; zoneSelection: number[]; chooseZone: (index: number) => void;
   chooseAction: (index: number, target?: DuelLocation) => void; phase: number; turn: number; turnNumber: number }
-export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, chooseZone, chooseAction, phase, turn, turnNumber }: Props) {
+export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, chooseZone, chooseAction, phase, turn, turnNumber, activeLocation, chooseLocation, children, confirmSelection, selectionValid, selectionLabel }: Props) {
   const [dragging, setDragging] = useState<number | null>(null)
   const [drop, setDrop] = useState<{ index: number; target: DuelLocation } | null>(null)
   useEffect(() => { setDrop(null); setDragging(null) }, [prompt?.id])
   const actions = (index: number, zone?: number) => prompt?.choices.map((choice, choiceIndex) => ({ ...choice, choiceIndex })).filter(choice =>
     choice.location?.owner === seat && choice.location.zone === 2 && choice.location.sequence === index &&
-    (zone === 8 ? choice.action === 'set_spell' : zone === 4 ? ['summon', 'special_summon', 'set_monster'].includes(choice.action || '') : ['summon', 'special_summon', 'set_monster', 'set_spell'].includes(choice.action || ''))) || []
+    (zone === 8 ? choice.action === 'set_spell' : zone === 4 ? ['summon', 'special_summon', 'set_monster'].includes(choice.action || '') : ['summon', 'special_summon', 'set_monster', 'set_spell', 'activate'].includes(choice.action || ''))) || []
+  const optionsAt = (owner: number, zone: number, sequence: number) => prompt?.choices.map((choice, index) => ({ ...choice, index })).filter(choice => choice.location?.owner === owner && choice.location.zone === zone && choice.location.sequence === sequence) || []
+  const activeAt = (owner: number, zone: number, sequence: number) => activeLocation?.owner === owner && (activeLocation.zone & 127) === zone && activeLocation.sequence === sequence
   function slot(owner: number, zone: number, sequence: number, label: string) {
     const entry = sides[owner].field.find(value => value.zone === zone && value.sequence === sequence)
+    const options = !disabled && prompt?.kind !== 'zones' ? optionsAt(owner, zone, sequence) : []
+    const attackReady = options.some(choice => choice.action === 'attack')
+    const selected = options.some(choice => zoneSelection.includes(choice.index))
     const zoneChoice = prompt?.kind === 'zones' ? prompt.choices.findIndex(choice => choice.location?.owner === owner && choice.location.zone === zone && choice.location.sequence === sequence) ?? -1 : -1
     const canDrop = !disabled && owner === seat && !entry && (zone === 4 || zone === 8) && dragging !== null && actions(dragging, zone).length > 0
-    return <div key={`${zone}:${sequence}`} className={'arena-slot' + (zone === 4 && entry && (entry.position & 12) ? ' defense-position' : '') + (entry?.disabled ? ' zone-disabled' : '') + (zoneChoice >= 0 && !disabled ? ' zone-selectable' : '') + (zoneSelection.includes(zoneChoice) ? ' zone-selected' : '') + (canDrop ? ' zone-droppable' : '')}
+    return <div key={`${zone}:${sequence}`} className={'arena-slot' + (zone === 4 && entry && (entry.position & 12) ? ' defense-position' : '') + (entry?.disabled ? ' zone-disabled' : '') + (zoneChoice >= 0 && !disabled ? ' zone-selectable' : '') + (zoneSelection.includes(zoneChoice) || selected ? ' zone-selected' : '') + (canDrop ? ' zone-droppable' : '') + (options.length ? ' action-available' : '') + (attackReady ? ' attack-ready' : '') + (activeAt(owner,zone,sequence) ? ' action-focused' : '')}
       onDragOver={event => { if (canDrop) { event.preventDefault(); event.dataTransfer.dropEffect = 'move' } }}
       onDrop={event => { event.preventDefault(); if (canDrop && dragging !== null) setDrop({ index: dragging, target: { owner, zone, sequence } }); setDragging(null) }}
       data-duel-owner={owner} data-duel-zone={zone} data-duel-sequence={sequence} aria-label={`${owner === seat ? 'Deine' : 'Gegnerische'} ${label}`}>
       {zoneChoice >= 0 && <button className="arena-zone-choice" aria-label={`${label} auswählen`} disabled={disabled} aria-pressed={zoneSelection.includes(zoneChoice)} onClick={() => chooseZone(zoneChoice)} />}
+      {options.length > 0 && <button className="arena-action-hotspot" aria-label={`${label} ${prompt?.select ? 'auswählen' : 'Aktionen'}`} aria-pressed={selected} onClick={() => chooseLocation({owner,zone,sequence})} />}
+      {options.length > 0 && <span className="arena-action-badge" aria-hidden="true">{attackReady ? '⚔' : prompt?.select ? selected ? '✓' : '◎' : '✦'}</span>}
+      {activeAt(owner,zone,sequence) && options.length > 0 && !prompt?.select && !prompt?.counter && <div className="arena-card-actions" aria-label="Kartenaktionen">{options.map(choice => <button key={choice.index} disabled={disabled} onClick={() => chooseAction(choice.index)}>{choice.label}</button>)}</div>}
+      {activeAt(owner,zone,sequence) && selected && prompt?.select && <div className="arena-card-actions" aria-label="Auswahl auf dem Feld"><button disabled={disabled || !selectionValid} onClick={confirmSelection}>{selectionLabel}</button><button disabled={disabled} onClick={()=>chooseLocation({owner,zone,sequence})}>Abwählen</button></div>}
       <span className="arena-zone-label">{label}</span>
-      {entry ? card(entry.card, `${owner}:${zone}:${sequence}`, Boolean(entry.position & 10)) : <span className="arena-empty-mark">◇</span>}
+      {entry ? card(entry.card, `${owner}:${zone}:${sequence}`, Boolean(entry.position & 10), {owner,zone,sequence}) : <span className="arena-empty-mark">◇</span>}
       {entry?.card && <div className="arena-card-stats">{zone === 4 && entry.card.atk !== undefined && <strong>{entry.card.atk} / {entry.card.defense ?? '—'}</strong>}
         {entry.materials?.length ? <details><summary>{entry.materials.length} Materialien</summary>{entry.materials.map((value, index) => card(value, `material:${index}`))}</details> : null}
         {entry.counters?.map(value => <small key={value}>Zähler {value & 65535}: {value >>> 16}</small>)}
@@ -35,18 +46,21 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
     </div>
   }
   function pile(owner: number, zone: number, label: string, values: (EngineCard | null)[]) {
-    return <details className="arena-pile" data-duel-owner={owner} data-duel-zone={zone}><summary>{label}<strong>{values.length}</strong></summary>
-      <div className="arena-pile-content">{values.map((value, index) => card(value, `${zone}:${index}`))}{!values.length && <small>Leer</small>}</div></details>
+    const available = !disabled && prompt?.choices.some(choice => choice.location?.owner === owner && choice.location.zone === zone)
+    return <details className={'arena-pile' + (available ? ' action-available' : '')} open={available || undefined} data-duel-owner={owner} data-duel-zone={zone}><summary>{label}<strong>{values.length}</strong></summary>
+      <div className="arena-pile-content">{values.map((value, index) => card(value, `${zone}:${index}`, false, {owner,zone,sequence:index}))}{!values.length && <small>Leer</small>}</div></details>
   }
-  return <div className="duel-arena" aria-label="Duellarena">
+  return <div className={'duel-arena ' + (turn === seat ? 'is-own-turn' : 'is-opponent-turn')} aria-label="Duellarena">
     {[1 - seat, seat].map(owner => <article className={'duel-player-field arena-player ' + (owner === seat ? 'arena-own' : 'arena-opponent')} key={owner}>
       <header><h2>{owner === seat ? 'Dein Spielfeld' : 'Gegnerisches Spielfeld'}</h2><strong className="duel-life" key={sides[owner].lp}>{sides[owner].lp.toLocaleString('de-DE')} LP</strong></header>
       <div className="duel-hand arena-hand" data-duel-owner={owner} data-duel-zone={2}>{sides[owner].hand.map((value, index) => {
         const options = owner === seat && !disabled ? actions(index, drop?.index === index ? drop.target.zone : undefined) : []
-        return <div className={'arena-hand-card' + (drop?.index === index ? ' placement-open' : '')} key={index} draggable={options.length > 0}
+        const handChoices = !disabled ? optionsAt(owner,2,index) : []
+        return <div className={'arena-hand-card' + (drop?.index === index || activeAt(owner,2,index) ? ' placement-open' : '') + (handChoices.length ? ' action-available' : '') + (handChoices.some(choice => zoneSelection.includes(choice.index)) ? ' zone-selected' : '')} key={index} draggable={options.some(choice => choice.action !== 'activate')}
           onDragStart={event => { setDragging(index); setDrop(null); event.dataTransfer.setData('text/plain', String(index)); event.dataTransfer.effectAllowed = 'move' }} onDragEnd={() => setDragging(null)}>
-          {card(value, `hand:${index}`)}
-          {options.length > 0 && <div className="arena-hand-actions" aria-label="Kartenaktionen">{options.map(option => <button key={option.choiceIndex} disabled={disabled} onClick={() => { chooseAction(option.choiceIndex, drop?.index === index ? drop.target : undefined); setDrop(null) }}>{option.action === 'set_spell' || option.action === 'set_monster' ? 'Setzen' : option.action === 'special_summon' ? 'Spezialbeschwören' : 'Beschwören'}</button>)}{drop?.index === index && <button onClick={() => setDrop(null)}>Abbrechen</button>}</div>}
+          {card(value, `hand:${index}`, false, {owner,zone:2,sequence:index})}
+          {activeAt(owner,2,index) && prompt?.select && handChoices.some(choice=>zoneSelection.includes(choice.index)) && <div className="arena-hand-actions" aria-label="Auswahl auf der Hand"><button disabled={disabled || !selectionValid} onClick={confirmSelection}>{selectionLabel}</button><button disabled={disabled} onClick={()=>chooseLocation({owner,zone:2,sequence:index})}>Abwählen</button></div>}
+          {options.length > 0 && <div className="arena-hand-actions" aria-label="Kartenaktionen">{options.map(option => <button key={option.choiceIndex} disabled={disabled} onClick={() => { chooseAction(option.choiceIndex, drop?.index === index ? drop.target : undefined); setDrop(null) }}>{option.action === 'set_spell' || option.action === 'set_monster' ? 'Setzen' : option.action === 'activate' ? 'Aktivieren' : option.action === 'special_summon' ? 'Spezialbeschwören' : 'Beschwören'}</button>)}{drop?.index === index && <button onClick={() => setDrop(null)}>Abbrechen</button>}</div>}
         </div>
       })}</div>
       <div className="arena-layout">
@@ -65,5 +79,6 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
       const owner = ownAvailable || sides[seat].field.some(value => value.zone === 4 && value.sequence === ownSequence) ? seat : 1 - seat
       return slot(owner, 4, owner === seat ? ownSequence : otherSequence, `Extra-Monsterzone ${index + 1}`)
     })}<DuelPhaseControl phase={phase} turnNumber={turnNumber} active={turn === seat} disabled={disabled} prompt={prompt} choose={chooseAction} /></div>
+    {children}
   </div>
 }

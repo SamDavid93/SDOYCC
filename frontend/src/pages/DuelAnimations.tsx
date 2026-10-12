@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import { API_BASE_URL } from '../api/transport'
+import type { EngineCard } from './DuelWorkerTable'
 
 type Location = { owner: number; zone: number; sequence: number }
-export type DuelEvent = { id: number; kind: string; player?: number; count?: number; value?: number; phase?: number; number?: number; step?: number; code?: number; text?: string; method?: string; values?: number[]; cards?: { name: string }[]; before?: Location; after?: Location; source?: Location; target?: Location; attacker?: Location; defender?: Location; location?: Location }
+export type DuelEvent = { id: number; kind: string; card?: EngineCard; effect?: string | null; player?: number; count?: number; value?: number; phase?: number; number?: number; step?: number; code?: number; text?: string; method?: string; values?: number[]; cards?: { name: string }[]; before?: Location; after?: Location; source?: Location; target?: Location; attacker?: Location; defender?: Location; location?: Location }
 type Mode = 'full' | 'fast' | 'reduced'
 const captions: Record<string, string> = { draw: 'Karte gezogen', move: 'Karte bewegt', position: 'Position geändert',
   turn: 'Neuer Spielzug', phase: 'Phasenwechsel', lp: 'Lebenspunkte geändert', summon: 'Beschwörung',
@@ -32,7 +34,8 @@ function Motion({ event, mode }: { event: DuelEvent; mode: Mode }) {
   </svg>
 }
 
-export function DuelAnimations({ events, runId }: { events: DuelEvent[]; runId: string }) {
+export function DuelAnimations({ events, runId, onEffect, seat, disabled, surrender }: { events: DuelEvent[]; runId: string;
+  onEffect?: (card: EngineCard, effect?: string | null) => void; seat?: number; disabled?: boolean; surrender?: () => void }) {
   const [mode, setMode] = useState<Mode>(() => {
     const stored = localStorage.getItem('duel-motion')
     return stored === 'full' || stored === 'fast' || stored === 'reduced' ? stored : matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reduced' : 'full'
@@ -61,9 +64,9 @@ export function DuelAnimations({ events, runId }: { events: DuelEvent[]; runId: 
       gain.gain.setValueAtTime(0.035, context.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.08)
       oscillator.connect(gain); gain.connect(context.destination); oscillator.start(); oscillator.stop(context.currentTime + 0.09)
     }
-    const timer = setTimeout(() => setActive(null), mode === 'full' ? 650 : mode === 'fast' ? 180 : 80)
+    const timer = setTimeout(() => { if (active.kind === 'chain' && active.card) onEffect?.(active.card, active.effect); setActive(null) }, active.kind === 'chain' && active.card ? 2000 : mode === 'full' ? 650 : mode === 'fast' ? 180 : 80)
     return () => clearTimeout(timer)
-  }, [active, mode, sound])
+  }, [active, mode, sound, onEffect])
   useEffect(() => () => { void audio.current?.close() }, [])
   useEffect(() => {
     const catchUp = () => { if (document.hidden) { setQueue([]); setActive(null) } }
@@ -75,15 +78,24 @@ export function DuelAnimations({ events, runId }: { events: DuelEvent[]; runId: 
     setSound(!sound)
   }
   return <aside className={`duel-animation-console motion-${mode}`} aria-label="Duellanimationen">
+    <details className="arena-settings"><summary aria-label="Duellmenü">☰</summary><div className="arena-settings-content">
     <div className="duel-animation-controls"><label>Animationen<select value={mode} onChange={event => { const next = event.target.value as Mode; setMode(next); localStorage.setItem('duel-motion', next) }}><option value="full">Voll</option><option value="fast">Schnell</option><option value="reduced">Bewegungsarm</option></select></label>
       <button aria-pressed={sound} onClick={() => void toggleSound()}>Ton {sound ? 'an' : 'aus'}</button>
       <button disabled={!active && !queue.length} onClick={() => { setQueue([]); setActive(null) }}>Animationen überspringen</button>
     </div>
+    {surrender && <button className="duel-surrender" disabled={disabled} onClick={surrender}>Duell aufgeben</button>}
+    <button onClick={event => { const field=event.currentTarget.closest('.duel-worker-table'); if (document.fullscreenElement) void document.exitFullscreen(); else if(field) void field.requestFullscreen().catch(()=>{}) }}>Spielfeld im Vollbild</button>
+    <details><summary>Bestätigtes Duellprotokoll</summary><ol className="duel-event-log">{events.filter(event => event.kind !== 'information').map(event => <li key={event.id}>#{event.id} {event.kind === 'summon' ? methods[event.method || 'special'] : captions[event.kind] || event.kind}{event.number ? ` · ${event.number}` : ''}{event.value !== undefined ? ` · ${event.value}` : ''}{event.values ? ` · ${event.values.join(', ')}` : ''}{event.text ? ` · ${event.text}` : ''}{event.card ? ` · ${event.card.name}` : ''}{event.cards ? ` · ${event.cards.map(card => card.name).join(', ')}` : ''}</li>)}</ol></details>
+    </div></details>
     {active && <Motion key={`motion:${active.id}`} event={active} mode={mode} />}
-    <div className={`duel-event-stage event-${active?.kind || 'idle'} summon-${active?.method || 'none'}`} key={`event:${active?.id || 'idle'}`} aria-live="polite">
+    {active?.kind === 'chain' && active.card && <section className="duel-effect-reveal" role="status" aria-label="Aktivierter Karteneffekt" key={`effect:${active.id}`}>
+      <span>{active.source?.owner === seat ? 'Dein Effekt' : 'Gegner aktiviert'} · Kettenglied {active.number}</span>
+      {active.card.image_url && <img src={API_BASE_URL.replace(/\/api\/?$/, '') + active.card.image_url} alt={active.card.name} onError={event => { const img=event.currentTarget; if(active.card?.fallback_image_url && !img.dataset.fallback){img.dataset.fallback='1';img.src=API_BASE_URL.replace(/\/api\/?$/, '')+active.card.fallback_image_url}else img.hidden=true }} />}
+      <strong>{active.card.name}</strong>{active.effect && <small>{active.effect}</small>}
+    </section>}
+    {active && !(active.kind === 'chain' && active.card) && <div className={`duel-event-stage event-${active?.kind || 'idle'} summon-${active?.method || 'none'}`} key={`event:${active?.id || 'idle'}`} aria-live="polite">
       <span className="duel-event-symbol" aria-hidden="true">{active?.kind === 'attack' ? '⚔' : active?.kind === 'summon' ? '✦' : active?.kind === 'chain' ? '∞' : active?.kind === 'lp' ? '♥' : '◇'}</span>
       <span>{active ? active.kind === 'summon' ? methods[active.method || 'special'] : captions[active.kind] || 'Spielereignis' : 'Bereit für dein Duell'}{active?.kind === 'lp' && ` · ${active.value?.toLocaleString('de-DE')} LP`}{active?.kind === 'chain_step' && ` · ${active.number ? 'Glied ' + active.number + ': ' : ''}${active.step === 72 ? 'wird aufgelöst' : active.step === 73 ? 'aufgelöst' : active.step === 74 ? 'beendet' : active.step === 75 || active.step === 76 ? 'negiert' : 'fortgesetzt'}`}{active?.values && ` · ${active.values.join(', ')}`}{active?.text && ` · ${active.text}`}{active?.cards && ` · ${active.cards.map(card => card.name).join(', ')}`}</span>
-    </div>
-    <details><summary>Bestätigtes Duellprotokoll</summary><ol className="duel-event-log">{events.filter(event => event.kind !== 'information').map(event => <li key={event.id}>#{event.id} {event.kind === 'summon' ? methods[event.method || 'special'] : captions[event.kind] || event.kind}{event.number ? ` · ${event.number}` : ''}{event.value !== undefined ? ` · ${event.value}` : ''}{event.values ? ` · ${event.values.join(', ')}` : ''}{event.text ? ` · ${event.text}` : ''}{event.cards ? ` · ${event.cards.map(card => card.name).join(', ')}` : ''}</li>)}</ol></details>
+    </div>}
   </aside>
 }

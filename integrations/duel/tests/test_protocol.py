@@ -14,6 +14,24 @@ CATALOG = {101: {'name': 'Testkarte', 'description': 'Privater Text', 'atk': 100
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_public_activation_carries_card_for_both_seats_without_revealing_hand(self):
+        message = bytes([70]) + struct.pack('<I', 101) + struct.pack('<BBII', 0, 8, 1, 1)
+        message += struct.pack('<BBIQI', 0, 8, 1, 101 << 4, 1)
+        self.p.consume({'status':0, 'messages':[base64.b64encode(message).decode()]})
+        for seat in (0, 1):
+            event = self.p.view(seat)['events'][-1]
+            self.assertEqual(event['card']['code'], 101)
+            self.assertEqual(event['card']['description'], 'Privater Text')
+            self.assertIsNone(self.p.view(seat)['boards'][1-seat]['hand'][0])
+
+    def test_selection_location_is_exposed_without_hidden_card_identity(self):
+        message = bytes([15,0,1]) + struct.pack('<III',1,1,1) + struct.pack('<I',0) + struct.pack('<BBII',1,4,3,8)
+        self.p.consume({'status':1, 'messages':[base64.b64encode(message).decode()]})
+        choice = self.p.view(0)['prompt']['choices'][0]
+        self.assertIsNone(choice['card'])
+        self.assertEqual(choice['location']['sequence'],3)
+        self.assertIsNone(self.p.view(1)['prompt'])
+
     def test_identical_hand_cards_keep_distinct_action_instances(self):
         message = bytes([11, 0]) + struct.pack('<I', 2)
         message += b''.join(struct.pack('<IBBI', 101, 0, 2, sequence) for sequence in (0, 1))

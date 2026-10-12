@@ -123,14 +123,16 @@ class Projection:
                 owner, cancel = r.read('BB'); minimum, maximum, count = r.read('III')
                 choices = []
                 for index in range(count):
-                    code = r.read('I'); r.loc()
+                    code = r.read('I'); location = r.loc()
                     choices.append(self.choice(self.catalog[code]['name'] if code else 'Verdeckte Karte', b'', code or None))
+                    choices[-1]['location'] = location
                 self.new_prompt(owner, 'Karten auswählen', choices, allow_empty=minimum == 0 or bool(cancel))
                 self.prompt.update(minimum=minimum, maximum=maximum, select=True, cancel=bool(cancel))
             elif msg == 12:
-                owner, code = r.read('BI'); r.loc(); description = r.read('Q')
+                owner, code = r.read('BI'); location = r.loc(); description = r.read('Q')
                 self.new_prompt(owner, 'Effekt von ' + self.catalog[code]['name'] + ' aktivieren?',
                     [self.choice('Ja', struct.pack('<i', 1), code), self.choice('Nein', struct.pack('<i', 0), code)])
+                self.prompt['effect_card'] = self.card(code)
             elif msg in (14, 143):
                 owner, count = r.read('BB')
                 choices = []
@@ -149,6 +151,7 @@ class Projection:
                         index = len(choices)
                         choices.append(self.choice(('Abwählen: ' if removing else 'Auswählen: ') + label,
                             struct.pack('<II', 1, index), code or None))
+                        choices[-1]['location'] = info
                 self.new_prompt(owner, 'Auswahl ändern', choices, allow_empty=bool(finishable or cancelable))
                 self.prompt.update(cancel=bool(finishable or cancelable))
             elif msg in (20, 21, 25):
@@ -163,6 +166,7 @@ class Projection:
                     weights.append(weight)
                     name = self.catalog[code]['name'] if code else 'Verdeckte Karte'
                     choices.append(self.choice(name + (f' · Tributwert {weight}' if msg == 20 else ''), b'', code or None))
+                    choices[-1]['location'] = {'owner': controller, 'zone': zone, 'sequence': sequence}
                 self.new_prompt(owner, 'Tribute wählen' if msg == 20 else 'Reihenfolge wählen', choices)
                 self.prompt.update(select=True, minimum=0 if msg == 20 else count,
                     maximum=maximum if msg == 20 else count, cancel=bool(cancel),
@@ -175,6 +179,7 @@ class Projection:
                     code, controller, zone, sequence, available = r.read('IBBBH')
                     limits.append(available)
                     choices.append(self.choice(self.catalog[code]['name'] if code else 'Verdeckte Karte', b'', code or None))
+                    choices[-1]['location'] = {'owner': controller, 'zone': zone, 'sequence': sequence}
                 self.new_prompt(owner, 'Zählmarken entfernen', choices)
                 self.prompt.update(counter=True, counter_limits=limits, counter_total=total, _response_kind='counter')
             elif msg == 23:
@@ -184,11 +189,12 @@ class Projection:
                     r.read('I'); r.loc(); mandatory.append(r.read('I'))
                 choices, weights = [], []
                 for _ in range(r.read('I')):
-                    code = r.read('I'); r.loc(); value = r.read('I')
+                    code = r.read('I'); location = r.loc(); value = r.read('I')
                     weights.append(value)
                     values = [value & 65535] + ([value >> 16] if value >> 16 else [])
                     name = self.catalog[code]['name'] if code else 'Verdeckte Karte'
                     choices.append(self.choice(name + ' · Wert ' + '/'.join(map(str, values)), b'', code or None))
+                    choices[-1]['location'] = location
                 self.new_prompt(owner, 'Materialien für Summe ' + str(target) + ' wählen', choices)
                 self.prompt.update(select=True, minimum=minimum if mode == 0 else 0, maximum=maximum if mode == 0 else len(choices),
                     _response_kind='sum', _weights=weights, _mandatory=mandatory, _sum_mode=mode, _sum_target=target)
@@ -216,8 +222,9 @@ class Projection:
                 owner, special, forced = r.read('BBB'); r.read('II'); count = r.read('I')
                 choices = []
                 for index in range(count):
-                    code = r.read('I'); r.loc(); r.read('QB')
+                    code = r.read('I'); location = r.loc(); r.read('QB')
                     choices.append(self.choice('Effekt: ' + self.catalog[code]['name'], struct.pack('<i', index), code))
+                    choices[-1]['location'] = location
                 if not forced: choices.append(self.choice('Nicht anketten', struct.pack('<i', -1)))
                 self.new_prompt(owner, 'Auf die Kette reagieren', choices)
                 if not forced and count == 0:
@@ -272,7 +279,10 @@ class Projection:
                 self.event('summon', player=info['owner'], location=info, method=method)
             elif msg == 70:
                 code = r.read('I'); source = r.loc(); player, zone, sequence, description, number = r.read('BBIQI')
-                self.event('chain', source=source, number=number)
+                options = self.catalog.get(code, {}).get('options', [])
+                effect = self.strings.get(description) or (options[description & 15] if description >> 4 == code and description & 15 < len(options) else None)
+                # An activated card is public to both seats; other hidden cards stay private.
+                self.event('chain', source=source, number=number, card=self.card(code), effect=effect)
             elif msg in (71, 72, 73, 74, 75, 76): self.event('chain_step', step=msg, number=r.read('B') if msg != 74 else 0)
             elif msg == 110: self.event('attack', attacker=r.loc(), defender=r.loc())
             elif msg == 56:

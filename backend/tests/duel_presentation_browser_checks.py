@@ -39,7 +39,10 @@ close(){this.readyState=3}
 }
 window.WebSocket=Socket
 window.__showChain=()=>{frame.board.prompt={id:8,title:'Auf die Kette reagieren',choices:[{label:'Effekt: Testkarte',card},{label:'Nicht anketten',card:null}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
-window.__showPhase=(turn=0,phase=4)=>{frame.board.turn=turn;frame.board.phase=phase;frame.board.prompt={id:20+frame.board.revision,title:'Aktion wählen',choices:[{label:'Aktivieren: Testkarte',card,action:'activate'}, {label:phase===4?'Kampfphase':'Hauptphase 2',card:null},{label:'Zug beenden',card:null}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__showPhase=(turn=0,phase=4)=>{frame.board.turn=turn;frame.board.phase=phase;frame.board.prompt={id:20+frame.board.revision,title:'Aktion wählen',choices:[{label:'Aktivieren: Testkarte',card,action:'activate',location:{owner:0,zone:4,sequence:0}}, {label:phase===4?'Kampfphase':'Hauptphase 2',card:null},{label:'Zug beenden',card:null}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__battle=()=>{frame.board.turn=0;frame.board.phase=16;frame.board.boards[0].field=[{zone:4,sequence:0,position:1,card},{zone:4,sequence:1,position:1,card}];frame.board.boards[1].field=[{zone:4,sequence:0,position:8,card:null},{zone:4,sequence:1,position:1,card}];frame.board.prompt={id:100,title:'Aktion wählen',choices:[{label:'Angreifen: Testkarte',card,action:'attack',location:{owner:0,zone:4,sequence:0}},{label:'Aktivieren: Testkarte',card,action:'activate',location:{owner:0,zone:4,sequence:0}},{label:'Angreifen: Testkarte',card,action:'attack',location:{owner:0,zone:4,sequence:1}},{label:'Zug beenden',card:null}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__targets=()=>{frame.board.prompt={id:101,title:'Karten auswählen',select:true,minimum:1,maximum:1,choices:[{label:'Verdeckte Karte',card:null,location:{owner:1,zone:4,sequence:0}},{label:'Testkarte',card,location:{owner:1,zone:4,sequence:1}}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__effect=(seat)=>{frame.seat=seat;frame.board.seat=seat;frame.board.prompt=null;frame.board.events.push({id:frame.board.events.length+1,kind:'chain',card,source:{owner:0,zone:4,sequence:0},number:1,effect:'Ein bestätigter Testeffekt'});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="presentation" onExit={()=>{}} />)
 ''', encoding='utf8')
         env = {**os.environ, 'VITE_BASE_PATH': '/'}
@@ -113,9 +116,38 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     orb.click()
                     page.get_by_role('group',name='Erlaubte Phasenwechsel').get_by_role('button',name='Endphase · Zug beenden',exact=True).click()
                     assert page.evaluate('window.__answers[4].selected') == [2]
+                    page.set_viewport_size({'width':1440,'height':1000})
+                    page.evaluate('window.__battle()')
+                    expect(page.locator('.attack-ready')).to_have_count(2)
+                    assert orb.evaluate('(e)=>getComputedStyle(e).borderTopColor') == 'rgb(66, 143, 239)'
+                    assert page.locator('.duel-worker-table > .duel-decisions').count() == 0
+                    page.get_by_role('button',name='Monsterzone 1 Aktionen',exact=True).click()
+                    page.locator('.arena-card-actions').get_by_role('button',name='Angreifen: Testkarte',exact=True).click()
+                    expect(page.get_by_role('dialog',name='Angriff vorbereiten')).to_be_visible()
+                    page.get_by_role('dialog',name='Angriff vorbereiten').get_by_role('button',name='Abbrechen',exact=True).click()
+                    assert len(page.evaluate('window.__answers')) == 5
+                    page.get_by_role('button',name='Monsterzone 2 Aktionen',exact=True).click()
+                    page.get_by_role('button',name='Angriff starten',exact=True).click()
+                    assert page.evaluate('window.__answers[5].selected') == [2]
+                    page.evaluate('window.__targets()')
+                    page.get_by_role('button',name='Monsterzone 1 auswählen',exact=True).click()
+                    expect(page.get_by_role('button',name='Angriff bestätigen',exact=True)).to_be_enabled()
+                    page.screenshot(path=str(ROOT / 'artifacts/duel-field-attack.png'))
+                    page.get_by_role('button',name='Angriff bestätigen',exact=True).click()
+                    assert page.evaluate('window.__answers[6].selected') == [0]
+                    for seat in (0,1):
+                        page.evaluate('(seat)=>window.__effect(seat)',seat)
+                        expect(page.get_by_role('status',name='Aktivierter Karteneffekt')).to_be_visible()
+                        expect(page.locator('.duel-effect-reveal')).to_contain_text('Dein Effekt' if seat==0 else 'Gegner aktiviert')
+                        if seat==1:
+                            assert orb.evaluate('(e)=>getComputedStyle(e).borderTopColor') == 'rgb(225, 72, 105)'
+                            page.screenshot(path=str(ROOT / 'artifacts/duel-field-effect.png'))
+                        expect(page.locator('.duel-inspector-effect')).to_contain_text('Ein bestätigter Testeffekt',timeout=5000)
+                        expect(page.locator('.duel-card-description')).to_have_text('Deutscher Kartentext')
+                        page.wait_for_timeout(2200)
                     assert not errors, errors
                     browser.close()
-                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus'],'console_errors':errors}))
+                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','effect reveal and viewer for both seats'],'console_errors':errors}))
             finally:
                 process.terminate()
                 try: process.wait(timeout=10)

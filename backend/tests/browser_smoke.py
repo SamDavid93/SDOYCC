@@ -20,12 +20,13 @@ def free_port():
         return sock.getsockname()[1]
 
 
-def wait_ready(url, process):
-    for _ in range(100):
+def wait_ready(url, process, timeout=30):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
         if process.poll() is not None:
             raise RuntimeError(f"Server exited: {url}")
         try:
-            if httpx.get(url).status_code < 500:
+            if httpx.get(url, timeout=1).status_code < 500:
                 return
         except httpx.HTTPError:
             pass

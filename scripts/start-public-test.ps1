@@ -20,7 +20,9 @@ $newTunnel = $null
 $state = $null
 
 function Wait-Health([string]$address) {
-    for ($attempt = 0; $attempt -lt 20; $attempt++) {
+    # The native worker verifies thousands of files before accepting requests.
+    $healthTimer = [System.Diagnostics.Stopwatch]::StartNew()
+    while ($healthTimer.Elapsed.TotalSeconds -lt 180) {
         try {
             $response = Invoke-RestMethod -Uri ($address + '/api/health') -TimeoutSec 5
             if ($response.status -eq 'ok') { return }
