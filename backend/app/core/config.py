@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal
 
 
 class TwitchReward(BaseModel):
@@ -21,6 +22,7 @@ class Settings(BaseSettings):
     twitch_reward_cost: int = Field(default=1000, gt=0)
     twitch_reward_diamonds: int = Field(default=100, gt=0)
     twitch_rewards: dict[str, TwitchReward] = Field(default_factory=dict)
+    rare_pull_delivery: Literal['overlay', 'chat'] = 'overlay'
     session_hours: int = Field(default=24, ge=1, le=168)
     streamerbot_api_key: str = ""
     registration_minutes: int = Field(default=30, ge=5, le=120)

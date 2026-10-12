@@ -117,9 +117,9 @@ CORS_ORIGINS=https://ACCOUNT.github.io
 
 Im Frontend-Build: `VITE_API_BASE_URL=https://OEFFENTLICHE-BACKEND-ADRESSE/api`. Vorlage: [.env.production.example](../../.env.production.example). Streamer.bot spricht weiterhin lokal mit Port 8002. Nur die Hub-API benötigt eine öffentliche HTTPS-Adresse; die Streamer.bot-Steuerung muss nicht öffentlich erreichbar sein.
 
-## Seltene Kartenfunde öffentlich ankündigen
+## Seltene Kartenfunde im Stream-Overlay
 
-Zusätzlich zur bisherigen Hub-Aktion die Datei [RarePullAnnouncements.cs](RarePullAnnouncements.cs) als eigene C#-Aktion mit einem 15-Sekunden-Timer einrichten. Der Timer verwendet den bestehenden Hub-Schlüssel und sendet über den Broadcaster. Er verarbeitet neue Funde ab Ultraselten mit Kartenname, Seltenheit und Packname. Einrichtung, Grenzen und Prüfungen: [Seltene Funde und Sammelfortschritt](../../docs/RARE_FINDS.md).
+Kartenfunde werden standardmäßig über die transparente OBS-Browserquelle `http://127.0.0.1:8002/api/stream-overlay/rare-pulls` angezeigt. Der bisherige Chat-Timer erhält im Overlay-Modus keine neuen Meldungen; er kann deaktiviert werden. Registrierung und Kanalpunkte bleiben unverändert. Einrichtung und Prüfungen: [Stream-Overlay](../../docs/STREAM_OVERLAY.md). [RarePullAnnouncements.cs](RarePullAnnouncements.cs) bleibt für den optionalen Modus `RARE_PULL_DELIVERY=chat` erhalten.
 
 ## Fehler eingrenzen
 

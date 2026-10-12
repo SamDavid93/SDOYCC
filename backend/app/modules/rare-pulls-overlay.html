@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SDOYCC Kartenfund Overlay</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;font-family:Arial,sans-serif;color:#fff}
+#alert{position:fixed;left:32px;bottom:32px;width:min(570px,calc(100vw - 64px));display:flex;gap:22px;align-items:center;padding:20px;border:1px solid #f3cf70;border-radius:18px;background:linear-gradient(125deg,rgba(12,20,35,.97),rgba(27,32,46,.95));box-shadow:0 8px 32px #0009,0 0 28px #e9bf4426;opacity:0;transform:translateX(-35px);transition:opacity .4s,transform .4s}
+#alert.visible{opacity:1;transform:translateX(0)}#card{width:145px;height:211px;object-fit:contain;filter:drop-shadow(0 5px 9px #0008);flex-shrink:0}.copy{min-width:0}#badge{font-size:12px;font-weight:bold;letter-spacing:2px;color:#f6d887;text-transform:uppercase}#viewer{margin:10px 0 6px;font-size:20px;overflow-wrap:anywhere}#name{margin:0;font-size:26px;line-height:1.15;overflow-wrap:anywhere}#rarity{margin:12px 0 6px;color:#f6d887;font-size:17px;font-weight:bold}#pack{margin:0;color:#c4cfdf;font-size:14px;overflow-wrap:anywhere}
+@media(max-width:500px){#alert{left:16px;bottom:16px;width:calc(100vw - 32px);gap:14px;padding:14px}#card{width:100px;height:146px}#name{font-size:20px}#viewer{font-size:16px}}
+</style></head><body>
+<section id="alert" aria-live="polite"><img id="card" alt=""><div class="copy"><div id="badge">Seltener Kartenfund</div><p id="viewer"></p><h1 id="name"></h1><p id="rarity"></p><p id="pack"></p></div></section>
+<script>
+'use strict';
+const panel=document.querySelector('#alert'), picture=document.querySelector('#card');
+const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const base='/api/stream-overlay';
+async function api(path,data){const response=await fetch(base+path,{method:data===undefined?'GET':'POST',headers:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data),cache:'no-store',signal:AbortSignal.timeout(5000)});if(!response.ok)throw Error('Overlay nicht erreichbar');return response.json()}
+let seen=[];try{seen=JSON.parse(localStorage.getItem('sdoycc-overlay-seen')||'[]');if(!Array.isArray(seen))seen=[]}catch{}
+async function show(item){
+ document.querySelector('#viewer').textContent='@'+item.username+' hat gezogen:';
+ document.querySelector('#name').textContent=(item.quantity>1?item.quantity+' × ':'')+item.card.name;
+ document.querySelector('#rarity').textContent=item.rarity;
+ document.querySelector('#pack').textContent='aus '+item.booster_name;
+ picture.alt=item.card.name;picture.style.visibility='visible';
+ const image=item.card.image_url||'';const fallback=item.card.fallback_image_url;
+ await new Promise(resolve=>{const timeout=setTimeout(resolve,4500);picture.onload=()=>{clearTimeout(timeout);resolve()};picture.onerror=()=>{if(fallback&&picture.getAttribute('src')!==fallback){picture.src=fallback;return}picture.style.visibility='hidden';clearTimeout(timeout);resolve()};picture.src=image;if(!image){picture.style.visibility='hidden';clearTimeout(timeout);resolve()}});
+ panel.classList.add('visible');await pause(8500);panel.classList.remove('visible');await pause(500);
+}
+async function run(){
+ for(;;){try{
+  const channel=await api('/channel');const {announcement:item}=await api('/claim',{});
+  if(!item){await pause(2000);continue}
+  if(!seen.includes(item.id)){await show(item);seen.push(item.id);seen=seen.slice(-200);try{localStorage.setItem('sdoycc-overlay-seen',JSON.stringify(seen))}catch{}}
+  await api('/'+item.id+'/ack',{...channel,claim_token:item.claim_token});
+ }catch{panel.classList.remove('visible');await pause(5000)}}
+}
+if(new URLSearchParams(location.search).has('preview')){
+ show({username:'BeispielZuschauer',quantity:1,rarity:'Ultraselten',booster_name:'Beispiel-Booster',card:{name:'Vorschau – Kartenfund',image_url:'/api/cards/1/art/original'}});
+}else run();
+</script></body></html>

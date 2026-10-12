@@ -1,4 +1,4 @@
-"""Transactional chat outbox. No network or Twitch call occurs during a pack opening."""
+"""Transactional draw alerts. No network call occurs during a pack opening."""
 from datetime import datetime, timedelta
 import secrets
 from typing import Annotated
@@ -72,6 +72,12 @@ def check_channel(payload):
 @router.post("/claim")
 def claim(payload: Channel, database: Database):
     check_channel(payload)
+    if settings.rare_pull_delivery != 'chat':
+        return {"announcement": None}
+    return claim_next(database)
+
+
+def claim_next(database, overlay=False):
     timestamp = datetime.utcnow()
     available = (RarePullAnnouncement.sent_at.is_(None), RarePullAnnouncement.expires_at > timestamp,
                  or_(RarePullAnnouncement.claimed_until.is_(None), RarePullAnnouncement.claimed_until <= timestamp))
@@ -88,6 +94,18 @@ def claim(payload: Channel, database: Database):
         return {"announcement": None}
     record = database.get(RarePullAnnouncement, candidate)
     result = {"announcement": {"id": record.id, "message": record.message, "claim_token": token}}
+    if overlay:
+        from app.api import card_payload
+        from app.db.models import Card, BoosterOpening, BoosterOpeningCard, User
+        from sqlalchemy import func
+        opening = database.get(BoosterOpening, record.opening_id)
+        user = database.get(User, opening.user_id)
+        card = card_payload(database.get(Card, record.card_id))
+        quantity = database.scalar(select(func.count()).select_from(BoosterOpeningCard).where(
+            BoosterOpeningCard.opening_id == opening.id, BoosterOpeningCard.card_id == record.card_id,
+            BoosterOpeningCard.rarity == record.rarity))
+        result['announcement'].update(card=card, username=user.username, booster_name=opening.booster.name,
+            rarity=HIGH_RARITIES.get(record.rarity, record.rarity), quantity=quantity or 1)
     database.commit()
     return result
 

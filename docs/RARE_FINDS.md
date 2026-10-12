@@ -1,6 +1,6 @@
 # Seltene Funde im Twitch-Chat und Booster-Fortschritt
 
-Stand: 04.10.2026. Die Fundmeldung ist entsprechend der Betreiberentscheidung für den **öffentlichen Twitch-Chat** vorgesehen. Die bestehende Öffnungsanimation auf der Website bleibt erhalten.
+**Aktuell werden Kartenfunde im Stream-Overlay angezeigt.** Einrichtung: [Stream-Overlay](STREAM_OVERLAY.md). Der Chat-Timer erhält standardmäßig keine Meldungen mehr. Die folgenden Angaben zum Chat gelten ausschließlich für den optionalen Modus `RARE_PULL_DELIVERY=chat`; die Auswahl seltener Funde und der Sammelfortschritt bleiben erhalten.
 
 ## Streamer.bot einmalig einrichten
 

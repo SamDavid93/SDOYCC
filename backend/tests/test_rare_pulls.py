@@ -13,6 +13,8 @@ class RarePullTests(HubTestCase):
     def setUp(self):
         super().setUp()
         self.old_key = settings.streamerbot_api_key
+        self.old_delivery = settings.rare_pull_delivery
+        settings.rare_pull_delivery = 'chat'
         settings.streamerbot_api_key = 'rare-pull-test-key-' * 3
         self.bridge = {'X-Streamerbot-Key': settings.streamerbot_api_key}
         self.channel = {'broadcaster_login': settings.twitch_broadcaster_login}
@@ -26,6 +28,7 @@ class RarePullTests(HubTestCase):
 
     def tearDown(self):
         settings.streamerbot_api_key = self.old_key
+        settings.rare_pull_delivery = self.old_delivery
         super().tearDown()
 
     def open_pack(self):
@@ -94,6 +97,36 @@ class RarePullTests(HubTestCase):
             db.commit()
         self.open_pack()
         self.assertIsNone(self.claim().json()['announcement'])
+
+    def test_overlay_consumes_with_card_and_disables_legacy_chat(self):
+        from fastapi.testclient import TestClient
+        from app.main import app
+        settings.rare_pull_delivery = 'overlay'
+        self.open_pack()
+        self.assertIsNone(self.claim().json()['announcement'])
+        local = TestClient(app, base_url='http://127.0.0.1:8002', client=('127.0.0.1', 32100))
+        self.addCleanup(local.close)
+        item = local.post('/api/stream-overlay/claim', json={}).json()['announcement']
+        self.assertEqual(item['card']['name'], 'Test')
+        self.assertEqual(item['card']['image_url'], '/api/cards/1/art/original')
+        self.assertEqual(item['username'], 'jaden-demo')
+        self.assertEqual(item['quantity'], 1)
+        self.assertEqual(item['rarity'], 'Ultraselten')
+        self.assertEqual(local.post(f'/api/stream-overlay/{item["id"]}/ack',
+            json={**self.channel, 'claim_token': item['claim_token']}).status_code, 200)
+        self.assertIsNone(local.post('/api/stream-overlay/claim', json={}).json()['announcement'])
+
+    def test_overlay_rejects_public_tunnel_and_cross_site_requests(self):
+        from fastapi.testclient import TestClient
+        from app.main import app
+        local = TestClient(app, base_url='http://127.0.0.1:8002', client=('127.0.0.1', 32100))
+        self.addCleanup(local.close)
+        self.assertEqual(local.get('/api/stream-overlay/rare-pulls').status_code, 200)
+        for headers in [{'Host': 'public.example'}, {'CF-Connecting-IP': '198.51.100.1'},
+                        {'X-Forwarded-For': '198.51.100.1'}, {'Origin': 'https://evil.example'},
+                        {'Sec-Fetch-Site': 'cross-site'}]:
+            self.assertEqual(local.post('/api/stream-overlay/claim', headers=headers, json={}).status_code, 403)
+        self.assertEqual(self.client.post('/api/stream-overlay/claim', json={}).status_code, 403)
 
     def test_queue_failure_rolls_back_opening_and_inventory(self):
         self.assertEqual(self.buy().status_code, 200)
