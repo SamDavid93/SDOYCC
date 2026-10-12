@@ -16,6 +16,7 @@ from fastapi.responses import FileResponse
 from app.db.models import Card
 from app.db.session import SessionLocal
 from app.modules.image_sources import german_sources
+from app.modules.cardcluster_images import preferred_image
 
 router = APIRouter()
 CACHE = Path(__file__).resolve().parents[3] / "cache" / "cards-de"
@@ -58,6 +59,9 @@ def original_image(url: str) -> Path:
 
 def german_image(konami_id: int) -> Path:
     global _last_request
+    preferred = preferred_image(konami_id)
+    if preferred is not None:
+        return preferred
     target = CACHE / f"{konami_id}.img"
     if target.exists():
         return target
@@ -116,7 +120,8 @@ def card_art_de(card_id: int):
 
 def image_response(target):
     with target.open("rb") as source:
-        media_type = "image/png" if source.read(8) == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
+        header = source.read(12)
+        media_type = "image/webp" if header[:4] == b"RIFF" and header[8:12] == b"WEBP" else "image/png" if header[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
     return FileResponse(target, media_type=media_type, headers={"Cache-Control": "public, max-age=604800", "X-Content-Type-Options": "nosniff"})
 
 

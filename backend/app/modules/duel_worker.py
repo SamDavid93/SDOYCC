@@ -136,14 +136,17 @@ class WorkerService:
     def refresh_artwork(self):
         if isinstance(self.adapter, NativeAdapter):
             from sqlalchemy import select
+            from sqlalchemy.orm import joinedload
             from app.db.models import Card
+            from app.modules.cardcluster_images import SOURCES
             from app.modules.duel_rules import canonical
             with self.sessions() as db:
-                for card in db.scalars(select(Card).where(Card.external_provider == 'ygoprodeck')):
+                for card in db.scalars(select(Card).options(joinedload(Card.details)).where(Card.external_provider.in_(['ygoprodeck', 'local-demo']))):
                     code = int(card.external_id) if card.external_id.isdecimal() else None
                     entry = self.adapter.catalog.get(code)
                     if entry and card.image_url and canonical(card.name) == canonical(entry['name']):
-                        entry['image_url'] = '/api/cards/' + str(card.id) + '/art/original'
+                        german = card.details and card.details.konami_id in SOURCES
+                        entry['image_url'] = '/api/cards/' + str(card.id) + ('/art/de' if german else '/art/original')
 
     async def consume_packet(self, live, packet):
         # Only an optional chain with zero legal effects is deterministic.

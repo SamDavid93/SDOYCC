@@ -8,6 +8,9 @@ from app.modules import german_images
 
 class GermanImageTests(unittest.TestCase):
     def setUp(self):
+        preferred = patch.object(german_images, 'preferred_image', return_value=None)
+        preferred.start()
+        self.addCleanup(preferred.stop)
         self.sources = patch.object(german_images, 'german_sources', return_value=[])
         self.sources.start()
         self.addCleanup(self.sources.stop)
