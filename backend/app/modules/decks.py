@@ -93,6 +93,42 @@ def check_capacity(db, user_id, total=True):
         raise HTTPException(409, 'Höchstens 200 Decks einschließlich Archiv. Lösche zuerst einen alten Entwurf.')
 
 
+def check_additions(db, user_id, entries, profile, previous=()):
+    """Reject new illegal copies; existing broken drafts can still be reduced."""
+    check = validate_deck(db, user_id, entries, profile)
+    old = Counter(); new = Counter(); old_sections = Counter()
+    for e in previous:
+        old[e['card_id']] += e['quantity']; old_sections[(e['card_id'], e['section'])] += e['quantity']
+    for e in entries: new[e['card_id']] += e['quantity']
+    for cid, quantity in new.items():
+        if quantity > old[cid] and check['rules'].get(cid, {}).get('copy_limit') == 0:
+            raise HTTPException(400, 'Diese Karte ist im gewählten Regelstand verboten.')
+    old_families = Counter(); new_families = Counter()
+    for cid, rule in check['rules'].items():
+        identity = rule['identity'] or ('card', cid)
+        new_families[identity] += new[cid]
+    for cid, quantity in old.items():
+        rule = db.get(DuelCardRule, (profile.id, cid)) if profile else None
+        old_families[rule.identity if rule and rule.identity else ('card', cid)] += quantity
+    for section, maximum in [('main', 60), ('extra', 15), ('side', 15)]:
+        if check['counts'][section] > maximum and check['counts'][section] > sum(e['quantity'] for e in previous if e['section'] == section):
+            raise HTTPException(400, f'Der Bereich {section} ist voll (höchstens {maximum} Karten).')
+    for issue in check['issues']:
+        cid = issue['card_id']
+        if issue['code'] == 'profile_missing' and any(new[c] > old[c] for c in new):
+            raise HTTPException(400, 'Wähle zuerst einen Regelstand.')
+        if cid is None: continue
+        rule = check['rules'].get(cid, {})
+        identity = rule.get('identity') or ('card', cid)
+        increased = new[cid] > old[cid]
+        if issue['code'] == 'copy_limit': increased = new_families[identity] > old_families[identity]
+        if issue['code'] == 'wrong_section':
+            increased = any(e['card_id'] == cid and e['section'] != 'side' and e['section'] != rule.get('section') and e['quantity'] > old_sections[(cid, e['section'])] for e in entries)
+        if increased and (issue['kind'] in ('rules', 'stock') or issue['code'] == 'script_missing'):
+            raise HTTPException(400, issue['message'])
+    return check
+
+
 def summary(deck):
     entries = json.loads(deck.entries_json)
     return {'id': deck.id, 'name': deck.name, 'notes': deck.notes, 'profile_id': deck.profile_id,
@@ -122,6 +158,8 @@ def catalog(db: Database, user=Depends(current_user), profile_id: str | None = N
             attribute: str = '', race: str = '', archetype: str = '', level: int | None = None,
             atk: int | None = None, defense: int | None = None, scale: int | None = None, link_value: int | None = None,
             copy_limit: int | None = Query(None, ge=0, le=3),
+            sort: Literal['name', 'name_desc', 'atk', 'level', 'owned'] = 'name',
+            legality: Literal['all', 'allowed', 'forbidden', 'unverified'] = 'all',
             page: int = Query(1, ge=1), page_size: int = Query(24, ge=1, le=60)):
     get_profile(db, profile_id)
     stocks = stock_query(user.id)
@@ -141,12 +179,17 @@ def catalog(db: Database, user=Depends(current_user), profile_id: str | None = N
         query = query.where(or_(DuelCardRule.type_bits.op('&')({'monster': 1, 'spell': 2, 'trap': 4}[group]) != 0, Card.card_type.in_(catalog_types)))
     elif group == 'extra': query = query.where(or_(DuelCardRule.section == 'extra', Card.card_type.in_(EXTRA_CARD_TYPES)))
     elif group == 'unknown': query = query.where(or_(DuelCardRule.status.is_(None), DuelCardRule.status != 'mapped'))
+    if legality == 'allowed': query = query.where(DuelCardRule.status == 'mapped', DuelCardRule.copy_limit > 0, DuelCardRule.script_available.is_(True))
+    elif legality == 'forbidden': query = query.where(DuelCardRule.status == 'mapped', DuelCardRule.copy_limit == 0)
+    elif legality == 'unverified': query = query.where(or_(DuelCardRule.status.is_(None), DuelCardRule.status != 'mapped', DuelCardRule.script_available.is_(False)))
     for column, value in [(Card.attribute, attribute), (CardDetails.race, race), (CardDetails.archetype, archetype),
                           (CardDetails.level, level), (CardDetails.atk, atk), (CardDetails.defense, defense),
                           (CardDetails.scale, scale), (CardDetails.link_value, link_value), (DuelCardRule.copy_limit, copy_limit)]:
         if value is not None and value != '': query = query.where(column == value)
     total = db.scalar(select(func.count()).select_from(query.subquery()))
-    ids = list(db.scalars(query.order_by(func.coalesce(CardDetails.name_de, Card.name), Card.id).offset((page-1)*page_size).limit(page_size)))
+    title = func.coalesce(CardDetails.name_de, Card.name)
+    ordering = {'name': title.asc(), 'name_desc': title.desc(), 'atk': func.coalesce(CardDetails.atk, -1).desc(), 'level': func.coalesce(CardDetails.level, -1).desc(), 'owned': func.coalesce(InventoryItem.quantity, 0).desc()}[sort]
+    ids = list(db.scalars(query.order_by(ordering, title, Card.id).offset((page-1)*page_size).limit(page_size)))
     cards = {card.id: card for card in db.scalars(select(Card).where(Card.id.in_(ids)))} if ids else {}
     rules = {r.card_id: r for r in db.scalars(select(DuelCardRule).where(DuelCardRule.profile_id == profile_id, DuelCardRule.card_id.in_(ids)))} if ids else {}
     stock = stock_for(db, user.id, ids)
@@ -175,6 +218,7 @@ def import_ydk(body: YdkRequest, db: Database, user=Depends(current_user)):
     if missing:
         raise HTTPException(400, 'Keine eindeutige freigegebene Katalogzuordnung für Passcodes: ' + ', '.join(map(str, missing)))
     entries = normalize(db, [Entry(card_id=matches[e['passcode']][0], section=e['section'], quantity=1) for e in source])
+    check_additions(db, user.id, entries, get_profile(db, body.profile_id))
     ids = {e['card_id'] for e in entries}
     cards = {card.id: card_payload(card) for card in db.scalars(select(Card).where(Card.id.in_(ids)))} if ids else {}
     return {'entries': entries, 'cards': cards, 'validation': validate_deck(db, user.id, entries, get_profile(db, body.profile_id))}
@@ -194,6 +238,7 @@ def create(body: DeckData, db: Database, user=Depends(current_user), idempotency
     if previous: return previous
     check_capacity(db, user.id); get_profile(db, body.profile_id)
     entries = normalize(db, body.entries)
+    check_additions(db, user.id, entries, get_profile(db, body.profile_id))
     deck = PlayerDeck(id=str(uuid4()), user_id=user.id, name=body.name, notes=body.notes, profile_id=body.profile_id,
                       entries_json=json.dumps(entries), version=1, archived=False)
     db.add(deck); db.flush()
@@ -212,6 +257,7 @@ def save(deck_id: str, body: SaveDeck, db: Database, user=Depends(current_user))
     if deck.archived: raise HTTPException(409, 'Archiviertes Deck zuerst wiederherstellen.')
     get_profile(db, body.profile_id)
     entries = normalize(db, body.entries)
+    check_additions(db, user.id, entries, get_profile(db, body.profile_id), json.loads(deck.entries_json))
     deck.name, deck.notes, deck.profile_id = body.name, body.notes, body.profile_id
     deck.entries_json = json.dumps(entries); deck.version += 1; deck.updated_at = datetime.utcnow()
     db.flush(); result = detail(db, deck); db.commit()

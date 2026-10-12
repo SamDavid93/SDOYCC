@@ -70,6 +70,45 @@ class DeckTestCase(HubTestCase):
 
 
 class DeckTests(DeckTestCase):
+    def test_additions_enforce_stock_legality_and_shared_family_limit(self):
+        for cid, section, quantity in [(1, 'main', 4), (22, 'main', 1)]:
+            response = self.create({**self.body, 'entries': [{'card_id': cid, 'section': section, 'quantity': quantity}]}, key=str(uuid4()))
+            self.assertEqual(response.status_code, 400, response.text)
+        with self.sessions() as db:
+            db.get(DuelCardRule, (self.profile, 1)).copy_limit = 0
+            db.get(DuelCardRule, (self.profile, 2)).status = 'name_mismatch'
+            db.commit()
+        for cid in (1, 2):
+            self.assertEqual(self.create({**self.body, 'entries': [{'card_id': cid, 'section': 'main', 'quantity': 1}]}, key=str(uuid4())).status_code, 400)
+        with self.sessions() as db:
+            db.get(DuelCardRule, (self.profile, 1)).copy_limit = 3
+            db.get(DuelCardRule, (self.profile, 2)).status = 'mapped'
+            db.get(DuelCardRule, (self.profile, 2)).identity = 10001
+            db.commit()
+        response = self.create({**self.body, 'entries': [{'card_id': 1, 'section': 'main', 'quantity': 2}, {'card_id': 2, 'section': 'side', 'quantity': 2}]}, key=str(uuid4()))
+        self.assertEqual(response.status_code, 400)
+
+    def test_broken_existing_deck_can_be_reduced_but_not_increased(self):
+        deck = self.create().json()
+        with self.sessions() as db:
+            db.get(DuelCardRule, (self.profile, 1)).copy_limit = 0; db.commit()
+        reduced = [{**e, 'quantity': 2} if e['card_id'] == 1 else e for e in deck['entries']]
+        response = self.client.put('/api/decks/' + deck['id'], json={**self.body, 'entries': reduced, 'version': deck['version']}, headers=self.headers)
+        self.assertEqual(response.status_code, 200, response.text)
+        increased = self.client.put('/api/decks/' + deck['id'], json={**self.body, 'version': response.json()['version']}, headers=self.headers)
+        self.assertEqual(increased.status_code, 400)
+
+    def test_legality_filters_and_server_sorting(self):
+        with self.sessions() as db:
+            db.get(DuelCardRule, (self.profile, 1)).copy_limit = 0
+            db.get(DuelCardRule, (self.profile, 2)).status = 'name_mismatch'; db.commit()
+        for mode, expected in [('forbidden', 1), ('unverified', 2)]:
+            result = self.client.get('/api/decks/catalog', params={'profile_id': self.profile, 'scope': 'owned', 'legality': mode}, headers=self.headers).json()
+            self.assertEqual([item['card']['id'] for item in result['items']], [expected])
+        forward = self.client.get('/api/decks/catalog', params={'profile_id': self.profile, 'scope': 'owned', 'sort': 'name'}, headers=self.headers).json()
+        reverse = self.client.get('/api/decks/catalog', params={'profile_id': self.profile, 'scope': 'owned', 'sort': 'name_desc'}, headers=self.headers).json()
+        self.assertEqual([i['card']['id'] for i in forward['items']], list(reversed([i['card']['id'] for i in reverse['items']])))
+
     def test_unmapped_extra_types_have_placement_but_stay_unapproved(self):
         from app.modules.duel_rules import EXTRA_CARD_TYPES, rule_payload
         with self.sessions() as db:

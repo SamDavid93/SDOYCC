@@ -31,12 +31,9 @@ class TemplateTests(DeckTestCase):
         shared = self.share().json()
         response = self.client.post('/api/deck-templates/' + shared['id'] + '/copy',
             headers={**self.other_headers, 'Idempotency-Key': str(uuid4())})
-        self.assertEqual(response.status_code, 200, response.text)
-        deck = response.json()
-        self.assertEqual(deck['entries'], self.deck['entries'])
-        self.assertFalse(deck['validation']['stock_ok'])
-        self.assertEqual(deck['notes'], '')
-        self.assertEqual(self.client.get('/api/decks/' + deck['id'], headers=self.headers).status_code, 404)
+        self.assertEqual(response.status_code, 400, response.text)
+        self.assertEqual(self.client.get('/api/decks', headers=self.other_headers).json(), [])
+        self.assertEqual(self.client.get('/api/decks/' + self.deck['id'], headers=self.other_headers).status_code, 404)
 
     def test_share_ownership_version_revoke_and_expiry(self):
         self.assertEqual(self.share(self.other_headers).status_code, 404)

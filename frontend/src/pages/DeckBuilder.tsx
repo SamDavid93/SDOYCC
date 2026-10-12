@@ -9,6 +9,8 @@ import { ErrorBox, useAction, useRead } from '../components/Workflow'
 import { label } from '../i18n'
 import './decks.css'
 import { DeckSharing } from './DeckSharing'
+import { DeckLibraryCard } from './DeckLibraryCard'
+import { DeckCatalogFilters } from './DeckCatalogFilters'
 
 type Section = 'main' | 'extra' | 'side'
 type Entry = { card_id: number; section: Section; quantity: number }
@@ -19,7 +21,7 @@ type Validation = { counts: Record<Section, number>; rules_ok: boolean; stock_ok
 type Draft = { name: string; notes: string; profile_id: string | null; entries: Entry[] }
 type Summary = { id: string; name: string; notes: string; profile_id: string | null; version: number; archived: boolean; updated_at: string; counts: Record<Section, number> }
 type Deck = Summary & { entries: Entry[]; cards: Record<number, ApiCard>; validation: Validation; profile: Profile | null }
-type CatalogItem = Stock & { card: ApiCard; rule: Rule }
+export type CatalogItem = Stock & { card: ApiCard; rule: Rule }
 const sections: [Section, string, string][] = [['main', 'Hauptdeck', '40–60'], ['extra', 'Extra-Deck', '0–15'], ['side', 'Side-Deck', '0–15']]
 const draftOf = (deck: Deck): Draft => ({ name: deck.name, notes: deck.notes, profile_id: deck.profile_id, entries: deck.entries })
 type Recovery = { version: number; draft: Draft; cards: Record<number, ApiCard> }
@@ -84,12 +86,18 @@ function DeckEditor({ initial, profiles }: { initial: Deck; profiles: Profile[] 
   const recoverAction = useAction(), navigate = useNavigate()
   const [pulse, setPulse] = useState(0), [section, setSection] = useState<Section>('main'), [pane, setPane] = useState('deck')
   const [preview, setPreview] = useState<ApiCard>(), [testHand, setTestHand] = useState<ApiCard[]>()
+  const [info, setInfo] = useState<Record<number, CatalogItem>>({})
+  const [validatedProfile, setValidatedProfile] = useState(initial.profile_id)
+  const [sort, setSort] = useState('name'), [legality, setLegality] = useState('all')
+  const [deckSort, setDeckSort] = useState('name'), [deckSearch, setDeckSearch] = useState('')
+  const [notice, setNotice] = useState('')
   const [search, setSearch] = useState(''), [query, setQuery] = useState(''), [scope, setScope] = useState('owned'), [group, setGroup] = useState('all'), [page, setPage] = useState(1)
   const [drag, setDrag] = useState<{ cardId: number; from?: Section; ruleSection?: Section | null } | null>(null)
   const [filters, setFilters] = useState<Record<string, string>>({}), [refreshStock, setRefreshStock] = useState(0)
   const live = useRef(draft), currentVersion = useRef(version), saving = useRef(false), mounted = useRef(true)
   const file = useRef<HTMLInputElement>(null)
   live.current = draft
+  useEffect(() => { setInfo({}) }, [draft.profile_id])
   const serialized = JSON.stringify(draft), dirty = serialized !== saved
   useEffect(() => {
     if (recovery) return
@@ -102,10 +110,12 @@ function DeckEditor({ initial, profiles }: { initial: Deck; profiles: Profile[] 
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   useEffect(() => { const timer = window.setTimeout(() => { setQuery(search); setPage(1) }, 250); return () => clearTimeout(timer) }, [search])
   const params = new URLSearchParams({ scope, group, search: query, page: String(page), page_size: '18', ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== '')) })
+  params.set('sort', sort); params.set('legality', legality)
   if (draft.profile_id) params.set('profile_id', draft.profile_id)
   const catalog = useRead<{ items: CatalogItem[]; total: number }>(`/decks/catalog?${params}`, refreshStock)
   useEffect(() => {
     if (catalog.data) setCards(previous => ({ ...previous, ...Object.fromEntries(catalog.data!.items.map(i => [i.card.id, i.card])) }))
+    if (catalog.data) setInfo(previous => ({ ...previous, ...Object.fromEntries(catalog.data!.items.map(i => [i.card.id, i])) }))
   }, [catalog.data])
   const save = useCallback(async () => {
     if (saving.current || readonly) return
@@ -127,7 +137,7 @@ function DeckEditor({ initial, profiles }: { initial: Deck; profiles: Profile[] 
     const ctrl = new AbortController(); setValidating(true)
     const timer = window.setTimeout(() => {
       api<Validation>('/decks/validate', { ...jsonPost({ ...draft, name: draft.name.trim() || 'Entwurf' }), signal: ctrl.signal }).then(value => {
-        if (!ctrl.signal.aborted) { setValidation(value); setValidating(false); setError('') }
+        if (!ctrl.signal.aborted) { setValidation(value); setValidatedProfile(draft.profile_id); setValidating(false); setError('') }
       }).catch(cause => { if (!ctrl.signal.aborted) { setError(cause.message); setValidating(false) } })
     }, 350)
     return () => { clearTimeout(timer); ctrl.abort() }
@@ -147,9 +157,36 @@ function DeckEditor({ initial, profiles }: { initial: Deck; profiles: Profile[] 
     window.addEventListener('focus', refresh); window.addEventListener('hub-data-changed', refresh)
     return () => { window.removeEventListener('focus', refresh); window.removeEventListener('hub-data-changed', refresh) }
   }, [])
+  function budget(cardId: number, entries = draft.entries, target?: Section) {
+    const rule = (validatedProfile === draft.profile_id ? validation.rules[cardId] : undefined) || info[cardId]?.rule
+    const stock = validation.stock[cardId] || info[cardId]
+    const count = entries.filter(e => e.card_id === cardId).reduce((n, e) => n + e.quantity, 0)
+    const identity = rule?.identity
+    const familyLimit = Math.min(rule?.copy_limit ?? 3, ...[...Object.values(validatedProfile === draft.profile_id ? validation.rules : {}), ...Object.values(info).map(i => i.rule)].filter(r => identity != null && r.identity === identity).map(r => r.copy_limit ?? 3))
+    const family = entries.filter(e => e.card_id === cardId || (identity != null && ((validatedProfile === draft.profile_id ? validation.rules[e.card_id] : undefined) || info[e.card_id]?.rule)?.identity === identity)).reduce((n, e) => n + e.quantity, 0)
+    let reason = ''
+    if (!draft.profile_id) reason = 'Wähle zuerst einen Regelstand.'
+    else if (!rule || rule.status !== 'mapped') reason = rule?.message || 'Die Kartenzuordnung wird noch geprüft.'
+    else if (familyLimit === 0) reason = 'Verboten: Diese Karte ist in diesem Regelstand nicht erlaubt.'
+    else if (!rule.script_available) reason = 'Diese Karte ist für Duelle noch nicht unterstützt.'
+    else if (!stock?.stock_verified) reason = 'Dein Kartenbestand muss zuerst geprüft werden.'
+    else if (count >= stock.available) reason = stock.available === 0 ? 'Kein freies Exemplar vorhanden.' : 'Alle freien Exemplare sind bereits im Deck.'
+    else if (family >= familyLimit) reason = `Kopienlimit erreicht: höchstens ${familyLimit} in Haupt-, Extra- und Side-Deck zusammen. Andere Illustrationen zählen mit. Überschüssige Exemplare zuerst entfernen.`
+    const destination = target || (section === 'side' ? 'side' : rule?.section || section)
+    if (!reason && destination !== 'side' && rule?.section && destination !== rule.section) reason = 'Diese Karte gehört in einen anderen Deckbereich.'
+    if (!reason && entries.filter(e => e.section === destination).reduce((n, e) => n + e.quantity, 0) >= (destination === 'main' ? 60 : 15)) reason = `${destination === 'main' ? 'Hauptdeck' : destination === 'extra' ? 'Extra-Deck' : 'Side-Deck'} ist voll.`
+    const remaining = reason ? 0 : Math.max(0, Math.min((stock?.available || 0) - count, familyLimit - family, (destination === 'main' ? 60 : 15) - entries.filter(e => e.section === destination).reduce((n, e) => n + e.quantity, 0)))
+    return { reason, remaining, count, family, rule, stock, destination }
+  }
   function change(cardId: number, target: Section, delta: number) {
     if (readonly) return
+    if (delta < 0) setNotice('')
     setDraft(d => {
+      if (delta > 0) {
+        const allowed = budget(cardId, d.entries, target)
+        if (allowed.reason) { setNotice(allowed.reason); return d }
+        setNotice('')
+      }
       if (delta > 0 && d.entries.reduce((n, e) => n+e.quantity, 0) >= 200) { setError('Höchstens 200 Karten pro Entwurf.'); return d }
       const entries = d.entries.map(e => ({ ...e })), entry = entries.find(e => e.card_id === cardId && e.section === target)
       if (entry) entry.quantity += delta
@@ -162,24 +199,29 @@ function DeckEditor({ initial, profiles }: { initial: Deck; profiles: Profile[] 
     const target = section === 'side' ? 'side' : item.rule.section || section
     change(item.card.id, target, 1)
   }
+  function moveCard(cardId: number, from: Section, target: Section, preferred?: Section | null) {
+    if (readonly || from === target) return
+    if (preferred && target !== 'side' && preferred !== target) { setNotice('Diese Karte gehört in einen anderen Deckbereich.'); return }
+    setDraft(old => {
+      if (old.entries.filter(e => e.section === target).reduce((n, e) => n + e.quantity, 0) >= (target === 'main' ? 60 : 15)) { setNotice('Der Zielbereich ist voll. Entferne dort zuerst eine Karte.'); return old }
+      const entries = old.entries.map(e => ({ ...e })), source = entries.find(e => e.card_id === cardId && e.section === from)
+      if (!source || source.quantity < 1) return old
+      source.quantity -= 1
+      const destination = entries.find(e => e.card_id === cardId && e.section === target)
+      if (destination) destination.quantity += 1
+      else entries.push({ card_id: cardId, section: target, quantity: 1 })
+      setNotice(''); return { ...old, entries: entries.filter(e => e.quantity > 0) }
+    })
+    setTestHand(undefined)
+  }
   function dropCard(target: Section) {
     if (readonly || !drag) return
     if (target !== 'side' && drag.ruleSection && target !== drag.ruleSection) {
       setError(`Diese Karte gehört ins ${drag.ruleSection === 'extra' ? 'Extra-Deck' : 'Hauptdeck'} oder Side-Deck.`); setDrag(null); return
     }
     if (drag.from === target) { setDrag(null); return }
-    if (drag.from) {
-      setDraft(old => {
-        const source = old.entries.find(entry => entry.card_id === drag.cardId && entry.section === drag.from)
-        if (!source || source.quantity < 1) return old
-        const entries = old.entries.map(entry => ({ ...entry }))
-        entries.find(entry => entry.card_id === drag.cardId && entry.section === drag.from)!.quantity -= 1
-        const destination = entries.find(entry => entry.card_id === drag.cardId && entry.section === target)
-        if (destination) destination.quantity += 1; else entries.push({ card_id: drag.cardId, section: target, quantity: 1 })
-        return { ...old, entries: entries.filter(entry => entry.quantity > 0) }
-      })
-      setTestHand(undefined)
-    } else change(drag.cardId, target, 1)
+    if (drag.from) moveCard(drag.cardId, drag.from, target, drag.ruleSection)
+    else change(drag.cardId, target, 1)
     setError(''); setDrag(null)
   }
   async function reload() {
@@ -211,7 +253,7 @@ function DeckEditor({ initial, profiles }: { initial: Deck; profiles: Profile[] 
     try {
       const result = await api<{ entries: Entry[]; cards: Record<number, ApiCard> }>('/decks/ydk/parse', jsonPost({ text: await selectedFile.text(), profile_id: selectedProfile }))
       if (JSON.stringify(live.current) !== initialDraft) { setError('Dein Entwurf wurde während des Imports geändert. Bitte die Datei erneut auswählen.'); return }
-      setCards(old => ({ ...old, ...result.cards })); setDraft(old => ({ ...old, entries: result.entries })); setError(''); setTestHand(undefined)
+      setCards(old => ({ ...old, ...result.cards })); setDraft(old => ({ ...old, entries: result.entries })); setError(''); setNotice(''); setTestHand(undefined)
     } catch (cause) { setError((cause as Error).message) }
   }
   async function exportFile() {
@@ -242,23 +284,25 @@ function DeckEditor({ initial, profiles }: { initial: Deck; profiles: Profile[] 
     {recovery && <section className="deck-recovery" aria-label="Ungespeicherten Entwurf wiederherstellen"><h2>Ein ungespeicherter Entwurf wartet auf dich.</h2><p>In diesem Browser-Tab wurde „{recovery.draft.name}“ gesichert. {recovery.version !== version || readonly ? 'Der Serverstand hat sich verändert oder liegt im Archiv. Rette deine Änderungen als neues Deck.' : 'Du kannst deine Änderungen wiederherstellen oder als neues Deck retten.'}</p><ErrorBox message={recoverAction.error} /><div className="deck-actions">{recovery.version === version && !readonly && <button disabled={recoverAction.busy} onClick={() => void recover(false)}>Entwurf wiederherstellen</button>}<button disabled={recoverAction.busy} onClick={() => void recover(true)}>Als neues Deck retten</button><button disabled={recoverAction.busy} onClick={() => { sessionStorage.removeItem(recoveryKey(initial.id)); setRecovery(null) }}>Lokalen Entwurf verwerfen</button></div></section>}
     <ErrorBox message={saveError || error || (!draft.name.trim() ? 'Bitte gib einen Decknamen ein, damit dein Entwurf gespeichert werden kann.' : '')} />{saveError && <div className="deck-actions"><button onClick={() => void save()} disabled={saving.current}>Erneut speichern</button><button onClick={() => void reload()} disabled={saving.current}>Serverstand laden</button></div>}
     {readonly && <p className="deck-phase-note">Dieses Deck liegt im Archiv. Stelle es in der Deckübersicht wieder her, um es zu bearbeiten.</p>}
+    {notice && <p className="deck-feedback" role="alert">{notice}<button aria-label="Hinweis schließen" onClick={() => setNotice('')}>×</button></p>}
     <div className="deck-status-strip">{statuses.map(([title, ok]) => <span key={title} className={ok && !validating ? 'is-good' : ''}><ShieldCheck size={17} />{title}<b>{validating ? 'Prüft …' : ok ? 'Erfüllt' : title === 'Duellfreigabe' ? 'Noch ausstehend' : 'Prüfen'}</b></span>)}</div>
     <div className="deck-mobile-tabs">{[['catalog', 'Karten suchen'], ['deck', 'Mein Deck'], ['review', 'Prüfung']].map(([value, title]) => <button key={value} aria-pressed={pane === value} onClick={() => setPane(value)}>{title}</button>)}</div>
     <div className="deck-workbench">
       <section className={'deck-library deck-panel' + (drag?.from ? ' deck-drop-active' : '')} onDragOver={event => { if (drag?.from && !readonly) event.preventDefault() }} onDrop={event => { event.preventDefault(); if (drag?.from && !readonly) change(drag.cardId, drag.from, -1); setDrag(null) }}><h2>Karten hinzufügen</h2><div className="deck-return-zone" onDragOver={event => { if (drag?.from && !readonly) { event.preventDefault(); event.dataTransfer.dropEffect = 'move' } }} onDrop={event => { event.preventDefault(); event.stopPropagation(); if (drag?.from && !readonly) change(drag.cardId, drag.from, -1); setDrag(null) }}>Deckkarte hier ablegen, um ein Exemplar zu entfernen</div><label>Karten suchen<input value={search} onChange={e => setSearch(e.target.value)} placeholder="Name, Effekt oder Passcode" maxLength={150} /></label>
-        <div className="deck-library-selects"><label>Kartenauswahl<select value={scope} onChange={e => { setScope(e.target.value); setPage(1) }}><option value="available">Meine verfügbaren Karten</option><option value="owned">Alle meine Karten</option><option value="all">Gesamter Katalog · Wunschdeck</option></select></label><label>Kartengruppe<select value={group} onChange={e => { setGroup(e.target.value); setPage(1) }}><option value="all">Alle Karten</option><option value="monster">Monster</option><option value="spell">Zauber</option><option value="trap">Fallen</option><option value="extra">Extra-Deck</option><option value="unknown">Zuordnung offen</option></select></label></div>
-        <details className="deck-filter-details"><summary>Weitere Filter</summary><div className="deck-filter-grid">{[['attribute', 'Attribut'], ['race', 'Unterart (Original)'], ['archetype', 'Archetyp'], ['level', 'Stufe / Rang'], ['atk', 'Angriff'], ['defense', 'Verteidigung'], ['scale', 'Pendelskala'], ['link_value', 'Linkwert'], ['copy_limit', 'Kopienlimit']].map(([key, title], i) => <label key={key}>{title}{key === 'attribute' ? <select value={filters[key] || ''} onChange={e => { setFilters(f => ({ ...f, [key]: e.target.value })); setPage(1) }}><option value="">Alle</option>{['LIGHT','DARK','EARTH','WATER','FIRE','WIND','DIVINE','SPELL','TRAP'].map(v => <option key={v} value={v}>{label(v)}</option>)}</select> : <input type={i < 3 ? 'text' : 'number'} value={filters[key] || ''} onChange={e => { setFilters(f => ({ ...f, [key]: e.target.value })); setPage(1) }} />}</label>)}</div><button type="button" onClick={() => { setFilters({}); setGroup('all'); setPage(1) }}>Filter zurücksetzen</button></details>
+        <DeckCatalogFilters scope={scope} group={group} sort={sort} legality={legality} choose={(key, value) => { ({ scope: setScope, group: setGroup, sort: setSort, legality: setLegality })[key](value); setPage(1) }} />
+        <details className="deck-filter-details"><summary>Weitere Filter</summary><div className="deck-filter-grid">{[['attribute', 'Attribut'], ['race', 'Unterart (Original)'], ['archetype', 'Archetyp'], ['level', 'Stufe / Rang'], ['atk', 'Angriff'], ['defense', 'Verteidigung'], ['scale', 'Pendelskala'], ['link_value', 'Linkwert'], ['copy_limit', 'Kopienlimit']].map(([key, title], i) => <label key={key}>{title}{key === 'attribute' ? <select value={filters[key] || ''} onChange={e => { setFilters(f => ({ ...f, [key]: e.target.value })); setPage(1) }}><option value="">Alle</option>{['LIGHT','DARK','EARTH','WATER','FIRE','WIND','DIVINE','SPELL','TRAP'].map(v => <option key={v} value={v}>{label(v)}</option>)}</select> : <input type={i < 3 ? 'text' : 'number'} value={filters[key] || ''} onChange={e => { setFilters(f => ({ ...f, [key]: e.target.value })); setPage(1) }} />}</label>)}</div><button type="button" onClick={() => { setFilters({}); setGroup('all'); setLegality('all'); setSort('name'); setSearch(''); setPage(1) }}>Filter zurücksetzen</button></details>
         <ErrorBox message={catalog.error} />
-        {!catalog.data ? <p role="status">Karten werden geladen …</p> : <><p className="deck-result-count">{catalog.data.total} Karten · Linksklick hinzufügen · Rechtsklick entfernen · Ziehen ins Deck</p><div className="deck-library-grid">{catalog.data.items.map(item => <article key={item.card.id} className="deck-library-card" draggable={!readonly} onDragStart={event => { setDrag({ cardId: item.card.id, ruleSection: item.rule.section }); event.dataTransfer.setData('text/plain', String(item.card.id)); event.dataTransfer.effectAllowed = 'copy' }} onDragEnd={() => setDrag(null)}><button className="deck-card-preview" aria-label={`${item.card.name} hinzufügen per Klick`} disabled={readonly} onClick={() => add(item)} onContextMenu={event => { event.preventDefault(); change(item.card.id, section === 'side' ? 'side' : item.rule.section || section, -1) }}><CardVisual card={toCardRecord(item.card)} compact /></button><small>{inDeck(item.card.id)} im Deck · {item.available} frei / {item.owned} besessen</small><small className={item.rule.status !== 'mapped' ? 'deck-warning' : ''}>{item.rule.copy_limit == null ? 'Zuordnung offen' : `Limit ${item.rule.copy_limit} · ${item.rule.section === 'extra' ? 'Extra' : 'Haupt'}`}</small><div className="deck-library-actions"><button className="deck-add" disabled={readonly} onClick={() => add(item)} aria-label={`${item.card.name} hinzufügen`}><Plus size={14} />{section === 'side' ? 'Ins Side-Deck' : item.rule.section === 'extra' ? 'Ins Extra-Deck' : 'Hinzufügen'}</button><button className="deck-info-button" aria-label={`${item.card.name} ansehen`} onClick={() => setPreview(item.card)}>Details</button></div></article>)}</div>{catalog.data.items.length === 0 && <p>Keine Karten gefunden. Für einen Wunschentwurf kannst du zum gesamten Katalog wechseln.</p>}<div className="deck-pagination"><button disabled={page === 1} onClick={() => setPage(p => p-1)}>Zurück</button><span>Seite {page}</span><button disabled={page*18 >= catalog.data.total} onClick={() => setPage(p => p+1)}>Weiter</button></div></>}
+        {!catalog.data ? <p role="status">Karten werden geladen …</p> : <><p className="deck-result-count">{catalog.data.total} Karten · Linksklick hinzufügen · Rechtsklick entfernen · Ziehen ins Deck</p><div className="deck-library-grid">{catalog.data.items.map(item => <DeckLibraryCard key={item.card.id} item={item} state={budget(item.card.id)} readonly={readonly} add={() => add(item)} remove={() => change(item.card.id, section === 'side' ? 'side' : item.rule.section || section, -1)} preview={() => setPreview(item.card)} drag={event => { const allowed = budget(item.card.id); if (allowed.reason) { event.preventDefault(); setNotice(allowed.reason); return } setDrag({ cardId: item.card.id, ruleSection: item.rule.section }); event.dataTransfer.setData('text/plain', String(item.card.id)); event.dataTransfer.effectAllowed = 'copy' }} endDrag={() => setDrag(null)} />)}</div>{catalog.data.items.length === 0 && <p>Keine passenden Karten gefunden. Setze die Filter zurück oder erweitere die Suche.</p>}<div className="deck-pagination"><button disabled={page === 1} onClick={() => setPage(p => p-1)}>Zurück</button><span>Seite {page}</span><button disabled={page*18 >= catalog.data.total} onClick={() => setPage(p => p+1)}>Weiter</button></div></>}
       </section>
       <section className="deck-composition deck-panel"><div className="deck-fields"><label>Deckname<input value={draft.name} maxLength={80} disabled={readonly} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} /></label><label>Regelstand<select value={draft.profile_id || ''} disabled={readonly} onChange={e => { setDraft(d => ({ ...d, profile_id: e.target.value || null })); setPage(1) }}><option value="">Noch kein Regelstand</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.name} · {p.id.slice(0, 8)}</option>)}</select></label></div>
-        <div className="deck-section-tabs">{sections.map(([s, title, range]) => <button key={s} className={drag ? 'deck-drop-tab' : ''} aria-pressed={section === s} onClick={() => setSection(s)} onDragOver={event => { if (drag && !readonly) event.preventDefault() }} onDrop={event => { event.preventDefault(); dropCard(s); setSection(s) }}><strong>{title}</strong><b>{totals[s]}</b><small>{range} Karten</small></button>)}</div>
+        <div className="deck-section-tabs">{sections.map(([s, title, range]) => <button key={s} className={drag ? 'deck-drop-tab' : ''} aria-pressed={section === s} onClick={() => setSection(s)} onDragOver={event => { if (drag && !readonly) event.preventDefault() }} onDrop={event => { event.preventDefault(); dropCard(s); setSection(s) }}><strong>{title}</strong><b>{totals[s]}</b><small>{s === 'main' && totals[s] < 40 ? `${40 - totals[s]} fehlen bis 40` : totals[s] > (s === 'main' ? 60 : 15) ? 'Zu viele Karten' : `${(s === 'main' ? 60 : 15) - totals[s]} Plätze frei`}</small><progress aria-label={title + ' Füllstand'} value={totals[s]} max={s === 'main' ? 60 : 15} /></button>)}</div>
         <p className="deck-section-help">{section === 'side' ? 'Neue Karten werden dem Side-Deck hinzugefügt.' : 'Geprüfte Kartentypen werden automatisch Haupt- oder Extra-Deck zugeordnet.'}</p>
-        <div className={'deck-entries' + (drag ? ' deck-drop-active' : '')} onDragOver={event => { if (drag && !readonly) event.preventDefault() }} onDrop={event => { event.preventDefault(); dropCard(section) }}>{draft.entries.filter(e => e.section === section).map(entry => {
+        <div className="deck-composition-tools"><label>Im Deck suchen<input aria-label="Im Deck suchen" value={deckSearch} onChange={e => setDeckSearch(e.target.value)} placeholder="Kartenname" /></label><label>Deck sortieren<select aria-label="Deck sortieren" value={deckSort} onChange={e => setDeckSort(e.target.value)}><option value="name">Name A–Z</option><option value="quantity">Menge: viele zuerst</option><option value="type">Kartentyp</option></select></label></div>
+        <div className={'deck-entries' + (drag ? ' deck-drop-active' : '')} onDragOver={event => { if (drag && !readonly) event.preventDefault() }} onDrop={event => { event.preventDefault(); dropCard(section) }}>{draft.entries.filter(e => e.section === section && (!deckSearch || (cards[e.card_id]?.name || '').toLowerCase().includes(deckSearch.toLowerCase()))).sort((a, b) => deckSort === 'quantity' ? b.quantity - a.quantity || a.card_id - b.card_id : deckSort === 'type' ? (cards[a.card_id]?.type || '').localeCompare(cards[b.card_id]?.type || '') || a.card_id - b.card_id : (cards[a.card_id]?.name || '').localeCompare(cards[b.card_id]?.name || '', 'de')).map(entry => {
           const card = cards[entry.card_id], stock = validation.stock[entry.card_id], missing = stock ? Math.max(0, inDeck(entry.card_id)-stock.available) : inDeck(entry.card_id)
-          return <article key={entry.card_id} className={`deck-entry ${missing ? 'is-missing' : ''}`} draggable={!readonly} onDragStart={event => { setDrag({ cardId: entry.card_id, from: section, ruleSection: validation.rules[entry.card_id]?.section }); event.dataTransfer.setData('text/plain', String(entry.card_id)); event.dataTransfer.effectAllowed = 'move' }} onDragEnd={() => setDrag(null)}><button className="deck-card-preview" disabled={readonly} onClick={() => change(entry.card_id, section, 1)} onContextMenu={event => { event.preventDefault(); change(entry.card_id, section, -1) }} aria-label={`${card?.name || 'Karte'} ein Exemplar hinzufügen`}>{card ? <CardVisual card={{ ...toCardRecord(card), quantity: entry.quantity }} compact showQuantity /> : <span>Karte wird geladen …</span>}</button><button className="deck-info-button" onClick={() => card && setPreview(card)} aria-label={`${card?.name || 'Karte'} ansehen`}>Details</button><div className="deck-entry-stepper"><button disabled={readonly} aria-label={`${card?.name} entfernen`} onClick={() => change(entry.card_id, section, -1)}><Minus size={14} /></button><b>{entry.quantity}</b><button disabled={readonly} aria-label={`${card?.name} ein weiteres Exemplar`} onClick={() => change(entry.card_id, section, 1)}><Plus size={14} /></button></div><small>{validating ? 'Bestand wird geprüft …' : missing ? `${missing} Ex. im Deck nicht verfügbar` : 'Bestand vorhanden'}</small><label className="deck-move">Verschieben<select aria-label={`${card?.name} verschieben`} disabled={readonly} value="" onChange={e => { if (!e.target.value) return; change(entry.card_id, section, -1); change(entry.card_id, e.target.value as Section, 1) }}><option value="">1 Exemplar …</option>{sections.filter(([s]) => s !== section && (s === 'side' || !validation.rules[entry.card_id]?.section || s === validation.rules[entry.card_id].section)).map(([s, title]) => <option key={s} value={s}>{title}</option>)}</select></label></article>
+          return <article key={entry.card_id} className={`deck-entry ${missing ? 'is-missing' : ''}`} draggable={!readonly} onDragStart={event => { setDrag({ cardId: entry.card_id, from: section, ruleSection: validation.rules[entry.card_id]?.section }); event.dataTransfer.setData('text/plain', String(entry.card_id)); event.dataTransfer.effectAllowed = 'move' }} onDragEnd={() => setDrag(null)}><button className="deck-card-preview" disabled={readonly} onClick={() => change(entry.card_id, section, 1)} onContextMenu={event => { event.preventDefault(); change(entry.card_id, section, -1) }} aria-label={`${card?.name || 'Karte'} ein Exemplar hinzufügen`}>{card ? <CardVisual card={{ ...toCardRecord(card), quantity: entry.quantity }} compact showQuantity /> : <span>Karte wird geladen …</span>}</button><button className="deck-info-button" onClick={() => card && setPreview(card)} aria-label={`${card?.name || 'Karte'} ansehen`}>Details</button><div className="deck-entry-stepper"><button disabled={readonly} aria-label={`${card?.name} entfernen`} onClick={() => change(entry.card_id, section, -1)}><Minus size={14} /></button><b>{entry.quantity}</b><button disabled={readonly} aria-disabled={!!budget(entry.card_id, draft.entries, section).reason} aria-label={`${card?.name} ein weiteres Exemplar`} onClick={() => change(entry.card_id, section, 1)}><Plus size={14} /></button></div><small>{validating ? 'Bestand wird geprüft …' : missing ? `${missing} Ex. im Deck nicht verfügbar` : 'Bestand vorhanden'}</small><div className="deck-entry-budget"><span>Im gesamten Deck: <b>{inDeck(entry.card_id)}</b></span><span>Noch möglich: <b>{budget(entry.card_id, draft.entries, section).remaining}</b></span></div>{budget(entry.card_id, draft.entries, section).reason && <p className={'deck-card-reason' + (validation.rules[entry.card_id]?.status === 'mapped' && (validation.rules[entry.card_id]?.copy_limit ?? 0) > 0 && validation.rules[entry.card_id]?.script_available ? ' is-exhausted' : '')}>{budget(entry.card_id, draft.entries, section).reason}</p>}<label className="deck-move">Verschieben<select aria-label={`${card?.name} verschieben`} disabled={readonly} value="" onChange={e => { if (!e.target.value) return; moveCard(entry.card_id, section, e.target.value as Section, validation.rules[entry.card_id]?.section) }}><option value="">1 Exemplar …</option>{sections.filter(([s]) => s !== section && (s === 'side' || !validation.rules[entry.card_id]?.section || s === validation.rules[entry.card_id].section)).map(([s, title]) => <option key={s} value={s}>{title}</option>)}</select></label></article>
         })}</div>
-        {!draft.entries.some(e => e.section === section) && <div className="deck-empty"><Layers3 size={34} /><h3>Hier beginnt deine Strategie.</h3><p>Füge Karten aus der Suche hinzu. Fehlende Exemplare bleiben als Wunschkarten sichtbar.</p><button className="outline-button deck-mobile-search" onClick={() => setPane('catalog')}>Karten suchen</button></div>}
+        {!draft.entries.some(e => e.section === section) && <div className="deck-empty"><Layers3 size={34} /><h3>Hier beginnt deine Strategie.</h3><p>Füge Karten aus der Suche hinzu. Nur erlaubte, freie Exemplare lassen sich hinzufügen.</p><button className="outline-button deck-mobile-search" onClick={() => setPane('catalog')}>Karten suchen</button></div>}
         <details className="deck-notes"><summary>Strategienotizen</summary><label>Deine privaten Notizen<textarea aria-label="Deine privaten Notizen" maxLength={1000} value={draft.notes} disabled={readonly} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} /></label></details>
         <div className="deck-actions"><button disabled={readonly || !draft.profile_id} onClick={() => file.current?.click()}><Upload size={15} />YDK importieren</button><button disabled={dirty || saving.current} onClick={() => void exportFile()}><Download size={15} />YDK exportieren</button><button disabled={totals.main < 5} onClick={drawHand}><Shuffle size={15} />Testhand ziehen</button></div><input ref={file} type="file" accept=".ydk,text/plain" className="deck-file-input" aria-label="YDK-Datei auswählen" onChange={e => { void importFile(e.target.files?.[0]); e.target.value = '' }} />
         <DeckSharing deckId={initial.id} version={version} disabled={dirty || saving.current || readonly} />

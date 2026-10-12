@@ -6,7 +6,7 @@ from uuid import uuid4
 from sqlalchemy import delete, func, select
 
 from app.core.auth import create_session
-from app.db.models import AuthSession, DuelDeckConfirmation, DuelLobby, DuelLobbySeat, DuelRuleProfile, User, VariantInventory
+from app.db.models import AuthSession, DuelDeckConfirmation, DuelLobby, DuelLobbySeat, DuelRuleProfile, PlayerDeck, User, VariantInventory
 from app.modules.inventory import change_stock, variant
 from app.modules.duel_lobbies import cleanup_lobbies
 from app.modules.workflow import mutex
@@ -25,7 +25,14 @@ class LobbyTests(DeckTestCase):
             self.third = {'Authorization': 'Bearer ' + create_session(db, outsider)}
             db.commit()
         self.host_deck = self.client.post('/api/decks', json={**self.body, 'name': 'Geheime Strategie'}, headers=self.headers).json()
-        self.guest_deck = self.client.post('/api/decks', json={**self.body, 'name': 'Gaststrategie'}, headers=self.other_headers).json()
+        # Existing deck whose stock is no longer available: new additions now
+        # require ownership, while lobby validation must still reject this case.
+        guest_deck_id = str(uuid4())
+        with self.sessions() as db:
+            db.add(PlayerDeck(id=guest_deck_id, user_id=2, name='Gaststrategie', profile_id=self.profile,
+                              entries_json=json.dumps(self.body['entries'])))
+            db.commit()
+        self.guest_deck = self.client.get('/api/decks/' + guest_deck_id, headers=self.other_headers).json()
 
     def post(self, path, body, headers=None, key=None):
         return self.client.post('/api/duel-zone' + path, json=body, headers={**(headers or self.headers), 'Idempotency-Key': key or str(uuid4())})
