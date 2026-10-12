@@ -4,7 +4,7 @@ import { AdvancedAdmin } from './pages/AdvancedAdmin'
 import { Notifications } from './components/Notifications'
 import logoUrl from './assets/sdoycc-logo.png'
 import bannerUrl from './assets/sdoycc-banner.png'
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { BookOpen, Layers3, ArrowRight, Boxes, ChevronRight, Gem, LayoutDashboard, LogOut, Menu, PackageOpen, Sparkles, Swords, Tags, Users, X } from 'lucide-react'
 import { BoosterTile } from './components/BoosterDisplay'
@@ -17,11 +17,17 @@ import { MyPacksPage } from './pages/MyPacksPage'
 import { RegistrationPage } from './pages/RegistrationPage'
 import { BattlePassPage, BoosterDetailPage, BoosterHistoryPage, BoostersPage, CardDetailPage, CatalogPage, InventoryPage, SetDetailPage, SetsPage, TradePage } from './pages/WorkspacePages'
 
+const DeckBuilder = lazy(() => import('./pages/DeckBuilder').then(module => ({ default: module.DeckBuilder })))
+const DuelZone = lazy(() => import('./pages/DuelZone').then(module => ({ default: module.DuelZone })))
+const DeckTemplatePage = lazy(() => import('./pages/DeckSharing').then(module => ({ default: module.DeckTemplatePage })))
+
 const navItems = [
   { label: 'Übersicht', path: '/', icon: LayoutDashboard },
   { label: 'Booster', path: '/boosters', icon: PackageOpen },
   { label: 'Meine Packs', path: '/my-packs', icon: Layers3 },
   { label: 'Meine Sammlung', path: '/inventory', icon: Boxes },
+  { label: 'Meine Decks', path: '/decks', icon: Layers3 },
+  { label: 'DuelZone', path: '/duel-zone', icon: Swords },
   { label: 'Kartenkatalog', path: '/cards', icon: BookOpen },
   { label: 'Handel', path: '/trade', icon: Tags },
   { label: 'Saisonpass', path: '/battle-pass', icon: Swords },
@@ -40,8 +46,9 @@ export default function App() {
   const location = useLocation()
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }) }, [location.pathname])
   if (location.pathname.startsWith('/register/')) return <RegistrationPage />
+  if (/^\/deck-template\/[a-f0-9-]{36}$/.test(location.pathname)) return <Suspense fallback={<p role="status">Vorlage laden …</p>}><DeckTemplatePage id={location.pathname.split('/')[2]} /></Suspense>
   if (!user) return <LoginPage />
-  const pageTitle = location.pathname.startsWith('/admin') ? 'Verwaltung' : location.pathname.startsWith('/trade/') ? 'Handel' : navItems.find(item => item.path === location.pathname)?.label || (location.pathname.startsWith('/boosters/') ? 'Booster' : /^\/(cards|sets)(\/|$)/.test(location.pathname) ? 'Kartenkatalog' : 'Kartenzentrale')
+  const pageTitle = location.pathname.startsWith('/admin') ? 'Verwaltung' : location.pathname.startsWith('/decks/') ? 'Meine Decks' : location.pathname.startsWith('/trade/') ? 'Handel' : navItems.find(item => item.path === location.pathname)?.label || (location.pathname.startsWith('/boosters/') ? 'Booster' : /^\/(cards|sets)(\/|$)/.test(location.pathname) ? 'Kartenkatalog' : 'Kartenzentrale')
   const path = location.pathname
   let page = <OverviewPage />
   if (path === '/cards') page = <CatalogPage />
@@ -49,6 +56,9 @@ export default function App() {
   else if (/^\/cards\/\d+$/.test(path)) page = <CardDetailPage cardId={Number(path.split('/')[2])} />
   else if (/^\/sets\/\d+$/.test(path)) page = <SetDetailPage setId={Number(path.split('/')[2])} />
   else if (path === '/inventory') page = <CollectionPage />
+  else if (path === '/decks') page = <DeckBuilder />
+  else if (path === '/duel-zone') page = <DuelZone />
+  else if (/^\/decks\/[a-f0-9-]{36}$/.test(path)) page = <DeckBuilder deckId={path.split('/')[2]} />
   else if (path === '/boosters') page = <BoostersPage />
   else if (path === '/my-packs') page = <MyPacksPage />
   else if (path === '/boosters/history') page = <BoosterHistoryPage />
@@ -70,7 +80,7 @@ export default function App() {
     {menuOpen && <button className="mobile-scrim" onClick={() => setMenuOpen(false)} aria-label="Menü schließen" />}
     <main className="main-content"><header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Menü öffnen"><Menu size={20} /></button><div className="breadcrumbs"><span>Hub</span><ChevronRight size={14} /><strong>{pageTitle}</strong></div><div className="top-actions"><Notifications key={user.id} /><NavLink className="top-pack-link" to="/my-packs"><Layers3 size={16} /><span>{packCount ?? '…'} Packs</span></NavLink><NavLink to="/account" className="currency"><Gem size={15} />{user.diamonds.toLocaleString('de-DE')} Sammelpunkte</NavLink></div></header>
     {error && <div className="api-notice" role="alert">{error}</div>}
-    <div key={user.id}>{page}</div></main>
+    <div key={user.id}><Suspense fallback={<div className="page-wrap" role="status">Bereich wird geladen …</div>}>{page}</Suspense></div></main>
   </div>
 }
 

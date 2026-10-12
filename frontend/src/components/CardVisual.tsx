@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react'
-import { Sparkles } from 'lucide-react'
 import type { CardRecord } from '../data/cards'
 import { rarityInfo } from '../i18n'
+import cardBack from '../assets/card-back.jpg'
 
 export function CardBack({ failed = false }: { failed?: boolean }) {
-  return <div className={`loading-card-back ${failed ? 'image-missing' : ''}`} aria-hidden="true"><span className="loading-card-border" /><span className="loading-card-sigil"><Sparkles size={28} /></span><span className="loading-card-caption">{failed ? 'Kartenbild derzeit nicht verfügbar' : 'Karte wird geladen'}</span>{!failed && <span className="loading-card-dots"><i /><i /><i /></span>}</div>
+  return <div className={`loading-card-back ${failed ? 'image-missing' : ''}`} style={{ backgroundImage: `url(${cardBack})`, backgroundSize: '100% 100%' }} aria-hidden="true"><span className="loading-card-caption">{failed ? 'Kartenbild derzeit nicht verfügbar' : 'Karte wird geladen'}</span>{!failed && <span className="loading-card-dots"><i /><i /><i /></span>}</div>
 }
 
 export function CardVisual({ card, compact = false, showQuantity = false }: { card: CardRecord; compact?: boolean; showQuantity?: boolean }) {

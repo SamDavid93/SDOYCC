@@ -1,0 +1,21 @@
+{
+  "binary_sha256": "6cb6bfbf17a80d3320b66d6d12a1e7bfb57643009d49cf46ee5720984e972e2b",
+  "binary_commit": "479d3597f1b4993c4df3eba33ca92af537f186fc",
+  "provenance": "Upstream binary commit message: Update core to efc21aa; submodule SHA from corresponding source tree",
+  "sources": [
+    {
+      "name": "EDOPro core corresponding source",
+      "revision": "efc21aa433b88cd35b7c37db4072a35c58d9d435",
+      "url": "https://codeload.github.com/edo9300/ygopro-core/zip/efc21aa433b88cd35b7c37db4072a35c58d9d435",
+      "sha256": "21b6608b3470b97466eb340148837e0a9049bdfd4e96fda99815b5d711bfb2c6",
+      "target": "core"
+    },
+    {
+      "name": "Lua submodule source",
+      "revision": "6e22fedb74cf0c9b6656e9fce8b7331db847c605",
+      "url": "https://codeload.github.com/lua/lua/zip/6e22fedb74cf0c9b6656e9fce8b7331db847c605",
+      "sha256": "8f1b561ffa6584b64dd7bab47f0b234635a1d918b2c905fdb492b985f080e09d",
+      "target": "core/lua/src"
+    }
+  ]
+}

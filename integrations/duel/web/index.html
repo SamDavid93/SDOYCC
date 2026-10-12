@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SDOYCC – DuelZone Techniklabor</title><link rel="stylesheet" href="/assets/lab.css"><script src="/assets/lab.js" defer></script></head>
+<body>
+<header><div><span class="eyebrow">SDOYCC · ECHTER EDOPRO-REGELKERN</span><h1>DuelZone <small>Techniklabor</small></h1></div><label>Animationen <select id="motion"><option value="full">Voll</option><option value="fast">Schnell</option><option value="reduced">Reduziert</option></select></label></header>
+<p class="scope">Isolierter Entwicklungstest · feste Testdecks · keine echten Konten, Sammelpunkte oder Kartenbuchungen. Noch keine vollständige DuelZone.</p>
+<section id="login"><h2>Deinen Testplatz betreten</h2><form><label>Persönlicher Laborzugang <input id="code" type="password" required autocomplete="off"></label><button>Verbinden</button></form><p>Der lokale Teststarter stellt zwei getrennte Zugänge bereit.</p></section>
+<p id="connection" role="status">Noch nicht verbunden.</p><p id="error" role="alert"></p>
+<main id="table" hidden>
+  <section class="player opponent"><div class="player-line"><h2>Gegner</h2><strong id="opponent-lp"></strong><span id="opponent-deck"></span></div><div id="opponent-hand" class="hand opponent-hand"></div><div id="opponent-field" class="field"></div></section>
+  <div class="phase-line"><span id="phase"></span><strong id="effect" aria-live="polite"></strong><span id="turn"></span></div>
+  <section class="player own"><div id="own-field" class="field"></div><div class="player-line"><h2>Deine Seite</h2><strong id="own-lp"></strong><span id="own-deck"></span></div><div id="own-hand" class="hand my-hand"></div></section>
+  <section class="decisions" aria-labelledby="decision-title"><h2 id="decision-title">Warte auf deinen Zug</h2><div id="actions"></div></section>
+  <p id="result-reason" role="status"></p>
+  <button id="surrender" type="button" disabled>Duell aufgeben</button>
+  <details><summary>Duellprotokoll</summary><ol id="events"></ol></details>
+</main>
+<dialog id="preview" aria-labelledby="card-title"><button id="close-preview" aria-label="Kartenvorschau schließen">×</button><p class="eyebrow">KARTENVORSCHAU · ORIGINALTEXT</p><h2 id="card-title"></h2><p id="card-stats"></p><p id="card-text"></p></dialog>
+</body></html>

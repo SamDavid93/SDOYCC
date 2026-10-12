@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     trade_proposal_hours: int = Field(default=48, ge=1, le=168)
     trade_max_listings: int = Field(default=10, ge=1, le=50)
     trade_max_proposals: int = Field(default=10, ge=1, le=50)
+    enable_duel_worker_lab: bool = False
+    enable_duel_alpha: bool = False
+    duel_max_active_matches: int = Field(default=5, ge=1, le=20)
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -33,5 +36,13 @@ class Settings(BaseSettings):
     @property
     def demo_enabled(self) -> bool:
         return self.app_env == "development" and self.enable_demo_auth
+
+    @property
+    def duel_worker_lab_enabled(self) -> bool:
+        return self.app_env == "development" and self.enable_duel_worker_lab
+
+    @property
+    def duel_worker_enabled(self) -> bool:
+        return self.duel_worker_lab_enabled or (self.app_env == "production" and self.enable_duel_alpha)
 
 settings = Settings()

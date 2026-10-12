@@ -12,6 +12,14 @@ def maintain():
     with SessionLocal() as db:
         mutex(db)
         cleanup(db)
+        from app.modules.duel_preparation import cleanup_preparations
+        cleanup_preparations(db)
+        from app.modules.duel_lobbies import cleanup_lobbies
+        cleanup_lobbies(db)
+        from datetime import datetime
+        from sqlalchemy import delete
+        from app.db.models import DuelWorkerReplay
+        db.execute(delete(DuelWorkerReplay).where(DuelWorkerReplay.expires_at <= datetime.utcnow()))
         # Events normally book synchronously. Replay only missing committed openings after downtime.
         seasons = db.scalars(select(Season).where(Season.state == "published")).all()
         for season in seasons:

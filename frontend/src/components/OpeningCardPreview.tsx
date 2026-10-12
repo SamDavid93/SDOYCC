@@ -4,7 +4,7 @@ import type { CardRecord } from '../data/cards'
 import { label } from '../i18n'
 import { CardVisual } from './CardVisual'
 
-export function OpeningCardPreview({ card, packName, close }: { card: CardRecord; packName: string; close: () => void }) {
+export function OpeningCardPreview({ card, packName, close, contextLabel = 'Gezogen aus', backLabel = 'Zurück zu deinen Karten' }: { card: CardRecord; packName: string; close: () => void; contextLabel?: string; backLabel?: string }) {
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     const element = dialog.current!
@@ -29,7 +29,7 @@ export function OpeningCardPreview({ card, packName, close }: { card: CardRecord
       <section className="opening-preview-details">
         <p className="opening-preview-rarity">{label(card.rarity)}</p>
         <h2 id="opening-card-title">{card.name}</h2>
-        <p className="opening-preview-pack">Gezogen aus: <strong>{packName}</strong></p>
+        <p className="opening-preview-pack">{contextLabel}: <strong>{packName}</strong></p>
         <p>{label(card.type)}</p>
         {!!specifications.length && <dl className="opening-preview-specifications">{specifications.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>}
         <h3>Kartentext</h3>
@@ -37,6 +37,6 @@ export function OpeningCardPreview({ card, packName, close }: { card: CardRecord
         <p className="opening-preview-description">{card.description?.trim() || 'Für diese Karte liegt noch kein Kartentext vor.'}</p>
       </section>
     </div>
-    <footer className="opening-preview-footer"><button type="button" className="opening-primary" onClick={close}>Zurück zu deinen Karten</button></footer>
+    <footer className="opening-preview-footer"><button type="button" className="opening-primary" onClick={close}>{backLabel}</button></footer>
   </dialog>
 }

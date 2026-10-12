@@ -1,0 +1,51 @@
+{
+  "status": "D0 laboratory only; not an approved tournament bundle",
+  "core_api": [
+    11,
+    0
+  ],
+  "core_api_reference": "38d04c9feb1a26617407091380634c87262fe3f8",
+  "sources": [
+    {
+      "name": "Python Windows x86 embedded 3.14.0",
+      "url": "https://www.python.org/ftp/python/3.14.0/python-3.14.0-embed-win32.zip",
+      "sha256": "e34567e60d8bcee53c8d0ceac85e1bc085e1f6129c3fb330f030878165cad692",
+      "target": "python32",
+      "archive": true
+    },
+    {
+      "name": "EDOPro core Windows x86 API 11",
+      "revision": "479d3597f1b4993c4df3eba33ca92af537f186fc",
+      "url": "https://raw.githubusercontent.com/ProjectIgnis/bin/479d3597f1b4993c4df3eba33ca92af537f186fc/ocgcore.dll",
+      "sha256": "6cb6bfbf17a80d3320b66d6d12a1e7bfb57643009d49cf46ee5720984e972e2b",
+      "target": "ocgcore.dll"
+    },
+    {
+      "name": "ProjectIgnis/BabelCDB",
+      "revision": "5ef09b033c3e26f74b2fdd0c336853c13217b85f",
+      "url": "https://codeload.github.com/ProjectIgnis/BabelCDB/zip/5ef09b033c3e26f74b2fdd0c336853c13217b85f",
+      "sha256": "ad6b6b4ebab215f9acc7fdaa03f62ed5dc47a08b441423a671ac774d04684e42",
+      "target": "cards",
+      "archive": true,
+      "strip": 1
+    },
+    {
+      "name": "ProjectIgnis/CardScripts",
+      "revision": "d331dbd1b5ce6ed829d80ce025e03020f89046d9",
+      "url": "https://codeload.github.com/ProjectIgnis/CardScripts/zip/d331dbd1b5ce6ed829d80ce025e03020f89046d9",
+      "sha256": "048a259e3f6b40920b31b0f10b8f874b7ce99724ac561174b7d862225d299a89",
+      "target": "scripts",
+      "archive": true,
+      "strip": 1
+    },
+    {
+      "name": "ProjectIgnis/LFLists",
+      "revision": "56fed86d12c0cf2e1b612e649afc817b8c021cd7",
+      "url": "https://codeload.github.com/ProjectIgnis/LFLists/zip/56fed86d12c0cf2e1b612e649afc817b8c021cd7",
+      "sha256": "402811166ba7d913fac6383f48011bbea98c879b1b5900fd01105f9d4c90c9e1",
+      "target": "lists",
+      "archive": true,
+      "strip": 1
+    }
+  ]
+}

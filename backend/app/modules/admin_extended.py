@@ -276,8 +276,9 @@ def operations(database: Database):
     from sqlalchemy import exists, literal, cast, String
     totals = {(u,c): q for u,c,q in database.execute(select(InventoryItem.user_id, InventoryItem.card_id, InventoryItem.quantity)) if q}
     variants = {(u,c): q for u,c,q in database.execute(select(VariantInventory.user_id, CardVariant.card_id, func.sum(VariantInventory.quantity)).join(CardVariant).group_by(VariantInventory.user_id, CardVariant.card_id)) if q}
-    reservations = {(u,v): q for u,v,q in database.execute(select(InventoryReservation.user_id, InventoryReservation.variant_id, func.sum(InventoryReservation.quantity)).where(InventoryReservation.active.is_(True)).group_by(InventoryReservation.user_id, InventoryReservation.variant_id)) if q}
-    reserved = {(u,v): q for u,v,q in database.execute(select(VariantInventory.user_id, VariantInventory.variant_id, VariantInventory.reserved).where(VariantInventory.bound.is_(False))) if q}
+    from app.modules.inventory import reservation_totals
+    reservations = reservation_totals(database)
+    reserved = {(u,v,b): q for u,v,b,q in database.execute(select(VariantInventory.user_id, VariantInventory.variant_id, VariantInventory.bound, VariantInventory.reserved)) if q}
     stock = {(u,v,b): q for u,v,b,q in database.execute(select(VariantInventory.user_id, VariantInventory.variant_id, VariantInventory.bound, VariantInventory.quantity)) if q}
     journal = {(u,v,b): q for u,v,b,q in database.execute(select(InventoryTransaction.user_id, InventoryTransaction.variant_id, InventoryTransaction.bound, func.sum(InventoryTransaction.amount)).group_by(InventoryTransaction.user_id, InventoryTransaction.variant_id, InventoryTransaction.bound)) if q}
     xp = {(u,s): q for u,s,q in database.execute(select(SeasonProgress.user_id, SeasonProgress.season_id, SeasonProgress.xp)) if q}

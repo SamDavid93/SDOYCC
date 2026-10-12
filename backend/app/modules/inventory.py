@@ -76,6 +76,24 @@ def migrate_inventory(database: Session) -> dict:
     return result
 
 
+def reservation_totals(database):
+    """Expected shared counters, preserving the bound identity of duel copies."""
+    from collections import Counter
+    from app.db.models import InventoryReservation, DuelStockReservation
+    totals = Counter()
+    for uid, vid, quantity in database.execute(select(InventoryReservation.user_id,
+            InventoryReservation.variant_id, func.sum(InventoryReservation.quantity)).where(
+            InventoryReservation.active.is_(True)).group_by(InventoryReservation.user_id, InventoryReservation.variant_id)):
+        totals[(uid, vid, False)] += quantity
+    for uid, vid, bound, quantity in database.execute(select(VariantInventory.user_id,
+            VariantInventory.variant_id, VariantInventory.bound, func.sum(DuelStockReservation.quantity)).join(
+            DuelStockReservation, DuelStockReservation.stock_id == VariantInventory.id).where(
+            DuelStockReservation.active.is_(True)).group_by(
+            VariantInventory.user_id, VariantInventory.variant_id, VariantInventory.bound)):
+        totals[(uid, vid, bound)] += quantity
+    return dict(totals)
+
+
 def change_stock(database: Session, user_id: int, kind: CardVariant, amount: int, reason: str, reference: str, bound=False) -> None:
     if not isinstance(amount, int) or isinstance(amount, bool) or amount == 0:
         raise ValueError("Kartenbewegung muss eine ganze Menge ungleich null sein.")

@@ -10,6 +10,205 @@ def now() -> datetime:
     return datetime.utcnow()
 
 
+class DuelRuntimePolicy(Base):
+    __tablename__ = "duel_runtime_policy"
+    __table_args__ = (CheckConstraint("id = 1"),)
+    id: Mapped[int] = mapped_column(primary_key=True, default=1)
+    accepting_new: Mapped[bool] = mapped_column(Boolean, default=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class DuelProfileReview(Base):
+    __tablename__ = "duel_profile_reviews"
+    profile_id: Mapped[str] = mapped_column(ForeignKey("duel_rule_profiles.id"), primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    evidence: Mapped[str] = mapped_column(String(2000), default="")
+
+
+class DuelRestriction(Base):
+    __tablename__ = "duel_restrictions"
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    until: Mapped[datetime] = mapped_column(DateTime)
+    reason: Mapped[str] = mapped_column(String(500))
+    version: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class DuelRuleProfile(Base):
+    """Immutable imported rule snapshot. Import alone never approves browser play."""
+    __tablename__ = "duel_rule_profiles"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(160))
+    region: Mapped[str] = mapped_column(String(20), default="TCG-EU")
+    list_name: Mapped[str] = mapped_column(String(100))
+    sources_json: Mapped[str] = mapped_column(Text)
+    engine_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    region_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+
+class DuelCardRule(Base):
+    __tablename__ = "duel_card_rules"
+    profile_id: Mapped[str] = mapped_column(ForeignKey("duel_rule_profiles.id"), primary_key=True)
+    card_id: Mapped[int] = mapped_column(ForeignKey("cards.id"), primary_key=True)
+    catalog_fingerprint: Mapped[str] = mapped_column(String(64))
+    passcode: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    identity: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    type_bits: Mapped[int] = mapped_column(Integer, default=0)
+    section: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    copy_limit: Mapped[int] = mapped_column(Integer, default=3)
+    status: Mapped[str] = mapped_column(String(40))
+    script_available: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class PlayerDeck(Base):
+    __tablename__ = "player_decks"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    name: Mapped[str] = mapped_column(String(80))
+    notes: Mapped[str] = mapped_column(String(1000), default="")
+    profile_id: Mapped[str | None] = mapped_column(ForeignKey("duel_rule_profiles.id"), nullable=True)
+    entries_json: Mapped[str] = mapped_column(Text, default="[]")
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    archived: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now)
+
+
+class DeckTemplate(Base):
+    """Explicitly published immutable list; no notes, inventory or login data."""
+    __tablename__ = "deck_templates"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    deck_id: Mapped[str] = mapped_column(String(36))
+    deck_version: Mapped[int] = mapped_column(Integer)
+    name: Mapped[str] = mapped_column(String(80))
+    profile_id: Mapped[str | None] = mapped_column(ForeignKey("duel_rule_profiles.id"), nullable=True)
+    entries_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class DuelLobby(Base):
+    __tablename__ = "duel_lobbies"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    code: Mapped[str] = mapped_column(String(8), unique=True)
+    host_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    profile_id: Mapped[str] = mapped_column(ForeignKey("duel_rule_profiles.id"))
+    state: Mapped[str] = mapped_column(String(20), default="open")
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
+class DuelLobbySeat(Base):
+    """One active lobby per account; removed on leave/closure, no stock reserved yet."""
+    __tablename__ = "duel_lobby_seats"
+    __table_args__ = (UniqueConstraint("lobby_id", "seat"), CheckConstraint("seat IN (0, 1)"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    lobby_id: Mapped[str] = mapped_column(ForeignKey("duel_lobbies.id"), index=True)
+    seat: Mapped[int] = mapped_column(Integer)
+    accepted: Mapped[bool] = mapped_column(Boolean, default=False)
+    deck_id: Mapped[str | None] = mapped_column(ForeignKey("player_decks.id"), nullable=True)
+    deck_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    session_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+
+class DuelLobbyOptions(Base):
+    __tablename__ = "duel_lobby_options"
+    lobby_id: Mapped[str] = mapped_column(ForeignKey("duel_lobbies.id"), primary_key=True)
+    mode: Mapped[str] = mapped_column(String(10), default="single")
+
+
+class DuelMatchProgress(Base):
+    """Durable game results and immutable-pool sideboarding; no native state recovery."""
+    __tablename__ = "duel_match_progress"
+    run_id: Mapped[str] = mapped_column(ForeignKey("duel_worker_runs.id"), primary_key=True)
+    progress_json: Mapped[str] = mapped_column(Text)
+
+
+class DuelDeckConfirmation(Base):
+    """Consent to the exact two-player deck selection; never a game-start ticket."""
+    __tablename__ = "duel_deck_confirmations"
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    lobby_id: Mapped[str] = mapped_column(ForeignKey("duel_lobbies.id"), index=True)
+    context_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class DuelPreparation(Base):
+    """Internal two-player start receipt; not a running duel or public readiness API."""
+    __tablename__ = "duel_preparations"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    lobby_id: Mapped[str] = mapped_column(ForeignKey("duel_lobbies.id"), unique=True)
+    profile_id: Mapped[str] = mapped_column(ForeignKey("duel_rule_profiles.id"))
+    state: Mapped[str] = mapped_column(String(20), default="prepared")
+    snapshot_json: Mapped[str] = mapped_column(Text)
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    released_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    release_reason: Mapped[str | None] = mapped_column(String(40), nullable=True)
+
+
+class DuelWorkerConsent(Base):
+    __tablename__ = "duel_worker_consents"
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    lobby_id: Mapped[str] = mapped_column(ForeignKey("duel_lobbies.id"), index=True)
+    context_hash: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class DuelWorkerRun(Base):
+    """Persisted private worker ownership and terminal receipt, never engine state."""
+    __tablename__ = "duel_worker_runs"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    preparation_id: Mapped[str] = mapped_column(ForeignKey("duel_preparations.id"), unique=True)
+    lobby_id: Mapped[str] = mapped_column(ForeignKey("duel_lobbies.id"), unique=True)
+    owner_instance: Mapped[str] = mapped_column(String(36))
+    participants_json: Mapped[str] = mapped_column(Text)
+    state: Mapped[str] = mapped_column(String(20), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reason: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    winner_seat: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class DuelWorkerParticipant(Base):
+    __tablename__ = "duel_worker_participants"
+    __table_args__ = (UniqueConstraint("run_id", "seat"),)
+    run_id: Mapped[str] = mapped_column(ForeignKey("duel_worker_runs.id"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    seat: Mapped[int] = mapped_column(Integer)
+
+
+class DuelWorkerReplay(Base):
+    """Private filtered browser timelines; never a raw engine response dump."""
+    __tablename__ = "duel_worker_replays"
+    run_id: Mapped[str] = mapped_column(ForeignKey("duel_worker_runs.id"), primary_key=True)
+    views_json: Mapped[str] = mapped_column(Text)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
+class DuelWorkerLease(Base):
+    """Committed before spawning: identifies the supervisor and exact child command."""
+    __tablename__ = "duel_worker_leases"
+    run_id: Mapped[str] = mapped_column(ForeignKey("duel_worker_runs.id"), primary_key=True)
+    manifest_json: Mapped[str] = mapped_column(Text)
+
+
+class DuelStockReservation(Base):
+    """Reserves an exact inventory row, including its bound/unbound identity."""
+    __tablename__ = "duel_stock_reservations"
+    __table_args__ = (UniqueConstraint("preparation_id", "stock_id"), CheckConstraint("quantity > 0"))
+    id: Mapped[int] = mapped_column(primary_key=True)
+    preparation_id: Mapped[str] = mapped_column(ForeignKey("duel_preparations.id"), index=True)
+    stock_id: Mapped[int] = mapped_column(ForeignKey("variant_inventory.id"))
+    quantity: Mapped[int] = mapped_column(Integer)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
 class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)

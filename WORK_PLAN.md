@@ -4,6 +4,38 @@ Ziel: SamDavidOfficial – 1.000 Kanalpunkte → 100 Tradingpoints → Booster k
 
 Aktueller Stand (03.10.2026): Admin A1–A7, Kartenhandel T1–T6 und kostenloser Saisonpass S1–S6 sind umgesetzt und geprüft. 138 Backend-Tests einschließlich Konfigurationsprüfungen, 57 lokale Browser-Prüfpunkte und Produktionsbuild erfolgreich. Die Website ist unter `https://samdavid93.github.io/SDOYCC/` veröffentlicht; das lokale Backend läuft im Produktionsmodus über einen vorübergehenden Cloudflare-Tunnel ohne eigene Domain. Der Betreiber bestätigt Kanalpunkte-Einlösung, Gutschrift, Packkauf und Öffnung im Live-Test. Offen bleiben unter anderem Queue-Abschluss, Neuregistrierung und Handel mit zweitem Konto sowie die erste bewusst konfigurierte Saison. Maßgebliche Übersicht: `docs/FINAL_STATUS.md`. Frühere offene Planungsstände weiter unten sind Entwicklungshistorie.
 
+## In Umsetzung: Deck Builder und DuelZone (05.10.2026)
+
+- [x] Fehlerbereinigung (06.10.2026): Asynchrone Abbrüche bei Engine-Start/Antwort werden nach Prozessstopp und Quittierung weitergereicht; ein einzelner Bereinigungsfehler blockiert andere Worker-Einträge nicht. Vier neue Grenztests; 216 Backend-Tests und neun Protokolltests erfolgreich. Bericht: `artifacts/backend-worker-hardening.log`. Wiederherstellung verwaister Prozesse weiterhin offen.
+- [x] Bestehende Konten-/Bestands-/Handelsarchitektur geprüft; EDOPro, Regelkern, Multirole, TCG-Regeln und Transportmöglichkeiten anhand der Primärquellen recherchiert.
+- [x] Konzept mit Deckregeln, Besitz-/Handelsreservierung, Lobby-ID, Engine-Anbindung, Betrieb ohne Domain, Ergebnissen, Abbruch/Reconnect, Adminfunktionen, Lizenzen und Abnahmematrix erstellt: [Deck Builder und DuelZone](docs/plans/04-DECKBUILDER-DUELZONE.md).
+- [x] Betreiber hat vollständig browserbasierte Duelle ohne EDOPro-Installation festgelegt. Vollständige Spielregeln und Animationen bleiben Anforderungen; Konzept, Architektur und Abnahme darauf umgestellt.
+- [x] Animationsfamilien, Engine-Entscheidungen, Synchronisierung, Wiederverbindung, Touch-/Tastaturbedienung und Leistungsziele konkretisiert. Desktopclient und Verbindungshelfer sind aus dem Nutzerablauf entfernt.
+- [x] Betreiber hat den Start freigegeben. D0 als getrenntes lokales Techniklabor begonnen: `integrations/duel/`, ohne Hub-Datenbankzugriff oder Änderung am öffentlichen Dienst.
+- [x] Echter EDOPro-Kern API 11 in eigenem Prozess, festgeschriebene Downloads mit Prüfsummen, WebSocket-Gateway und getrennte private Spieleransichten eingerichtet.
+- [x] Zwei getrennte Edge-Sitzungen haben lokal ein Engine-Duell über 9 Züge und 318 Entscheidungen bis zum Sieg gespielt; Ziehen, Beschwörung, Zauber/Kette, Angriff und LP-Veränderung beobachtet. Keine Browserfehler. Desktop-/Mobilansicht und Kartentextvorschau geprüft.
+- [x] Grenztests für verdeckte Karten, fremde/veraltete Entscheidungen, ungültige Auswahl und unzulässige Labor-Deckbestände bestanden. Falscher Sitzungszugang, falscher Origin und doppelte WebSocket-Belegung werden abgelehnt.
+- [x] Kleiner Folgeausbau: Aufgabe im Laborduell mit Bestätigung und Ergebnisgrund. Authentifizierter Platz bestimmt den Verlierer; Worker wird vor Ergebnismeldung beendet, erneute Aktionen ändern das Ergebnis nicht. Neun Protokoll-/Gateway-Tests erfolgreich.
+- [x] Aufgabe zusätzlich in zwei echten Browser-Sitzungen gegen den nativen Core geprüft: Abbrechen erhält das Duell; Bestätigen während des gegnerischen Zugs beendet den Worker und zeigt beiden Spielern den korrekten Ausgang. Keine Browserfehler. Bericht: `artifacts/duel-lab/surrender-report.json`.
+- [ ] D0 vervollständigen: externe HTTPS/WSS-Prüfung mit zwei Netzen, Produktions-Authentifizierungskonzept und Betriebshärtung, Protokoll-/Animationsabdeckung und Quellen-/Lizenzprüfung abschließen. Das lokale Testdeck ist kein vollständiger TCG-Abnahmenachweis.
+- [x] D1-Grundlage: geprüfter, versionierter Kandidatenimport aus festgeschriebenen Engine-Daten, Bannliste und Skripten; Passcodes, Alias-Familien, Kartentypen, Namensprüfung und unbekannte Karten werden eindeutig behandelt. Schreibgeschützte Vorschau: 13.823 von 14.600 Karten zugeordnet; keine produktive Regelübernahme oder Freigabe.
+- [x] D2-Kern: privater Deck-Editor mit Haupt-/Extra-/Side-Deck, Besitz-/Kopien-/Regelprüfung, Suche und Spezifikationsfiltern, YDK, Notizen, Testhand, Kartenvorschau, Archiv und mobilen Reitern. Versionsgeschütztes automatisches Speichern und Wiederherstellung ungespeicherter Entwürfe geprüft. Teilen-Links noch offen.
+- [x] D3a: private Lobby-ID, genau zwei Konten, Bestätigung des Gastes, private Deckwahl, Schließen/Verlassen, Ablauf und Sitzungsprüfung. Noch kein freigegebener Duellstart.
+- [x] D3b-Grundlage: interne atomare Reservierung beider Decks, gebundene/ungebundene Varianten, Konkurrenz zum Handel, privater Snapshot mit Prüfsumme, Wiederholungsschutz und vollständige Freigabe abgebrochener Vorbereitungen. Admin-Konsistenzprüfung und Wartung berücksichtigen die neuen Reservierungen. Keine öffentliche API aktiviert diesen Ablauf.
+- [x] D3-Folgeausbau: beidseitige Deckbestätigung in der Lobby, an Spieler, ursprüngliche Anmeldung und aktuelle Deckversionen gebunden; maximal fünf Minuten gültig. Parallelzugriffe, fehlender Bestand, andere Sitzung desselben Kontos, Deckänderung und Spielerwechsel geprüft. Zurücknehmen löscht beide Bestätigungen und gibt interne Vorbereitungen sofort frei. Reservierungsgrenze verlangt nun beide gültigen Bestätigungen und protokolliert sie im privaten Snapshot. Kein automatischer Duellstart.
+- [x] 19 Deck-/Lobby-Browser-Prüfpunkte mit zwei Konten einschließlich Wiederherstellung, Konfliktbehandlung und Mobilansicht; bestehender Hub-Browserlauf mit 61 Prüfpunkten erfolgreich. Keine JavaScript-Fehler oder Änderungen an echten Konten.
+- [x] Abschließende Prüfung: 189 Backend-Tests einschließlich 13 Tests der atomaren Duellvorbereitung, neun Protokoll-/Gateway-Tests und Produktionsbuild erfolgreich. `git diff --check` ohne Fehler. Prüfberichte unter `artifacts/backend-duel-regression.log`, `artifacts/deck-builder-build.log` und `artifacts/deck-builder/report.json`.
+- [x] Folgeprüfung nach Deckbestätigung: 198 Backend-Tests erfolgreich, davon 32 für Lobby/Bestätigung/Reservierung; 21 Deck-/Lobby-Browser-Prüfpunkte mit zwei Konten einschließlich Zurücknehmen erfolgreich, keine JavaScript-Fehler. Produktionsbuild und `git diff --check` ebenfalls erfolgreich; lokale Bildschirmaufnahmen erneuert.
+- [x] D3-Worker-Nachweis: standardmäßig abgeschalteter Entwicklungsmodus verbindet echte Hub-Sitzungen und reservierte Deck-Snapshots mit dem nativen Core. Zwei zusätzliche Testzustimmungen, Gastgeberstart, private Ansichten, ursprüngliche Sitzungsbindung, Duplizierschutz, Prozess-Startquittierung und dauerhafte Ergebnisbelege umgesetzt. Aufgabe, Fehler, Widerruf und Verbindungsablauf stoppen den Prozess vor Bestandsfreigabe; fehlgeschlagene Quittierung wird mit unverändertem Ergebnis wiederholt. Bei unbewiesenem Prozessstopp bleiben Reservierungen bestehen.
+- [x] 13 native Hub-Worker-Browserprüfungen bestanden: zwei getrennte Konten, echte Engine-Entscheidung, private Hände, Neuladen, Kartentextdialog, Mobilansicht, Aufgabe/Ergebnis und Freigabe. Keine JavaScript-Fehler, keine Änderung an realen Konten; Testbestand und Kartenjournal unverändert. Bericht: `artifacts/duel-worker/report.json`.
+- [x] Worker-Gesamtprüfung: 212 Backend-Tests einschließlich 14 Worker-Grenztests, neun Protokoll-/Gateway-Tests, erneut 21 Deck-/Lobby-Browser-Prüfpunkte und Produktionsbuild erfolgreich. `git diff --check` ohne Fehler. Entwicklungsschalter standardmäßig aus; Produktionskonfiguration und Veröffentlichung unverändert.
+- [x] D1/D2 lokal: versionierter EU-Listenabgleich, Kandidatenimport, vollständige Deckbereiche und widerrufbare Vorlagen mit anonymer Ansicht und Übernahme. Europäische Format-/Kartenfreigabe bleibt externe Voraussetzung; es wurden keine Profile automatisch freigegeben.
+- [x] D3 lokal: vollständige validierte Deck-Snapshots, Protokollentscheidungen, Match/Sideboarding, Serveruhren, Absturz-Wiederherstellung, Admin-Betriebsprüfung und AppContainer-Isolation. Öffentlicher WSS-Betrieb ist weiterhin nicht aktiviert oder extern abgenommen.
+- [x] D4–D6 lokal: Browserclient, Ereigniseffekte, Wiederverbindung, private Ansichtswiedergabe, Adminbetrieb und festgeschriebene passende Core-/Lua-Quellen umgesetzt und geprüft.
+- [ ] D0/D1/D4–D6 externe Freigabe: zwei externe HTTPS/WSS-Netze, europäische Format-/Kartenfreigabe, reale Geräte-/Leistung und visuelle Referenz, Veröffentlichung der erforderlichen Quellen/Lizenzen und Nutzungsnachweise für Kartenbilder/-texte.
+- Aktueller lokaler Stand, Bedienwege, Testbefehle und konkrete Grenzen: [Decks und DuelZone](docs/DECKS_DUELZONE_STATUS.md). Noch nicht auf Pages veröffentlicht; Produktionsserver nicht neu gestartet.
+- Details, lokale Startanleitung und ausdrücklich noch offene Funktionen: [DuelZone-Techniklabor](integrations/duel/README.md).
+
 ## Abgeschlossen
 
 ### Kartenvorschau bei der Pack-Öffnung (04.10.2026)
@@ -320,3 +352,43 @@ Auf ausdrücklichen Wunsch wurden **alle geplanten Bereiche der ersten Version**
 Nachweise: `artifacts/final-tests.log`, `final-browser.log`, `final-rehearsal.json`, `final-migration.json`, `final-local-readiness.json`, `final-public-readiness.json`, `final-release-check.json`. Neue Screenshots: `final-special-card-mobile.png`, `final-batch-mobile.png`, `final-trade-listing-mobile.png`, `final-trade-confirmation-mobile.png`, `final-trade-receipt-mobile.png`, `final-season-mobile.png`, `final-season-reward-mobile.png`.
 
 Noch erforderlich für Zuschauer: GitHub Pages und öffentliche HTTPS-Adresse einrichten, Produktionswerte setzen, echten Twitch-Ablauf einschließlich Reward-Queue-Abschluss und Zugriff von einem anderen Gerät prüfen. Erste Live-Saison mit eigenen Zeiten/Belohnungen veröffentlichen. PostgreSQL wurde in dieser Runde nicht live geprüft. Erweiterungen außerhalb der festgelegten ersten Version sind im Abschlussstand ausdrücklich benannt.
+
+
+## DuelZone-Fortsetzung am 06.10.2026
+
+WebSockets, gepruefte native Absturz-/Neustartbereinigung, Windows-Ressourcenlimits, Admin-Betrieb, widerrufbare Deckvorlagen und private Ansichtswiedergaben sind umgesetzt. Erweiterte Entscheidungen und autoritative Feldabfragen sind getestet. 229 Backend-Tests, 29 Integrationspruefungen und Frontendbuild erfolgreich. Keine produktive Aktivierung.
+
+Vollstaendiger TCG-Pool, Match-/Side-Deck-Betrieb, komplette Animationsabnahme, EU-Listenabgleich, Quellen-/Rechtenachweise und externe HTTPS/WSS-Abnahme bleiben offen. Aktueller Detailstand: [Decks und DuelZone](docs/DECKS_DUELZONE_STATUS.md).
+
+
+## Abschluss der lokalen Match-Umsetzung – 06.10.2026
+
+- [x] Frühere künstliche Testpoolgrenze entfernt; geprüfte Haupt-/Extra-/Side-Snapshots werden geladen.
+- [x] Einzelduell und Match bis zum zweiten Sieg, Unentschieden, echter Side-Deck-Austausch, Startspielerwechsel und dauerhafte Ergebnisfolge.
+- [x] Native Abnahme von Tribut, Fusion, Synchro, Xyz, Link, Ritual, Pendel, Kettennegierung und Zählmarken.
+- [x] Serveruhren ohne Reconnect-Aufladung; getrennte Gründe für Bedenkzeit, Nichtbereitwerden, Aufgabe und neutrale Abbrüche.
+- [x] Private Ansichtswiedergabe über wechselnde Engine-Sitzplätze, Deckvorlagen im anonymen/zweiten Browser, Ereigniseffekte und Feldbeziehungen.
+- [x] EU-Listenabgleich und separater offizieller Kandidatenimport; keine stillschweigende Freigabe abweichender Listen.
+- [x] Zugehöriger Core-/Lua-Quellstand identifiziert und mit Hashes, Lizenzen und Buildskripten bereitgestellt.
+- [x] 237 Backend-Tests, 32 Protokolltests, neun native Mechanikfälle, 26 Deck-/Lobby-/Vorlagen-Browserprüfpunkte, kompletter nativer Mehrspiel-Matchlauf und Frontendbuild erfolgreich.
+- [x] Betriebssystem-Sandbox: Hub-Core im Windows-AppContainer ohne Fähigkeiten, prüfsummenbestätigte separate Laufzeit mit Leserechten, bereinigte Umgebung, angehaltener Start vor Job-Zuordnung. Zwölf native Sicherheitsproben einschließlich Startfehlern/Startabbruch, echter Supervisor-Absturz/Neustart und vollständiges Browser-Match mit drei Spielen erfolgreich. Berichte: `artifacts/duel-sandbox-report.json`, `artifacts/duel-restart/report.json`, `artifacts/duel-match/report.json`. Vollständige Backend-Suite erneut bestanden: 237 Tests, `artifacts/duel-final-sandbox-backend.log`.
+- [ ] Öffentliche Abnahme: externe HTTPS/WSS-Verbindung aus zwei Netzen, reale Geräte/Leistung und visuelle Referenz sowie Nutzungs-/Weitergabenachweise. Keine produktive Aktivierung.
+
+Aktueller verbindlicher Detailstand: [Decks und DuelZone](docs/DECKS_DUELZONE_STATUS.md).
+
+## Duellbetrieb ergänzt – 12.10.2026
+
+- [x] Fünf parallele native AppContainer-Matches für zehn Konten; Kapazitätsgrenze, Wartung und Wiederverwendung freier Plätze ohne Bestands- oder Journaländerung geprüft.
+- [x] Versionierter, passwortbestätigter Wartungsschalter mit Audit; laufende Spiele und Sideboarding laufen weiter. Lobby zeigt den tatsächlichen Startblocker.
+- [x] Adminfreigaben für unveränderliche Regelprofile mit Nachweisen und installiertem Paketabgleich; neue Regionsfreigaben verlangen einen bereits gültigen offiziellen EU-Listenimport.
+- [x] Befristete Duellsperren mit Passwort, Begründung, Versionsprüfung und Audit; andere Hub-Funktionen bleiben verfügbar, laufende betroffene Duelle enden neutral nach sicherem Prozessstopp.
+- [x] Native Regelproben um Token, Exodia, leeres Nachziehdeck und Unentschieden erweitert: 13 Szenarien erfolgreich. Unentschieden werden ohne Sieger dargestellt.
+- [x] Vollständige Backend-Suite: 241 Tests erfolgreich; 35 Integrationsprüfungen, zwölf echte Sandbox-Proben und Frontendbuild erfolgreich. Aktuelle Artefakte und lokale Lastmessungen sind im Detailstand dokumentiert.
+- [ ] Öffentliche Freigabe weiterhin ausstehend: tatsächliche Nutzungs-/Weitergabenachweise, externe HTTPS/WSS-Abnahme aus zwei Netzen sowie reale Geräte-/Leistungs- und visuelle Referenzabnahme. Produktionskonfiguration und echte Konten wurden nicht verändert.
+
+## Kartenbestand und Deckeditor – 12.10.2026
+
+- Originalrückseite unverändert eingebaut, einschließlich verdeckter Duellkarten und Deckstapel.
+- Echte Datenbank nach SQLite-Sicherung um verifizierte Regelzuordnungen ergänzt: 13.823 Katalogkarten, darunter 490 unterschiedliche erworbene Karten. 16 weitere erworbene Karten bleiben wegen ungeklärter Namen oder TCG-Zuordnung nur im Entwurf nutzbar. Konten, Guthaben, Bestände und Journale wurden anhand vollständiger Tabellenprüfsummen unverändert bestätigt.
+- Editor zeigt standardmäßig eigene Karten; Linksklick fügt hinzu, Rechtsklick entfernt. Drag & Drop unterstützt Deckbereiche und das Zurücklegen in die Sammlung. Separate Details öffnen die Vorschau.
+- Vollständige Backend-Suite mit 243 Tests und Frontendbuild erfolgreich; aktuelle Browsernachweise und Datenbanksicherung im Detailstand. Der Regelimport aktiviert keine öffentlichen Duelle.

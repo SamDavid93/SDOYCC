@@ -16,6 +16,8 @@ jobs:
         env:
           PYTHONPATH: backend
           APP_ENV: development
+      - name: Verify isolated DuelZone protocol boundaries
+        run: python -m unittest discover -s integrations/duel/tests -v
   frontend:
     runs-on: ubuntu-latest
     steps:

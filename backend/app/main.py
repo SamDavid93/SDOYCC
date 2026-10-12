@@ -27,6 +27,14 @@ async def lifespan(app: FastAPI):
     import asyncio
     from app.modules.maintenance import maintenance_loop, maintain
     await asyncio.to_thread(maintain)
+    worker_task = None
+    app.state.duel_worker = None
+    if settings.duel_worker_enabled:
+        from app.modules.duel_worker import NativeAdapter, WorkerService
+        adapter = await asyncio.to_thread(NativeAdapter)
+        app.state.duel_worker = WorkerService(SessionLocal, adapter)
+        await app.state.duel_worker.recover_orphans()
+        worker_task = asyncio.create_task(app.state.duel_worker.watchdog())
     task = asyncio.create_task(maintenance_loop())
     try:
         yield
@@ -36,6 +44,11 @@ async def lifespan(app: FastAPI):
             await task
         except asyncio.CancelledError:
             pass
+        if worker_task:
+            worker_task.cancel()
+            try: await worker_task
+            except asyncio.CancelledError: pass
+            await app.state.duel_worker.close()
 
 
 app = FastAPI(title="SDOYCC – SamDavidOfficial's Yu-Gi-Oh Card Collector API", version="0.2.0", lifespan=lifespan)
@@ -98,3 +111,26 @@ app.include_router(season_admin_router)
 
 from app.modules.rare_pulls import router as rare_pulls_router
 app.include_router(rare_pulls_router)
+
+from app.modules.decks import router as decks_router
+app.include_router(decks_router)
+
+from app.modules.duel_lobbies import router as duel_lobbies_router
+app.include_router(duel_lobbies_router)
+
+from app.modules.duel_worker import router as duel_worker_router
+app.include_router(duel_worker_router)
+
+from app.modules.duel_socket import router as duel_socket_router
+app.include_router(duel_socket_router)
+
+from app.modules.duel_operations import router as duel_operations_router
+app.include_router(duel_operations_router)
+from app.modules.duel_controls import router as duel_controls_router
+app.include_router(duel_controls_router)
+
+from app.modules.deck_templates import router as deck_templates_router
+app.include_router(deck_templates_router)
+
+from app.modules.duel_history import router as duel_history_router
+app.include_router(duel_history_router)

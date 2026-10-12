@@ -144,7 +144,8 @@
 .reveal-card-inner { position: relative; display: block; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .85s cubic-bezier(.2,.75,.2,1); }
 .is-revealed .reveal-card-inner { transform: rotateY(180deg); }
 .reveal-back, .reveal-front { position: absolute; inset: 0; display: block; border-radius: 9px; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.reveal-back { overflow: hidden; background: radial-gradient(ellipse at 50% 45%, #224b50, #101f35 67%); border: 1px solid #6cb19a; box-shadow: 0 8px 35px #0008, inset 0 0 0 6px #0d1f30, inset 0 0 0 7px #668e7844; }
+.reveal-back { overflow: hidden; background: url('./assets/card-back.jpg') center / 100% 100%; border: 1px solid #b78c39; box-shadow: 0 8px 35px #0008; }
+.reveal-back .back-corner,.reveal-back .back-sigil,.reveal-back .back-caption{display:none}
 .reveal-back::before { content: ''; position: absolute; width: 150%; height: 75%; left: -25%; top: 5%; background: repeating-conic-gradient(from 45deg, #8bddbb07 0deg 2deg, transparent 2deg 20deg); border: 1px solid #8bddbb22; border-radius: 50%; }
 .reveal-back::after { content: ''; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 20%, #c6fff12a 45%, transparent 60%); transform: translateX(-100%); transition: transform .7s; }
 .reveal-card:hover .reveal-back::after { transform: translateX(100%); }

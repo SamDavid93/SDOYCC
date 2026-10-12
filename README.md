@@ -20,6 +20,10 @@ Trading-Card-Hub für **SamDavidOfficial**: **1.000 Twitch-Kanalpunkte → 100 T
 
 Der aktuelle Abschlussstand, Bedienwege und die noch fehlende öffentliche Einrichtung stehen in [docs/FINAL_STATUS.md](docs/FINAL_STATUS.md). Die Entwicklungshistorie steht in [WORK_PLAN.md](WORK_PLAN.md).
 
+**Alpha-Ausbau vom 12.10.2026:** Meine Decks mit echten Beständen, Drag & Drop, Kartenprüfung, YDK und Entwurfswiederherstellung sowie private Zwei-Spieler-Duelle und Matches sind umgesetzt. Der Produktionsworker wird ausdrücklich über `ENABLE_DUEL_ALPHA` aktiviert; Regelprofile benötigen weiterhin die dokumentierte Adminfreigabe. Einrichtung und Abnahme: [Online-Alpha](docs/ALPHA_START.md). Bedienung und Testnachweise: [Decks und DuelZone](docs/DECKS_DUELZONE_STATUS.md).
+
+Ein standardmäßig abgeschalteter Worker-Test verbindet inzwischen echte Hub-Anmeldungen und reservierte Decks mit dem nativen Regelkern. Der Zwei-Browser-Nachweis umfasst private Hände, eine Engine-Entscheidung, Neuladen und Aufgabe mit anschließender Kartenfreigabe. Er verwendet ausschließlich eine temporäre Datenbank und geprüfte serverseitige Decksnapshots. Einzelduell und Match mit Sideboarding, Serveruhren und privater Wiedergabe sind lokal getestet; der öffentliche Duellbetrieb bleibt gesperrt. Aktueller Umfang: [DuelZone-Status](docs/DECKS_DUELZONE_STATUS.md).
+
 ## Architektur
 
 - `frontend/`: React, TypeScript, Vite, HashRouter. Statisches Hosting, etwa GitHub Pages.

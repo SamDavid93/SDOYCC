@@ -4,6 +4,8 @@ Stand: **03.10.2026**. Der Sammel-Hub mit Admin A1–A7, Kartenhandel und kosten
 
 ## Funktionsübersicht
 
+**Separater Entwicklungsstand 12.10.2026:** Deckverwaltung, native Browserduelle, Matches mit Sideboarding, private Historie, Wiederverbindung, Sandbox und Adminbetrieb sind lokal implementiert und geprüft. Fünf parallele native Matches mit gleichzeitiger Hub-Nutzung wurden erfolgreich getestet. Der öffentliche Duellbetrieb bleibt bis zur externen Abnahme deaktiviert. Siehe [Decks und DuelZone](DECKS_DUELZONE_STATUS.md); die folgende Tabelle beschreibt den bestehenden Sammel-Hub.
+
 | Bereich | Umgesetzter Stand |
 | --- | --- |
 | Twitch & Anmeldung | Streamer.bot-Brücke; öffentlicher Registrierungslink, browsergebundene `!confirm`-Bestätigung, Passwort-Login, Sitzungen und Anmelde-Zurücksetzung durch Admins |
@@ -80,3 +82,33 @@ Verpasste Twitch-Ereignisse werden weiterhin nicht automatisch nachgeladen. Bei 
 Vor jeder Schemaänderung `backend/scripts/migrate_database.py` mit `PYTHONPATH=backend` ausführen; die Start-BAT sichert ebenfalls vor ihrer Schemaprüfung. SQLite-Backups liegen in `artifacts/db-backups/`. Diese Sicherungen regelmäßig zusätzlich außerhalb des Serverlaufwerks ablegen.
 
 Bei Rückfall zuerst den Backend-Prozess beenden, den fehlerhaften aktuellen Datenbestand separat sichern und anschließend eine ausdrücklich ausgewählte vorherige Datenbanksicherung zusammen mit dem dazugehörigen Code wiederherstellen. Keine laufende SQLite-Datei mit einer einfachen Dateikopie überschreiben. Ein Backup-Rückfall verliert alle seit dieser Sicherung entstandenen Buchungen; daher zunächst die neue Datenbank zur Klärung aufbewahren. Vor Neustart Integrität und Bestandssummen prüfen. Die finale Übernahme protokolliert den konkreten Sicherungspfad und den Vorher-/Nachher-Vergleich.
+
+
+## DuelZone-Fortsetzung am 06.10.2026
+
+WebSockets, gepruefte native Absturz-/Neustartbereinigung, Windows-Ressourcenlimits, Admin-Betrieb, widerrufbare Deckvorlagen und private Ansichtswiedergaben sind umgesetzt. Erweiterte Entscheidungen und autoritative Feldabfragen sind getestet. 229 Backend-Tests, 29 Integrationspruefungen und Frontendbuild erfolgreich. Keine produktive Aktivierung.
+
+Vollstaendiger TCG-Pool, Match-/Side-Deck-Betrieb, komplette Animationsabnahme, EU-Listenabgleich, Quellen-/Rechtenachweise und externe HTTPS/WSS-Abnahme bleiben offen. Aktueller Detailstand: [Decks und DuelZone](DECKS_DUELZONE_STATUS.md).
+
+
+## Abschluss der lokalen Match-Umsetzung – 06.10.2026
+
+- [x] Frühere künstliche Testpoolgrenze entfernt; geprüfte Haupt-/Extra-/Side-Snapshots werden geladen.
+- [x] Einzelduell und Match bis zum zweiten Sieg, Unentschieden, echter Side-Deck-Austausch, Startspielerwechsel und dauerhafte Ergebnisfolge.
+- [x] Native Abnahme von Tribut, Fusion, Synchro, Xyz, Link, Ritual, Pendel, Kettennegierung und Zählmarken.
+- [x] Serveruhren ohne Reconnect-Aufladung; getrennte Gründe für Bedenkzeit, Nichtbereitwerden, Aufgabe und neutrale Abbrüche.
+- [x] Private Ansichtswiedergabe über wechselnde Engine-Sitzplätze, Deckvorlagen im anonymen/zweiten Browser, Ereigniseffekte und Feldbeziehungen.
+- [x] EU-Listenabgleich und separater offizieller Kandidatenimport; keine stillschweigende Freigabe abweichender Listen.
+- [x] Zugehöriger Core-/Lua-Quellstand identifiziert und mit Hashes, Lizenzen und Buildskripten bereitgestellt.
+- [x] 237 Backend-Tests, 32 Protokolltests, neun native Mechanikfälle, 26 Deck-/Lobby-/Vorlagen-Browserprüfpunkte, kompletter nativer Mehrspiel-Matchlauf und Frontendbuild erfolgreich.
+- [x] Hub-Worker im Windows-AppContainer ohne Fähigkeiten und Server-Zugangsdaten, getrennte prüfsummenbestätigte Laufzeit mit Leserechten und angehaltener Start vor Job-Zuordnung. Native Sicherheitsproben, echter Supervisor-Neustart und vollständiges Browser-Match im AppContainer bestanden.
+- [ ] Öffentliche Abnahme: externe HTTPS/WSS-Verbindung aus zwei Netzen, reale Geräte/Leistung und visuelle Referenz sowie Nutzungs-/Weitergabenachweise. Keine produktive Aktivierung.
+
+Aktueller verbindlicher Detailstand: [Decks und DuelZone](DECKS_DUELZONE_STATUS.md).
+
+## Kartenbestand und Deckeditor – 12.10.2026
+
+- Originalrückseite unverändert eingebaut, einschließlich verdeckter Duellkarten und Deckstapel.
+- Echte Datenbank nach SQLite-Sicherung um verifizierte Regelzuordnungen ergänzt: 13.823 Katalogkarten, darunter 490 unterschiedliche erworbene Karten. 16 weitere erworbene Karten bleiben wegen ungeklärter Namen oder TCG-Zuordnung nur im Entwurf nutzbar. Konten, Guthaben, Bestände und Journale wurden anhand vollständiger Tabellenprüfsummen unverändert bestätigt.
+- Editor zeigt standardmäßig eigene Karten; Linksklick fügt hinzu, Rechtsklick entfernt. Drag & Drop unterstützt Deckbereiche und das Zurücklegen in die Sammlung. Separate Details öffnen die Vorschau.
+- Vollständige Backend-Suite mit 243 Tests und Frontendbuild erfolgreich; aktuelle Browsernachweise und Datenbanksicherung im Detailstand. Der Regelimport aktiviert keine öffentlichen Duelle.
