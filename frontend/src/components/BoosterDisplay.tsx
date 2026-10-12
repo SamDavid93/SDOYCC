@@ -1,15 +1,10 @@
-import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { ArrowRight, Gem, PackageOpen } from 'lucide-react'
+import { ArrowRight, Gem } from 'lucide-react'
 import type { BoosterSummary } from '../api/client'
+import { BoosterArtwork } from './BoosterArtwork'
 
-export function BoosterCover({ name, imageUrl }: { name: string; imageUrl?: string | null }) {
-  const [failedUrl, setFailedUrl] = useState<string | null>(null)
-  return <div className="booster-cover">
-    {imageUrl && failedUrl !== imageUrl
-      ? <img src={imageUrl} alt={`Cover: ${name}`} loading="lazy" onError={() => setFailedUrl(imageUrl)} />
-      : <div className="booster-cover-missing"><PackageOpen size={36} /><strong>{name}</strong><span>Kein Cover verfügbar</span></div>}
-  </div>
+export function BoosterCover({ name, code }: { name: string; code?: string | null }) {
+  return <div className="booster-cover"><BoosterArtwork name={name} code={code} /></div>
 }
 
 export function DiscoveryNav() {
@@ -42,7 +37,7 @@ export function BoosterProgress({ booster }: { booster: BoosterSummary }) {
 export function BoosterTile({ booster, children }: { booster: BoosterSummary; children?: React.ReactNode }) {
   return <article className="booster-tile">
     <NavLink className="booster-tile-link" to={`/boosters/${booster.id}`}>
-      <BoosterCover name={booster.name} imageUrl={booster.image_url} />
+      <BoosterCover name={booster.name} code={booster.set_code} />
       <div className="booster-tile-copy"><span className="eyebrow">{booster.set_code || 'SAMMELBOOSTER'} · {booster.cards_per_pack} Karten pro Pack</span><h3>{booster.name}</h3><p>{booster.product_type === 'structure_deck' ? `${booster.pool_size} Kartenarten · ${booster.bonus_cards ? 'Deck + Bonus' : 'Fester Inhalt'}` : `${booster.pool_size} mögliche Karten`}</p></div>
     </NavLink>
     <BoosterProgress booster={booster} />

@@ -76,7 +76,8 @@ def run():
                     page.screenshot(path=str(ROOT / 'artifacts/sdoycc-banner-desktop.png'), full_page=True)
                     expect(page.locator(".currency")).to_contain_text("2.450 Sammelpunkte")
                     page.get_by_role("link", name="Booster", exact=True).first.click()
-                    expect(page.locator(".booster-tile .booster-cover img").first).to_have_attribute("src", "https://example.com/test-pack.svg")
+                    expect(page.locator(".booster-tile .sdoycc-pack-art").first).to_have_attribute("viewBox", "0 0 320 480")
+                    expect(page.locator(".booster-tile .booster-cover img")).to_have_count(0)
                     assert api_requests.count(api_url + "/api/boosters") == 1, "Concurrent/page navigation reads should share cached booster data"
                     progress = page.request.get(api_url + '/api/boosters', headers={'Authorization': 'Bearer demo-token'}).json()[0]['collection_progress']
                     meter = page.locator('.booster-tile .booster-collection-progress').first
@@ -256,15 +257,18 @@ def run():
                     page.get_by_role("textbox", name="Booster suchen").fill("")
                     page.get_by_role("checkbox", name="Nur meine ungeöffneten Packs").uncheck()
                     expect(page.locator(".booster-tile")).to_have_count(1)
-                    # Image load failure must show the pack's identity, never a different pack's cover.
+                    # Custom covers remain sharp and identifiable without any external pack image.
                     page.route("https://example.com/test-pack.svg", lambda route: route.abort())
                     page.reload()
-                    expect(page.locator(".booster-cover-missing")).to_contain_text("Kein Cover verfügbar")
+                    expect(page.locator(".sdoycc-pack-art").first).to_have_attribute("aria-label", "SDOYCC-Cover: SDOYCC Origins")
+                    expect(page.locator(".booster-cover img")).to_have_count(0)
+                    page.screenshot(path=str(ROOT / "artifacts/sdoycc-custom-covers-desktop.png"), full_page=True)
                     page.set_viewport_size({"width": 390, "height": 844})
                     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), "Booster shop mobile horizontal overflow"
                     page.get_by_role("link", name="Enthaltene Karten ansehen").first.click()
                     expect(page.get_by_role("heading", name="Welche Karten kann ich ziehen?")).to_be_visible()
                     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), "Booster detail mobile horizontal overflow"
+                    page.screenshot(path=str(ROOT / "artifacts/sdoycc-custom-covers-mobile.png"), full_page=True)
 
                     page.get_by_role("button", name="Menü öffnen").click()
                     page.get_by_role("link", name="Meine Sammlung", exact=True).click()
@@ -442,7 +446,7 @@ def run():
                     check_workflows(page, ui_url, api_url, Path(temporary) / "browser.db", ROOT / "artifacts")
                     assert not errors, errors
                     browser.close()
-                    print(json.dumps({"browser": "passed", "checks": ["revealed card preview and exact text", "preview keyboard and Escape preserve opening", "summary preview and text fallbacks", "preview mobile layout", "community card image upload and publication", "resumable batch grant", "original-linked correction", "two-account reserved trade and receipt", "season planning and publication", "opening XP and reward claim", "workflow mobile layout", "mixed admin grant preview and submission", "stored grant receipt", "recipient notification and read state", "grant mobile layout", "collection variant quantities", "personal and admin inventory journal", "variant mobile layout", "admin login reset preserves assets", "admin block and unblock", "admin confirmation dialog and audit", "admin sidebar mobile navigation", "admin role access and revocation", "admin search and account details", "admin desktop and mobile layout", "bonus card separated from guaranteed content", "43-card opening with exactly one bonus", "bonus mobile layout", "pack vault", "empty vault", "animated reveal", "rarity spotlight matches result", "keyboard reveal", "reduced motion", "skip animation", "close preserves cards", "failed opening preserves stock", "demo", "purchase", "purchase receipt", "no success receipt on failed purchase", "receipt mobile", "open from receipt", "free opening", "inventory", "wallet", "catalog search", "card-to-booster navigation", "pool search", "actual cover", "cover failure fallback", "owned filter", "mobile", "logout", "public registration link", "chat confirmation", "reload preserves browser challenge", "locked username", "password registration", "precredited balance", "password login"], "console_errors": errors}))
+                    print(json.dumps({"browser": "passed", "checks": ["revealed card preview and exact text", "preview keyboard and Escape preserve opening", "summary preview and text fallbacks", "preview mobile layout", "community card image upload and publication", "resumable batch grant", "original-linked correction", "two-account reserved trade and receipt", "season planning and publication", "opening XP and reward claim", "workflow mobile layout", "mixed admin grant preview and submission", "stored grant receipt", "recipient notification and read state", "grant mobile layout", "collection variant quantities", "personal and admin inventory journal", "variant mobile layout", "admin login reset preserves assets", "admin block and unblock", "admin confirmation dialog and audit", "admin sidebar mobile navigation", "admin role access and revocation", "admin search and account details", "admin desktop and mobile layout", "bonus card separated from guaranteed content", "43-card opening with exactly one bonus", "bonus mobile layout", "pack vault", "empty vault", "animated reveal", "rarity spotlight matches result", "keyboard reveal", "reduced motion", "skip animation", "close preserves cards", "failed opening preserves stock", "demo", "purchase", "purchase receipt", "no success receipt on failed purchase", "receipt mobile", "open from receipt", "free opening", "inventory", "wallet", "catalog search", "card-to-booster navigation", "pool search", "resolution-independent SDOYCC cover", "cover independent of external image failure", "owned filter", "mobile", "logout", "public registration link", "chat confirmation", "reload preserves browser challenge", "locked username", "password registration", "precredited balance", "password login"], "console_errors": errors}))
             except Exception:
                 log.flush()
                 print((Path(temporary) / "servers.log").read_text(encoding="utf8"))

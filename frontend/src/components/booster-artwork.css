@@ -1,0 +1,12 @@
+.booster-cover .sdoycc-pack-art {
+  display: block;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  max-width: 100%;
+  overflow: visible;
+  font-family: inherit;
+  filter: drop-shadow(0 8px 9px #10203335);
+}
+.hero-cover .sdoycc-pack-art,
+.pack-half .sdoycc-pack-art { filter: none; }
