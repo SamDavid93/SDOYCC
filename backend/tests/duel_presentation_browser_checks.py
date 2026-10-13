@@ -52,6 +52,7 @@ window.__scene=(event)=>{frame.board.seat=frame.seat=0;frame.board.turn=0;frame.
 const visible={...card,image_url:'/scene-card.jpg',atk:3000,defense:2500};
 frame.board.boards=[{...side,lp:8000,hand:Array(6).fill(visible),grave:[visible],extra:[null,null],removed:[],field:[{zone:4,sequence:0,position:1,card:visible},{zone:4,sequence:2,position:4,card:visible},{zone:8,sequence:1,position:8,card:visible}]},{...side,lp:event?.kind==='lp'?7000:8000,hand:Array(4).fill(null),grave:[],extra:[null],removed:[],field:[{zone:4,sequence:0,position:8,card:null},{zone:4,sequence:2,position:1,card:visible},{zone:8,sequence:1,position:8,card:null}]}];
 if(event)frame.board.events.push({...event,id:Math.max(0,...frame.board.events.map(e=>e.id))+1});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__extra=(owners,seat,offer=false)=>{frame.board.seat=frame.seat=seat;frame.board.prompt=offer?{id:900+frame.board.revision,kind:'zones',minimum:1,maximum:1,choices:[{label:'Right',location:{owner:seat,zone:4,sequence:6}},{label:'Left',location:{owner:seat,zone:4,sequence:5}}]}:null;frame.board.boards.forEach(s=>s.field=s.field.filter(e=>e.zone!==4||e.sequence<5));owners.forEach((owner,i)=>{if(owner!==null)frame.board.boards[owner].field.push({zone:4,sequence:owner===seat?5+i:6-i,position:1,card})});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="presentation" onExit={()=>{}} />)
 ''', encoding='utf8')
         env = {**os.environ, 'VITE_BASE_PATH': '/'}
@@ -66,6 +67,8 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     page = browser.new_page(viewport={'width':1440,'height':1000})
                     page.add_init_script("""window.__soundStarts=0; const OriginalAudioContext=window.AudioContext; window.AudioContext=class extends OriginalAudioContext { createBufferSource(){const node=super.createBufferSource();const start=node.start.bind(node);node.start=(...args)=>{window.__soundStarts++;return start(...args)};return node} };""")
                     errors = []
+                    key_warnings = []
+                    page.on('console', lambda message: key_warnings.append(message.text) if 'same key' in message.text else None)
                     page.on('pageerror', lambda error: errors.append(str(error)))
                     page.route('**/test-card.svg', lambda route: route.fulfill(content_type='image/svg+xml', body='<svg xmlns="http://www.w3.org/2000/svg" width="80" height="120"><rect width="80" height="120" fill="teal"/></svg>'))
                     artwork=ROOT/'cache/cards-original/89631139.img'
@@ -341,9 +344,29 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     page.get_by_role('button',name='Auswahl 1',exact=True).click()
                     page.get_by_role('button',name='Auswahl 2',exact=True).dblclick()
                     expect(page.locator('.arena-decision-overlay')).to_have_count(0)
+                    # Physical shared zones keep their DOM identity when controllers change.
+                    page.evaluate('window.__physicalExtraNodes=Array.from(document.querySelectorAll(".arena-extra-row > .arena-slot"))')
+                    for viewport in ({'width':1440,'height':1000}, {'width':390,'height':844}):
+                        page.set_viewport_size(viewport)
+                        for seat in (0,1):
+                            for owners in ([None,None],[seat,None],[None,seat],[1-seat,seat],[seat,1-seat],[None,None],[1-seat,None],[None,1-seat],[None,None]):
+                                for offer in (False,True):
+                                    page.evaluate('(args)=>window.__extra(...args)', [owners,seat,offer])
+                                    expect(page.locator('.arena-extra-row > .arena-slot')).to_have_count(2)
+                                    expect(page.locator('.arena-slot')).to_have_count(24)
+                                    assert page.evaluate('window.__physicalExtraNodes.every((node,i)=>node===document.querySelectorAll(".arena-extra-row > .arena-slot")[i])')
+                                    for index, owner in enumerate(owners):
+                                        if owner is not None:
+                                            zone=page.locator('.arena-extra-row > .arena-slot').nth(index)
+                                            expect(zone).to_have_attribute('data-duel-owner',str(owner))
+                                            expect(zone.locator('.duel-playing-card')).to_have_count(1)
+                            page.evaluate('(seat)=>window.__extra([null,null],seat,true)',seat)
+                            page.locator('.arena-extra-row > .arena-slot').nth(0).locator('.arena-zone-choice').click()
+                            assert page.evaluate('window.__answers.at(-1).selected') == [1]
+                    assert not key_warnings, key_warnings
                     assert not errors, errors
                     browser.close()
-                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','effect reveal and viewer for both seats','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','720p and 1080p arena fits viewport','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement','one-card double-click submits exactly once','incomplete multi-selection stays open','maximum selection cannot be exceeded','double-click preserves original selection order','step selection auto-finishes only after engine confirms completion','double-click selects own hand cards','larger own hand fits mobile','required-card count remains visible on mobile','periodic clock state cannot acknowledge a pending action'],'console_errors':errors}))
+                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','effect reveal and viewer for both seats','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','720p and 1080p arena fits viewport','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement','one-card double-click submits exactly once','incomplete multi-selection stays open','maximum selection cannot be exceeded','double-click preserves original selection order','step selection auto-finishes only after engine confirms completion','double-click selects own hand cards','larger own hand fits mobile','required-card count remains visible on mobile','periodic clock state cannot acknowledge a pending action','two shared extra zones retain physical identity across controller and prompt changes for both seats and viewports','occupied shared zones stay visible and placement preserves original indexes'],'console_errors':errors}))
             finally:
                 process.terminate()
                 try: process.wait(timeout=10)

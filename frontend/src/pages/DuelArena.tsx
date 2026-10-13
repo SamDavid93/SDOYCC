@@ -20,7 +20,7 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
     (zone === 8 ? choice.action === 'set_spell' : zone === 4 ? ['summon', 'special_summon', 'set_monster'].includes(choice.action || '') : ['summon', 'special_summon', 'set_monster', 'set_spell', 'activate'].includes(choice.action || ''))) || []
   const optionsAt = (owner: number, zone: number, sequence: number) => prompt?.choices.map((choice, index) => ({ ...choice, index })).filter(choice => choice.location?.owner === owner && choice.location.zone === zone && choice.location.sequence === sequence) || []
   const activeAt = (owner: number, zone: number, sequence: number) => activeLocation?.owner === owner && (activeLocation.zone & 127) === zone && activeLocation.sequence === sequence
-  function slot(owner: number, zone: number, sequence: number, label: string) {
+  function slot(owner: number, zone: number, sequence: number, label: string, physicalKey = `${owner}:${zone}:${sequence}`) {
     const entry = sides[owner].field.find(value => value.zone === zone && value.sequence === sequence)
     const options = !disabled && prompt?.kind !== 'zones' ? optionsAt(owner, zone, sequence) : []
     const attackReady = options.some(choice => choice.action === 'attack')
@@ -28,7 +28,7 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
     const selected = options.some(choice => zoneSelection.includes(choice.index))
     const zoneChoice = prompt?.kind === 'zones' ? prompt.choices.findIndex(choice => choice.location?.owner === owner && choice.location.zone === zone && choice.location.sequence === sequence) ?? -1 : -1
     const canDrop = !disabled && owner === seat && !entry && (zone === 4 || zone === 8) && dragging !== null && actions(dragging, zone).length > 0
-    return <div key={`${zone}:${sequence}`} className={'arena-slot' + (zone === 4 && entry && (entry.position & 12) ? ' defense-position' : '') + (entry?.disabled ? ' zone-disabled' : '') + (zoneChoice >= 0 && !disabled ? ' zone-selectable' : '') + (zoneSelection.includes(zoneChoice) || selected ? ' zone-selected' : '') + (canDrop ? ' zone-droppable' : '') + (options.length ? ' action-available' : '') + (attackReady ? ' attack-ready' : '') + (effectReady ? ' effect-available' : '') + (activeAt(owner,zone,sequence) ? ' action-focused' : '')}
+    return <div key={physicalKey} className={'arena-slot' + (zone === 4 && entry && (entry.position & 12) ? ' defense-position' : '') + (entry?.disabled ? ' zone-disabled' : '') + (zoneChoice >= 0 && !disabled ? ' zone-selectable' : '') + (zoneSelection.includes(zoneChoice) || selected ? ' zone-selected' : '') + (canDrop ? ' zone-droppable' : '') + (options.length ? ' action-available' : '') + (attackReady ? ' attack-ready' : '') + (effectReady ? ' effect-available' : '') + (activeAt(owner,zone,sequence) ? ' action-focused' : '')}
       onDragOver={event => { if (canDrop) { event.preventDefault(); event.dataTransfer.dropEffect = 'move' } }}
       onDrop={event => { event.preventDefault(); if (canDrop && dragging !== null) setDrop({ index: dragging, target: { owner, zone, sequence } }); setDragging(null) }}
       data-duel-owner={owner} data-duel-zone={zone} data-duel-sequence={sequence} aria-label={`${owner === seat ? 'Deine' : 'Gegnerische'} ${label}`}>
@@ -83,10 +83,13 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
       </div>
     </article>)}
     <div className="arena-extra-row" aria-label="Extra-Monsterzonen">{[0, 1].map(index => {
+      // These two physical zones keep their identity when the controller changes.
       const ownSequence = 5 + index, otherSequence = 6 - index
       const ownAvailable = prompt?.choices.some(choice => choice.location?.owner === seat && choice.location.zone === 4 && choice.location.sequence === ownSequence)
-      const owner = ownAvailable || sides[seat].field.some(value => value.zone === 4 && value.sequence === ownSequence) ? seat : 1 - seat
-      return slot(owner, 4, owner === seat ? ownSequence : otherSequence, `Extra-Monsterzone ${index + 1}`)
+      const ownOccupied = sides[seat].field.some(value => value.zone === 4 && value.sequence === ownSequence)
+      const otherOccupied = sides[1 - seat].field.some(value => value.zone === 4 && value.sequence === otherSequence)
+      const owner = ownOccupied ? seat : otherOccupied ? 1 - seat : ownAvailable ? seat : 1 - seat
+      return slot(owner, 4, owner === seat ? ownSequence : otherSequence, `Extra-Monsterzone ${index + 1}`, `extra:${index}`)
     })}<DuelPhaseControl phase={phase} turnNumber={turnNumber} active={turn === seat} disabled={disabled} prompt={prompt} choose={chooseAction} /></div>
     {children}
   </div>
