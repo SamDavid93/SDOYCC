@@ -1,0 +1,7 @@
+.site-footer{flex-shrink:0;padding:12px 20px;border-top:1px solid #60748735;background:#102033;color:#b8c5d2;font-size:11px;line-height:1.5}
+.site-footer p{max-width:1250px;margin:0 auto;overflow-wrap:anywhere}
+.public-page-shell{min-height:100dvh;display:flex;flex-direction:column}.public-page-shell>.public-page-content{flex:1}
+.main-content:has(>.site-footer){display:flex;flex-direction:column;min-height:100dvh}.main-content>.app-route-slot{flex:1;min-height:0}
+.main-content:has(.deck-editor,.duel-zone-page)>.app-route-slot{overflow:hidden}
+.main-content:has(>.site-footer) .page-wrap:is(.deck-editor,.duel-zone-page){height:calc(100dvh - 70px - var(--site-footer-height,80px))}
+@media(max-width:700px){.site-footer{font-size:10px;line-height:1.4;padding:9px 12px}}

@@ -2,6 +2,7 @@ import { TradeHub } from './pages/TradeHub'
 import { SeasonHub } from './pages/SeasonHub'
 import { AdvancedAdmin } from './pages/AdvancedAdmin'
 import { Notifications } from './components/Notifications'
+import { SiteFooter } from './components/SiteFooter'
 import logoUrl from './assets/sdoycc-logo.png'
 import bannerUrl from './assets/sdoycc-banner.png'
 import { lazy, Suspense, useEffect, useState } from 'react'
@@ -45,9 +46,9 @@ export default function App() {
   }, [user, revision])
   const location = useLocation()
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }) }, [location.pathname])
-  if (location.pathname.startsWith('/register/')) return <RegistrationPage />
-  if (/^\/deck-template\/[a-f0-9-]{36}$/.test(location.pathname)) return <Suspense fallback={<p role="status">Vorlage laden …</p>}><DeckTemplatePage id={location.pathname.split('/')[2]} /></Suspense>
-  if (!user) return <LoginPage />
+  if (location.pathname.startsWith('/register/')) return <div className="public-page-shell"><div className="public-page-content"><RegistrationPage /></div><SiteFooter /></div>
+  if (/^\/deck-template\/[a-f0-9-]{36}$/.test(location.pathname)) return <div className="public-page-shell"><div className="public-page-content"><Suspense fallback={<p role="status">Vorlage laden …</p>}><DeckTemplatePage id={location.pathname.split('/')[2]} /></Suspense></div><SiteFooter /></div>
+  if (!user) return <div className="public-page-shell"><div className="public-page-content"><LoginPage /></div><SiteFooter /></div>
   const pageTitle = location.pathname.startsWith('/admin') ? 'Verwaltung' : location.pathname.startsWith('/decks/') ? 'Meine Decks' : location.pathname.startsWith('/trade/') ? 'Handel' : navItems.find(item => item.path === location.pathname)?.label || (location.pathname.startsWith('/boosters/') ? 'Booster' : /^\/(cards|sets)(\/|$)/.test(location.pathname) ? 'Kartenkatalog' : 'Kartenzentrale')
   const path = location.pathname
   let page = <OverviewPage />
@@ -80,7 +81,7 @@ export default function App() {
     {menuOpen && <button className="mobile-scrim" onClick={() => setMenuOpen(false)} aria-label="Menü schließen" />}
     <main className="main-content"><header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Menü öffnen"><Menu size={20} /></button><div className="breadcrumbs"><span>Hub</span><ChevronRight size={14} /><strong>{pageTitle}</strong></div><div className="top-actions"><Notifications key={user.id} /><NavLink className="top-pack-link" to="/my-packs"><Layers3 size={16} /><span>{packCount ?? '…'} Packs</span></NavLink><NavLink to="/account" className="currency"><Gem size={15} />{user.diamonds.toLocaleString('de-DE')} Sammelpunkte</NavLink></div></header>
     {error && <div className="api-notice" role="alert">{error}</div>}
-    <div key={user.id}><Suspense fallback={<div className="page-wrap" role="status">Bereich wird geladen …</div>}>{page}</Suspense></div></main>
+    <div className="app-route-slot" key={user.id}><Suspense fallback={<div className="page-wrap" role="status">Bereich wird geladen …</div>}>{page}</Suspense></div><SiteFooter /></main>
   </div>
 }
 
