@@ -92,6 +92,18 @@ def run():
                     expect(page.get_by_label('Deckname', exact=True)).to_have_value('Mein Browserdeck')
                     page.locator('.deck-catalog-options > summary').click()
                     expect(page.locator('.deck-library-card').first).to_be_visible()
+                    for width,height in ((1920,1080),(1280,720),(390,844)):
+                        page.set_viewport_size({'width':width,'height':height})
+                        assert page.evaluate('document.documentElement.scrollHeight <= innerHeight + 1')
+                        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth + 1')
+                        page.evaluate('window.scrollTo(0,1000)')
+                        assert page.evaluate('scrollY') == 0
+                        if width < 900:
+                            page.get_by_role('button',name='Sammlung',exact=True).click()
+                        bounds=page.locator('.deck-workbench').bounding_box()
+                        assert bounds and bounds['height'] > 150 and bounds['y']+bounds['height'] <= height+1,bounds
+                        page.screenshot(path=str(artifacts/f'frame-{width}.png'))
+                    page.set_viewport_size({'width':1440,'height':1000})
                     # Rapid edits while debounce is running must all survive.
                     page.get_by_label('Erlaubnis', exact=True).select_option('allowed')
                     page.get_by_placeholder('Name, Effekt oder Passcode').fill(str(codes[0]))
@@ -261,6 +273,13 @@ def run():
                     expect(page.get_by_label('Deckname', exact=True)).to_have_value('Anderer Bearbeitungsstand (Kopie)')
                     host_deck_id = page.url.split('/')[-1]
                     page.get_by_role('link', name='DuelZone', exact=True).click()
+                    expect(page.locator('.duel-mode-card')).to_be_visible()
+                    for width,height in ((1920,1080),(1280,720),(390,844)):
+                        page.set_viewport_size({'width':width,'height':height})
+                        assert page.evaluate('document.documentElement.scrollHeight <= innerHeight + 1')
+                        page.evaluate('window.scrollTo(0,1000)')
+                        assert page.evaluate('scrollY') == 0
+                    page.set_viewport_size({'width':1600,'height':1100})
                     page.get_by_label('Dein Deck', exact=True).select_option(host_deck_id)
                     page.get_by_role('button', name='Private Lobby erstellen', exact=True).click()
                     expect(page.locator('.duel-room-heading h2')).to_contain_text('SDO-')
@@ -270,6 +289,7 @@ def run():
                     guest_page = guest_context.new_page()
                     guest_page.on('pageerror', lambda error: errors.append(str(error)))
                     guest_page.goto(ui_url + '/#/duel-zone')
+                    guest_page.get_by_text('Mit Code beitreten',exact=True).click()
                     guest_page.get_by_label('Lobby-Code', exact=True).fill(code)
                     guest_page.get_by_role('button', name='Beitreten', exact=True).click()
                     expect(guest_page.locator('.duel-room')).to_be_visible()
@@ -293,11 +313,11 @@ def run():
                     expect(page.locator('.duel-seat').nth(1)).to_contain_text('Deckauswahl offen', timeout=10000)
                     expect(page.locator('.duel-seat').first).to_contain_text('Bereit')
                     guest_page.get_by_role('button', name='Lobby verlassen', exact=True).click()
-                    expect(guest_page.locator('.duel-entry-grid')).to_be_visible()
+                    expect(guest_page.locator('.duel-mode-card')).to_be_visible()
                     expect(page.locator('.duel-seat').nth(1)).to_contain_text('Platz frei', timeout=10000)
                     page.once('dialog', lambda dialog: dialog.accept())
                     page.get_by_role('button', name='Lobby schließen', exact=True).click()
-                    expect(page.locator('.duel-entry-grid')).to_be_visible()
+                    expect(page.locator('.duel-mode-card')).to_be_visible()
                     assert not errors, errors
                     report = {'status': 'passed', 'tests': ['create', 'rapid-autosave', 'real-rule-ydk-import', 'formal-check', 'ownership', 'engine-gate', 'preview-escape', 'test-hand', 'ydk-export', 'failed-save-draft-recovery', 'edit-conflict', 'mobile-tabs', 'compact-three-pane-layout', 'individual-copy-grid', 'persistent-card-preview', 'mobile-card-preview', 'archive-restore', 'duplicate', 'two-account-lobby', 'host-approval', 'private-deck-choice', 'immediate-deck-selection', 'withdraw-by-clearing-selection', 'mobile-lobby', 'leave-close', 'immutable-share-link', 'anonymous-template-view', 'private-notes-omitted', 'copy-own-draft', 'revoke-link'], 'console_errors': errors, 'production_modified': False}
                     (artifacts / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf8')

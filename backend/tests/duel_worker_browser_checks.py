@@ -82,6 +82,7 @@ def run(manual=False):
                         return
                     host.get_by_role('button', name='Private Lobby erstellen', exact=True).click()
                     expect(host.locator('.duel-room-heading h2')).to_contain_text('SDO-')
+                    guest.get_by_text('Mit Code beitreten',exact=True).click()
                     guest.get_by_label('Lobby-Code', exact=True).fill(host.locator('.duel-room-heading h2').inner_text())
                     guest.get_by_role('button', name='Beitreten', exact=True).click()
                     expect(host.get_by_role('button', name='Gast bestätigen', exact=True)).to_be_visible(timeout=10000)

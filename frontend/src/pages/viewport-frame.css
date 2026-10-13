@@ -1,0 +1,26 @@
+/* The application frame stays still; only its content panes may scroll. */
+html:has(.deck-editor,.duel-zone-page),body:has(.deck-editor,.duel-zone-page){height:100%;overflow:hidden;overscroll-behavior:none}
+.app-shell:has(.deck-editor,.duel-zone-page){height:100dvh;min-height:0;overflow:hidden}
+.app-shell:has(.deck-editor,.duel-zone-page)>.sidebar{height:100%;overflow-y:auto;overscroll-behavior:contain}
+.main-content:has(.deck-editor,.duel-zone-page){height:100%;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.main-content:has(.deck-editor,.duel-zone-page)>.topbar{flex:0 0 70px}
+.page-wrap:is(.deck-editor,.duel-zone-page){width:100%;height:calc(100dvh - 70px);min-height:0;max-height:100%;overflow:hidden;display:flex;flex-direction:column;padding:16px 20px;gap:0}
+.page-wrap:is(.deck-editor,.duel-zone-page)>:not(.deck-workbench,.duel-hub-layout){flex-shrink:0}
+.deck-editor>.back-link{margin-bottom:4px;font-size:11px}.deck-editor .deck-editor-heading{margin-bottom:4px}.deck-editor .deck-editor-heading h1{margin:4px 0 8px;font-size:21px}
+.deck-editor .deck-mobile-tabs{margin:6px 0}
+.deck-editor .deck-workbench{flex:1;min-height:0;overflow:hidden;grid-template-rows:minmax(0,1fr) auto}
+.deck-editor .deck-workbench>.deck-panel{min-height:0;max-height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;position:static}
+.deck-editor .deck-review{max-height:min(35dvh,250px)!important;margin:0}
+.deck-editor .deck-recovery{max-height:25dvh;overflow:auto;padding:12px;margin:6px 0}.deck-editor>.api-notice{max-height:18dvh;overflow:auto}
+.duel-zone-page .duel-hub-heading{margin-bottom:12px}.duel-zone-page .duel-hub-heading h1{font-size:24px}
+.duel-zone-page .duel-hub-layout{flex:1;min-height:0;overflow:hidden;align-items:stretch;gap:18px}
+.duel-zone-page .duel-hub-main,.duel-zone-page .duel-hub-sidebar{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.duel-zone-page .duel-mode-card{height:100%;min-height:340px;display:flex;flex-direction:column}
+.duel-zone-page .duel-mode-art{height:auto;min-height:80px;flex:1;gap:18px}.duel-zone-page .duel-mode-emblem{width:clamp(70px,16dvh,132px);height:clamp(70px,16dvh,132px)}.duel-zone-page .duel-mode-emblem svg{width:65%;height:65%}
+.duel-zone-page .duel-mode-copy{padding:8px 20px 12px}.duel-zone-page .duel-mode-copy h2{font-size:clamp(22px,4dvh,34px);margin:8px 0}.duel-zone-page .duel-mode-copy p:last-child{margin:8px 0;font-size:12px}
+.duel-zone-page .duel-mode-switch{padding-bottom:16px}.duel-zone-page .duel-mode-switch button{padding:12px}.duel-zone-page .duel-hub-steps{padding:12px 16px}
+.duel-zone-page .duel-hub-sidebar{gap:8px}.duel-zone-page .duel-hub-launch{margin-top:8px;padding:16px;gap:12px}.duel-zone-page .duel-hub-play{min-height:48px}
+.duel-zone-page .duel-room{height:100%;overflow:auto;overscroll-behavior:contain}.duel-zone-page .duel-room-heading h2{margin:8px 0}
+@media(max-width:900px){.deck-editor .deck-workbench{display:flex;flex-direction:column;gap:8px}.deck-editor .deck-workbench>.deck-panel{flex:1}.deck-editor[data-pane=review] .deck-review{max-height:100%!important}.deck-editor[data-pane=preview] .deck-inspector{display:block;min-height:0;overflow:auto}.deck-editor .deck-library,.deck-editor .deck-composition{max-height:100%}}
+@media(max-width:700px){.page-wrap:is(.deck-editor,.duel-zone-page){padding:10px; border-radius:0}.duel-zone-page .duel-hub-layout{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);gap:10px}.duel-zone-page .duel-hub-main{overflow:auto;max-height:28dvh}.duel-zone-page .duel-mode-card{height:auto;min-height:0}.duel-zone-page .duel-mode-art,.duel-zone-page .duel-mode-copy .eyebrow,.duel-zone-page .duel-hub-steps{display:none}.duel-zone-page .duel-mode-topline{padding:8px 12px}.duel-zone-page .duel-mode-copy{padding:4px 12px}.duel-zone-page .duel-mode-copy h2{font-size:21px;margin:3px}.duel-zone-page .duel-mode-copy p:last-child{margin:4px 0;font-size:11px}.duel-zone-page .duel-mode-switch{padding:6px 12px 10px;gap:8px}.duel-zone-page .duel-mode-switch button{padding:7px}.duel-zone-page .duel-mode-switch small{margin-top:3px}.duel-zone-page .duel-hub-heading{margin-bottom:8px}.duel-zone-page .duel-hub-heading .eyebrow{display:none}.duel-zone-page .duel-hub-layout:has(.duel-room){grid-template-rows:minmax(0,1fr) auto}.duel-zone-page .duel-hub-main:has(.duel-room){max-height:none}.duel-zone-page .duel-hub-layout:has(.duel-room) .duel-hub-sidebar{max-height:22dvh}.duel-zone-page .duel-hub-room-info{display:none}.duel-zone-page .duel-hub-launch{margin-top:0}.duel-zone-page .duel-hub-deck img{width:40px}.duel-zone-page .duel-hub-deck strong{font-size:15px;margin:5px 0}.duel-zone-page .duel-hub-details summary,.duel-zone-page .duel-history>summary,.duel-zone-page .duel-hub-link,.duel-zone-page .duel-hub-join summary{padding:11px 14px;font-size:12px}}
+@media(max-height:600px) and (min-width:701px){.duel-zone-page .duel-mode-art>span,.duel-zone-page .duel-hub-steps{display:none}.duel-zone-page .duel-mode-card{min-height:260px}.duel-zone-page .duel-mode-art:before,.duel-zone-page .duel-mode-art:after{display:none}.duel-zone-page .duel-mode-copy .eyebrow{display:none}}
