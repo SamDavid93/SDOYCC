@@ -113,6 +113,9 @@ def run(manual=False):
                         for token, seat in ((host_token, 0), (guest_token, 1)):
                             result = client.get('/api/duel-zone/worker/runs/' + run_id, headers={'Authorization': 'Bearer ' + token}).json()
                             assert result['state'] == 'running' and result['seat'] == seat
+                            assert result['clock']['limit'] == 360 and result['clock']['refill_ratio'] == .5
+                            assert all(0 < value <= 360 for value in result['clock']['remaining'])
+                            assert max(result['clock']['remaining']) == 360
                             assert all(card is None for card in result['board']['boards'][1-seat]['hand'])
                             assert any(card for card in result['board']['boards'][seat]['hand'])
                     host.locator('.duel-player-field').nth(1).locator('.duel-hand .duel-playing-card').first.click()
@@ -144,6 +147,17 @@ def run(manual=False):
                     summoned_name = destination.locator('.duel-playing-card').get_attribute('aria-label').removesuffix(' ansehen')
                     for page in (host, guest):
                         expect(page.locator('.duel-event-log li').filter(has_text='Normal-/Tributbeschwörung').last).to_contain_text('Karte: ' + summoned_name)
+                    guest.locator('.arena-phase-orb').click()
+                    guest.get_by_role('button',name='Kampfphase',exact=True).click()
+                    expect(destination.locator('.arena-action-hotspot')).to_be_enabled(timeout=10000)
+                    destination.locator('.arena-action-hotspot').click()
+                    guest.get_by_role('button',name='Angriff starten',exact=True).click()
+                    target=guest.locator('.arena-slot[data-duel-owner="0"][data-duel-zone="4"][data-duel-sequence="2"] .arena-action-hotspot')
+                    expect(target).to_be_enabled(timeout=10000)
+                    target.dblclick()
+                    for page in (host,guest):
+                        expect(page.locator('.duel-event-log')).to_contain_text('Angriff',timeout=10000)
+                    expect(guest.get_by_role('button',name='Angriff bestätigen',exact=True)).to_have_count(0)
                     expect(host.locator('.duel-player-field')).to_have_count(2)
                     host.screenshot(path=str(artifacts / 'desktop.png'), full_page=True)
                     guest.reload()
@@ -222,7 +236,7 @@ def run(manual=False):
                     expect(host.get_by_text('Keine aktive Duellsperre', exact=True)).to_be_visible()
                     assert not errors, errors
                     report = {'status': 'passed', 'native_core': True, 'production_modified': False,
-                        'tests': ['two-hub-sessions', 'deck-choice-authorizes-start-without-extra-confirmations','deselect-revokes-readiness-without-resetting-other-deck', 'snapshot-worker-start', 'private-hands', 'native-answer','named-summon-log-for-both-seats','shared-turn-end-request-and-completion', 'card-preview', 'browser-reload', 'mobile-layout', 'cancel-surrender', 'surrender-and-result', 'reservation-release', 'no-inventory-or-journal-change', 'one-worker-run', 'authenticated-websocket', 'credentials-not-in-urls', 'private-history-playback', 'cancel-maintenance', 'admin-pause-admission', 'admin-resume-admission', 'versioned-rule-review', 'duel-only-restriction', 'duel-restriction-revocation'], 'console_errors': errors}
+                        'tests': ['two-hub-sessions', 'deck-choice-authorizes-start-without-extra-confirmations','deselect-revokes-readiness-without-resetting-other-deck', 'snapshot-worker-start', 'private-hands', 'native-answer','native-double-click-attack-target','360-second-budget-with-50-percent-recovery','named-summon-log-for-both-seats','shared-turn-end-request-and-completion', 'card-preview', 'browser-reload', 'mobile-layout', 'cancel-surrender', 'surrender-and-result', 'reservation-release', 'no-inventory-or-journal-change', 'one-worker-run', 'authenticated-websocket', 'credentials-not-in-urls', 'private-history-playback', 'cancel-maintenance', 'admin-pause-admission', 'admin-resume-admission', 'versioned-rule-review', 'duel-only-restriction', 'duel-restriction-revocation'], 'console_errors': errors}
                     (artifacts / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf8')
                     print(json.dumps(report)); browser.close()
             finally:

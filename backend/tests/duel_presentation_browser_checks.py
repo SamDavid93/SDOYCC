@@ -34,7 +34,7 @@ window.__answers=[]
 class Socket {
 static OPEN=1;readyState=1
 constructor(){window.__socket=this;setTimeout(()=>this.onopen?.(),0)}
-send(text){const message=JSON.parse(text);if(message.type==='answer'){window.__answers.push(message);frame.board.prompt=null;frame.board.revision++}if(message.type!=='ping')queueMicrotask(()=>this.onmessage?.({data:JSON.stringify({type:'state',result:frame})}))}
+send(text){const message=JSON.parse(text);if(message.type==='answer'){const stale=JSON.stringify(frame);if(window.__delayReply){window.__delayReply=false;queueMicrotask(()=>this.onmessage?.({data:JSON.stringify({type:'state',result:JSON.parse(stale)})}));window.__replyLater=true}window.__answers.push(message);const progress=frame.board.prompt?.selection_progress;if(progress&&!message.cancel){frame.board.prompt={...frame.board.prompt,id:frame.board.prompt.id+1,selection_progress:{...progress,selected:progress.selected+1,can_finish:progress.selected+1>=progress.minimum},cancel:progress.selected+1>=progress.minimum}}else frame.board.prompt=null;frame.board.revision++}if(message.type!=='ping'){const emit=()=>this.onmessage?.({data:JSON.stringify({type:'state',result:frame,ack:message.type==='answer'})});if(window.__replyLater){window.__replyLater=false;setTimeout(emit,350)}else queueMicrotask(emit)}}
 close(){this.readyState=3}
 }
 window.WebSocket=Socket
@@ -46,6 +46,8 @@ window.__log=()=>{frame.board.events.push({id:3,kind:'attack',affected_cards:[{r
 window.__effect=(seat)=>{frame.seat=seat;frame.board.seat=seat;frame.board.prompt=null;frame.board.events.push({id:frame.board.events.length+1,kind:'chain',card,source:{owner:0,zone:4,sequence:0},number:1,effect:'Ein bestätigter Testeffekt'});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__feedback=(chain=false)=>{frame.seat=0;frame.board.seat=0;frame.board.turn=0;frame.board.boards[0]={...side,hand:[card],grave:[card],extra:[card],removed:[card],field:[{zone:4,sequence:0,position:1,card},{zone:8,sequence:0,position:8,card}]};frame.board.prompt={id:300,title:chain?'Auf die Kette reagieren':'Aktion wählen',choices:[2,4,8,16,32,64,1].map(zone=>({label:'Aktivieren: Testkarte '+zone,card,...(chain?{}:{action:'activate'}),location:{owner:0,zone,sequence:0}}))};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__announce=(kind,phase,player=1)=>{frame.board.events.push({id:Math.max(0,...frame.board.events.map(e=>e.id))+1,kind,phase,player,number:2});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__pick=(minimum,maximum=minimum,ordered=false,zone=1)=>{frame.board.prompt={id:500+frame.board.revision,title:'Karten auswählen',hint:'Wähle Karten, die deiner Hand hinzugefügt werden.',select:true,minimum,maximum,ordered,choices:[0,1,2].map(i=>({label:'Auswahl '+(i+1),card,location:{owner:0,zone,sequence:i}}))};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__pickStep=()=>{window.__pick(2);frame.board.prompt={...frame.board.prompt,title:'Auswahl ändern',select:false,cancel:false,selection_progress:{minimum:2,maximum:2,selected:0,can_finish:false}};window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__scene=(event)=>{frame.board.seat=frame.seat=0;frame.board.turn=0;frame.board.phase=4;frame.board.prompt=null;
 const visible={...card,image_url:'/scene-card.jpg',atk:3000,defense:2500};
 frame.board.boards=[{...side,lp:8000,hand:Array(6).fill(visible),grave:[visible],extra:[null,null],removed:[],field:[{zone:4,sequence:0,position:1,card:visible},{zone:4,sequence:2,position:4,card:visible},{zone:8,sequence:1,position:8,card:visible}]},{...side,lp:event?.kind==='lp'?7000:8000,hand:Array(4).fill(null),grave:[],extra:[null],removed:[],field:[{zone:4,sequence:0,position:8,card:null},{zone:4,sequence:2,position:1,card:visible},{zone:8,sequence:1,position:8,card:null}]}];
@@ -274,9 +276,74 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                         expect(page.get_by_role('status',name='Duellergebnis')).to_have_count(0,timeout=5000)
                     page.evaluate('window.__scene({kind:"chain_step",step:75,number:1})')
                     expect(page.get_by_role('status',name='Negierter Effekt')).to_contain_text('Aktivierung negiert')
+                    before=len(page.evaluate('window.__answers'))
+                    page.evaluate('window.__pick(1)')
+                    progress=page.get_by_role('status',name='Auswahlfortschritt')
+                    expect(progress).to_contain_text('Wähle genau 1 Karte')
+                    page.evaluate('window.__delayReply=true')
+                    page.get_by_role('button',name='Auswahl 2',exact=True).dblclick()
+                    expect(page.get_by_role('button',name='Auswahl 2',exact=True)).to_be_disabled()
+                    page.wait_for_timeout(80)
+                    expect(page.get_by_role('button',name='Auswahl 2',exact=True)).to_be_disabled()
+                    expect(page.locator('.arena-decision-overlay')).to_have_count(0)
+                    assert page.evaluate('window.__answers.at(-1).selected')==[1]
+                    assert len(page.evaluate('window.__answers'))==before+1
+                    page.evaluate('window.__pick(2)')
+                    page.get_by_role('button',name='Auswahl 1',exact=True).dblclick()
+                    expect(progress).to_contain_text('Noch 1 Karte erforderlich')
+                    assert len(page.evaluate('window.__answers'))==before+1
+                    page.get_by_role('button',name='Auswahl 3',exact=True).dblclick()
+                    expect(page.locator('.arena-decision-overlay')).to_have_count(0)
+                    assert page.evaluate('window.__answers.at(-1).selected')==[0,2]
+                    page.evaluate('window.__pick(2)')
+                    page.get_by_role('button',name='Auswahl 1',exact=True).click()
+                    page.get_by_role('button',name='Auswahl 2',exact=True).click()
+                    total=len(page.evaluate('window.__answers'))
+                    page.get_by_role('button',name='Auswahl 3',exact=True).dblclick()
+                    expect(progress).to_contain_text('2 / 2 ausgewählt')
+                    assert len(page.evaluate('window.__answers'))==total
+                    page.get_by_role('button',name='Auswahl 1',exact=True).dblclick()
+                    expect(page.locator('.arena-decision-overlay')).to_have_count(0)
+                    assert page.evaluate('window.__answers.at(-1).selected')==[0,1]
+                    page.evaluate('window.__pick(3,3,true)')
+                    for name in ('Auswahl 3','Auswahl 1','Auswahl 2'):
+                        page.get_by_role('button',name=name,exact=True).click()
+                    page.get_by_role('button',name='1. Auswahl 3',exact=True).dblclick()
+                    expect(page.locator('.arena-decision-overlay')).to_have_count(0)
+                    assert page.evaluate('window.__answers.at(-1).selected')==[2,0,1]
+                    page.evaluate('window.__pickStep()')
+                    total=len(page.evaluate('window.__answers'))
+                    page.get_by_role('button',name='Auswahl 1',exact=True).dblclick()
+                    expect(progress).to_contain_text('1 / 2 ausgewählt')
+                    assert len(page.evaluate('window.__answers'))==total+1
+                    page.get_by_role('button',name='Auswahl 2',exact=True).dblclick()
+                    expect(page.locator('.arena-decision-overlay')).to_have_count(0)
+                    answers=page.evaluate('window.__answers.slice(-2)')
+                    assert answers[0]['selected']==[1]
+                    assert answers[1]['selected']==[] and answers[1]['cancel'] is True
+                    assert answers[1]['prompt']>answers[0]['prompt']
+                    page.evaluate('window.__scene();window.__pick(2,2,false,2)')
+                    expect(progress).to_contain_text('Wähle genau 2 Karten')
+                    own=page.locator('.arena-own .arena-hand-card>.duel-playing-card')
+                    own.nth(0).dblclick()
+                    expect(progress).to_contain_text('Noch 1 Karte erforderlich')
+                    own.nth(1).dblclick()
+                    expect(page.locator('.arena-decision-overlay')).to_have_count(0)
+                    assert page.evaluate('window.__answers.at(-1).selected')==[0,1]
+                    page.evaluate('window.__scene()')
+                    assert own.first.bounding_box()['width']>=100
+                    page.set_viewport_size({'width':390,'height':844})
+                    assert own.first.bounding_box()['width']>=66
+                    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+                    page.evaluate('window.__pick(2)')
+                    expect(progress).to_contain_text('Wähle genau 2 Karten')
+                    page.screenshot(path=str(ROOT/'artifacts/duel-selection-mobile.png'),full_page=True)
+                    page.get_by_role('button',name='Auswahl 1',exact=True).click()
+                    page.get_by_role('button',name='Auswahl 2',exact=True).dblclick()
+                    expect(page.locator('.arena-decision-overlay')).to_have_count(0)
                     assert not errors, errors
                     browser.close()
-                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','effect reveal and viewer for both seats','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','720p and 1080p arena fits viewport','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement'],'console_errors':errors}))
+                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','effect reveal and viewer for both seats','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','720p and 1080p arena fits viewport','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement','one-card double-click submits exactly once','incomplete multi-selection stays open','maximum selection cannot be exceeded','double-click preserves original selection order','step selection auto-finishes only after engine confirms completion','double-click selects own hand cards','larger own hand fits mobile','required-card count remains visible on mobile','periodic clock state cannot acknowledge a pending action'],'console_errors':errors}))
             finally:
                 process.terminate()
                 try: process.wait(timeout=10)

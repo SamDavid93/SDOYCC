@@ -171,9 +171,11 @@ class Projection:
                 self.new_prompt(owner, 'Zahl ansagen' if msg == 143 else 'Effektoption wählen', choices)
             elif msg == 26:
                 owner, finishable, cancelable = r.read('BBB'); minimum, maximum = r.read('II')
-                choices = []
+                choices, selected_count = [], 0
                 for removing in (False, True):
-                    for _ in range(r.read('I')):
+                    count = r.read('I')
+                    if removing: selected_count = count
+                    for _ in range(count):
                         code = r.read('I'); info = r.loc()
                         label = self.catalog[code]['name'] if code else 'Verdeckte Karte'
                         index = len(choices)
@@ -181,7 +183,8 @@ class Projection:
                             struct.pack('<II', 1, index), code or None))
                         choices[-1]['location'] = info
                 self.new_prompt(owner, 'Auswahl ändern', choices, allow_empty=bool(finishable or cancelable))
-                self.prompt.update(cancel=bool(finishable or cancelable))
+                self.prompt.update(cancel=bool(finishable or cancelable), selection_progress={
+                    'minimum': minimum, 'maximum': maximum, 'selected': selected_count, 'can_finish': bool(finishable)})
             elif msg in (20, 21, 25):
                 owner = r.read('B')
                 cancel = r.read('B') if msg == 20 else True

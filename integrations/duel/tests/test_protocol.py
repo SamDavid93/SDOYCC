@@ -14,6 +14,16 @@ CATALOG = {101: {'name': 'Testkarte', 'description': 'Privater Text', 'atk': 100
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_step_selection_exposes_required_and_selected_counts_only_to_deciding_player(self):
+        message = struct.pack('<BBBBII', 26, 0, 0, 1, 2, 2)
+        message += struct.pack('<IIBBII', 1, 101, 0, 1, 0, 0)
+        message += struct.pack('<IIBBII', 1, 101, 0, 1, 1, 0)
+        self.p.consume({'status': 1, 'messages': [base64.b64encode(message).decode()]})
+        self.assertEqual(self.p.prompt['selection_progress'], {'minimum': 2, 'maximum': 2, 'selected': 1, 'can_finish': False})
+        self.assertEqual(self.p.view(0)['prompt']['selection_progress']['selected'], 1)
+        self.assertIsNone(self.p.view(1)['prompt'])
+        self.assertEqual(self.p.respond(0, self.p.prompt['id'], [0]), struct.pack('<II', 1, 0))
+
     def test_turn_end_request_is_public_but_not_a_completed_turn(self):
         self.p.turn_number = 1
         self.p.new_prompt(0, 'Aktion wählen', [self.p.choice('Zug beenden', struct.pack('<i', 7))])

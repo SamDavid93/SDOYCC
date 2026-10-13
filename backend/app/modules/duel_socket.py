@@ -85,7 +85,7 @@ async def worker_socket(socket: WebSocket, run_id: str):
                 else: raise ValueError('Unknown command')
                 # An explicit acknowledgement also unblocks the UI when an answer
                 # produces the same public state. It never repeats an engine action.
-                await socket.send_json({'type': 'state', 'result': result})
+                await socket.send_json({'type': 'state', 'result': result, 'ack': True})
                 last_sent = json.dumps(result, ensure_ascii=False, sort_keys=True)
             except (ValidationError, ValueError, TypeError):
                 await socket.send_json({'type': 'error', 'message': 'Ungültige Spielentscheidung.'})

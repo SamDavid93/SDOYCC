@@ -523,11 +523,16 @@ class WorkerTests(PreparationFixture):
             first = host.receive_json()['result']; other = guest.receive_json()['result']
             self.assertEqual(first['board']['boards'][1]['hand'], [None])
             self.assertEqual(other['board']['boards'][0]['hand'], [None])
+            def acknowledged(socket):
+                for _ in range(30):
+                    message = socket.receive_json()
+                    if message.get('ack'): return message['result']
+                self.fail('Command acknowledgement did not arrive')
             host.send_json({'type': 'answer', 'prompt': first['board']['prompt']['id'], 'selected': [0]})
-            response = host.receive_json()['result']
+            response = acknowledged(host)
             self.assertGreater(response['board']['revision'], first['board']['revision'])
             host.send_json({'type': 'surrender'})
-            result = host.receive_json()['result']
+            result = acknowledged(host)
             self.assertEqual(result['winner_seat'], 1)
             self.assertEqual(result['reason'], 'surrender')
             self.assertEqual(self.total(), 0)

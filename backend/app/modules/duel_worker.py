@@ -86,7 +86,8 @@ class LiveRun:
     history_truncated: bool = False
     match: dict | None = None
     engine_seats: list = field(default_factory=lambda: [0, 1])
-    clock_remaining: list = field(default_factory=lambda: [180.0, 180.0])
+    clock_remaining: list = field(default_factory=lambda: [360.0, 360.0])
+    clock_recovered: list = field(default_factory=lambda: [0.0, 0.0])
     clock_owner: int | None = None
     clock_started: float = field(default_factory=time.monotonic)
     clock_turn: int = 0
@@ -95,20 +96,25 @@ class LiveRun:
     def pause_clock(self):
         now = time.monotonic()
         if self.clock_owner is not None:
-            self.clock_remaining[self.clock_owner] = max(0, self.clock_remaining[self.clock_owner] - (now - self.clock_started))
+            owner, other = self.clock_owner, 1 - self.clock_owner
+            elapsed = min(self.clock_remaining[owner], max(0, now - self.clock_started))
+            self.clock_remaining[owner] = max(0, self.clock_remaining[owner] - elapsed)
+            recovered = min(360.0 - self.clock_remaining[other], elapsed * .5)
+            self.clock_remaining[other] += recovered
+            self.clock_recovered[other] += recovered
         self.clock_started = now; self.clock_owner = None
 
     def tick_clock(self):
         self.pause_clock()
         if self.projection.turn_number != self.clock_turn:
             self.clock_turn = self.projection.turn_number
-            self.clock_remaining[self.engine_seats[self.projection.turn]] = 180.0
         if not self.terminal and not self.projection.ended and self.projection.prompt:
             self.clock_owner = self.engine_seats[self.projection.prompt['owner']]
 
     def clock(self):
         return {'remaining': [round(value, 1) for value in self.clock_remaining], 'active': self.clock_owner,
-            'profile': '180s per own turn; reactions consume remaining budget',
+            'profile': '360s budget; 50% of opponent decision time recovered, capped at 360s',
+            'limit': 360, 'refill_ratio': .5, 'recovered': [round(value, 1) for value in self.clock_recovered],
             'side_remaining': max(0, round(180 - (time.monotonic() - self.side_started), 1)) if self.side_started is not None else None}
 
     def view(self, seat):
@@ -393,7 +399,7 @@ class WorkerService:
                     live.projection.revision = old_revision; live.projection.event_sequence = old_sequence
                     progress['game'] += 1; progress['phase'] = 'playing'; progress['starter'] = starter
                     live.side_started = None
-                    live.clock_remaining = [180.0, 180.0]; live.clock_turn = 0
+                    live.clock_remaining = [360.0, 360.0]; live.clock_recovered = [0.0, 0.0]; live.clock_turn = 0
                     packet = await live.engine.command({'op': 'start', 'decks': [progress['decks'][player] for player in live.engine_seats], 'flags': 0x30002e800})
                     await self.consume_packet(live, packet)
                     live.tick_clock()

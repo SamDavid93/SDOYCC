@@ -7,6 +7,7 @@ import { DuelSideboard, type MatchProgress } from './DuelSideboard'
 import { DuelArena } from './DuelArena'
 import { duelPhaseName } from './DuelPhaseControl'
 import { effectAvailableAt } from './duelFeedback'
+import { includeChoice, selectionComplete } from './duelSelection'
 import './duel-arena.css'
 import './duel-premium.css'
 import cardBack from '../assets/card-back.jpg'
@@ -21,13 +22,14 @@ function imageFailed(event: SyntheticEvent<HTMLImageElement>, card: EngineCard) 
 }
 export type Side = { lp: number; deck: number; hand: (EngineCard | null)[]; field: { zone: number; sequence: number; position: number; card: EngineCard | null; materials?: EngineCard[]; counters?: number[]; disabled?: boolean; equip?: { owner: number; zone: number; sequence: number } | null; targets?: { owner: number; zone: number; sequence: number }[] }[]; grave: (EngineCard | null)[]; extra?: (EngineCard | null)[]; removed?: (EngineCard | null)[] }
 type Board = { revision: number; seat: number; boards: Side[]; turn: number; turn_number: number; phase: number; ended: boolean; events: DuelEvent[]; prompt: WorkerPrompt | null }
-export type WorkerResult = { id: string; state: string; seat: number; reason: string | null; winner_seat: number | null; board: Board | null; match?: MatchProgress | null; clock?: { remaining: number[]; active: number | null; side_remaining: number | null } }
+export type WorkerResult = { id: string; state: string; seat: number; reason: string | null; winner_seat: number | null; board: Board | null; match?: MatchProgress | null; clock?: { remaining: number[]; active: number | null; side_remaining: number | null; limit?: number; refill_ratio?: number; recovered?: number[] } }
 const terminal = (value: WorkerResult) => ['finished', 'aborted', 'recovery_required'].includes(value.state)
 
 export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () => void }) {
   const [result, setResult] = useState<WorkerResult | null>(null), [error, setError] = useState('')
   const [preview, setPreview] = useState<EngineCard | null>(null)
   const [zoneSelection, setZoneSelection] = useState<number[]>([])
+  const selectionClick = useRef<{ prompt: number; index: number; before: number[] } | null>(null)
   const [activeLocation, setActiveLocation] = useState<DuelLocation | null>(null)
   const [pendingAttack, setPendingAttack] = useState<number | null>(null)
   const [attackFlow, setAttackFlow] = useState(false)
@@ -35,7 +37,9 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   const [previewEffect, setPreviewEffect] = useState<string | null>(null)
   const showEffect = useCallback((card: EngineCard, effect?: string | null) => { setPreview(card); setPreviewEffect(effect || 'Effekt aktiviert') }, [])
   const placement = useRef<DuelLocation | null>(null)
+  const finishSelectionAfter = useRef<number | null>(null)
   const socket = useRef<WebSocket | null>(null)
+  const pendingCommand = useRef<{ revision: number; prompt?: number } | null>(null)
   const [connected, setConnected] = useState(false), [busy, setBusy] = useState(false)
   function accept(next: WorkerResult) {
     setResult(old => old && ((terminal(old) && !terminal(next)) || (old.board && next.board && old.board.revision > next.board.revision)) ? old : next)
@@ -58,14 +62,20 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
         if (disposed) return
         const message = JSON.parse(event.data)
         if (message.type === 'state') {
-          accept(message.result); setConnected(true); setBusy(false); setError(''); attempts = 0
+          accept(message.result); setConnected(true); setError(''); attempts = 0
+          const pending = pendingCommand.current
+          if (!pending || message.ack || terminal(message.result) || message.result.board?.revision > pending.revision || message.result.board?.prompt?.id !== pending.prompt) {
+            pendingCommand.current = null; setBusy(false)
+          }
           done = terminal(message.result)
-        } else if (message.type === 'error') { placement.current = null; setBusy(false); setError(message.message) }
+        } else if (message.type === 'error') { placement.current = null; finishSelectionAfter.current = null; pendingCommand.current = null; setBusy(false); setError(message.message) }
       }
       ws.onclose = event => {
         clearInterval(heartbeat)
         if (disposed) return
         setConnected(false); setBusy(false)
+        pendingCommand.current = null
+        finishSelectionAfter.current = null
         if (done) return
         if ([4401, 4403, 4404, 4400, 4429].includes(event.code)) {
           setError('Die Duellverbindung wurde abgewiesen. Prüfe deine ursprüngliche Anmeldung.'); return
@@ -79,18 +89,25 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   }, [runId])
   useEffect(() => { if (result && terminal(result)) window.dispatchEvent(new Event('hub-data-changed')) }, [result?.state])
   useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { setPreview(null); setActiveLocation(null); setPendingAttack(null) } }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close) }, [])
-  function send(kind: string, body: Record<string, unknown>) {
-    if (!connected || busy || socket.current?.readyState !== WebSocket.OPEN) return
+  function send(kind: string, body: Record<string, unknown>, finishSelection = false) {
+    if (!connected || busy || pendingCommand.current || socket.current?.readyState !== WebSocket.OPEN) return
+    pendingCommand.current = { revision: result?.board?.revision || 0, prompt: result?.board?.prompt?.id }
     setBusy(true); setError('')
+    if (finishSelection && typeof body.prompt === 'number') finishSelectionAfter.current = body.prompt
     socket.current.send(JSON.stringify({ type: kind, ...body }))
   }
   const board = result?.board, prompt = board?.prompt
+  useEffect(() => {
+    if (finishSelectionAfter.current === null || !prompt || prompt.id <= finishSelectionAfter.current || busy || !connected) return
+    finishSelectionAfter.current = null
+    if (prompt.selection_progress?.can_finish && prompt.cancel) send('answer', { prompt: prompt.id, selected: [], cancel: true })
+  }, [prompt?.id, busy, connected])
   useEffect(() => { if (board?.events.some(event => event.kind === 'attack' && event.id > attackStartedAfter.current)) setAttackFlow(false) }, [board?.revision])
   const chainReaction = prompt?.kind === 'chain' || prompt?.title === 'Auf die Kette reagieren'
   useEffect(() => { setZoneSelection(prompt?.counter ? prompt.choices.map(() => 0) : []); setActiveLocation(null); setPendingAttack(null); if (prompt?.title === 'Aktion wählen') setAttackFlow(false) }, [prompt?.id])
   const disabled = busy || !connected || Boolean(result && terminal(result))
   function choicesAt(location: DuelLocation) { return prompt?.choices.map((choice, index) => ({ choice, index })).filter(({choice}) => choice.location?.owner === location.owner && choice.location.zone === location.zone && choice.location.sequence === location.sequence) || [] }
-  function chooseLocation(location: DuelLocation) {
+  function chooseLocation(location: DuelLocation, complete = false) {
     if (disabled || !prompt) return
     const options = choicesAt(location)
     if (!options.length) return
@@ -100,7 +117,15 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     if (prompt.select && options.length === 1) {
       setActiveLocation(location)
       const index = options[0].index
-      setZoneSelection(old => old.includes(index) ? old.filter(value => value !== index) : prompt.maximum === 1 ? [index] : old.length < (prompt.maximum || 0) ? [...old,index] : old)
+      if (complete) {
+        const before = selectionClick.current?.prompt === prompt.id && selectionClick.current.index === index ? selectionClick.current.before : zoneSelection
+        const next = includeChoice(before, index, prompt.maximum || 0)
+        setZoneSelection(next)
+        if (next.includes(index) && selectionComplete(next, prompt.minimum || 0, prompt.maximum || 0)) send('answer', { prompt: prompt.id, selected: next })
+      } else {
+        selectionClick.current = { prompt: prompt.id, index, before: [...zoneSelection] }
+        setZoneSelection(old => old.includes(index) ? old.filter(value => value !== index) : includeChoice(old,index,prompt.maximum || 0))
+      }
     } else if (options.length === 1 && options[0].choice.action === 'attack') {
       setActiveLocation(null); setPendingAttack(options[0].index)
     } else setActiveLocation(location)
@@ -126,7 +151,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     placement.current = null
     if (index >= 0) send('answer', { prompt: prompt.id, selected: [index] })
   }, [prompt?.id, connected, busy])
-  const card = (value: EngineCard | null, key: string, covered = false, location?: DuelLocation) => <button key={key} className={'duel-playing-card' + (!value || covered ? ' covered' : '') + (location && !disabled && effectAvailableAt(prompt,location) ? ' effect-available' : '')} disabled={!value && !(location && choicesAt(location).length && !disabled)} onClick={() => { if (value) { setPreview(value); setPreviewEffect(null) } if (location) chooseLocation(location) }} aria-label={value ? value.name + ' ansehen' : 'Verdeckte Karte'}>{!value || covered ? <img src={cardBack} alt="Kartenrückseite" draggable={false} /> : <>{value.image_url && <img key={value.image_url} src={API_BASE_URL.replace(/\/api\/?$/, '') + value.image_url} alt="" loading="lazy" onError={event => imageFailed(event, value)} />}<strong>{value.name}</strong><small>{value.atk !== undefined ? `ATK ${value.atk} · DEF ${value.defense}` : 'Kartentext ansehen'}</small></>}</button>
+  const card = (value: EngineCard | null, key: string, covered = false, location?: DuelLocation) => <button key={key} className={'duel-playing-card' + (!value || covered ? ' covered' : '') + (location && !disabled && effectAvailableAt(prompt,location) ? ' effect-available' : '')} disabled={!value && !(location && choicesAt(location).length && !disabled)} onClick={event => { if (event.detail > 1) return; if (value) { setPreview(value); setPreviewEffect(null) } if (location) chooseLocation(location) }} onDoubleClick={() => { if (location && prompt?.select) chooseLocation(location,true) }} aria-label={value ? value.name + ' ansehen' : 'Verdeckte Karte'}>{!value || covered ? <img src={cardBack} alt="Kartenrückseite" draggable={false} /> : <>{value.image_url && <img key={value.image_url} src={API_BASE_URL.replace(/\/api\/?$/, '') + value.image_url} alt="" loading="lazy" onError={event => imageFailed(event, value)} />}<strong>{value.name}</strong><small>{value.atk !== undefined ? `ATK ${value.atk} · DEF ${value.defense}` : 'Kartentext ansehen'}</small></>}</button>
   return <section className={'duel-worker-table' + (board && result && !terminal(result) && result.match?.phase !== 'sideboarding' ? ' is-playing' : '')}>
     <ErrorBox message={error} />
     <p className="duel-connection-status" role="status">{connected ? 'Mit dem Duell verbunden' : result && terminal(result) ? 'Duell abgeschlossen' : 'Duellverbindung herstellen …'}</p>
@@ -155,7 +180,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
             if (prompt.select) setZoneSelection(old => old.includes(index) ? old.filter(value => value !== index) : [...old, index])
             else send('answer', { prompt: prompt.id, selected: [index] })
           }} chooseAction={chooseAction}>
-          <div className="arena-hud" role="status"><span>Zug {board.turn_number} · {board.turn === board.seat ? 'Dein Zug' : 'Gegnerischer Zug'} · {duelPhaseName(board.phase)}</span>{result?.clock && <span role="timer">Du {Math.ceil(result.clock.remaining[result.seat])} s · Gegner {Math.ceil(result.clock.remaining[1-result.seat])} s</span>}</div>
+          <div className="arena-hud" role="status"><span>Zug {board.turn_number} · {board.turn === board.seat ? 'Dein Zug' : 'Gegnerischer Zug'} · {duelPhaseName(board.phase)}</span>{result?.clock && <span role="timer" title="360 Sekunden Zeitkonto. 50 % der gegnerischen Entscheidungszeit werden gutgeschrieben, bis maximal 360 Sekunden.">Du {Math.ceil(result.clock.remaining[result.seat])} s · Gegner {Math.ceil(result.clock.remaining[1-result.seat])} s</span>}</div>
           <DuelAnimations events={board.events} runId={runId} onEffect={showEffect} seat={board.seat} phase={board.phase} turn={board.turn} turnNumber={board.turn_number} disabled={disabled} surrender={() => { if(window.confirm('Duell wirklich aufgeben?')) send('surrender',{}) }} />
           {pendingAttack !== null && prompt && <section className="arena-attack-confirm" role="dialog" aria-label="Angriff vorbereiten"><h2>⚔ Angriff starten?</h2><p>{prompt.choices[pendingAttack]?.card?.name || 'Dein Monster'} soll angreifen. Danach wählst du ein erlaubtes Ziel.</p><button disabled={disabled} onClick={()=>{ attackStartedAfter.current = Math.max(0,...board.events.map(event=>event.id)); setAttackFlow(true); send('answer',{prompt:prompt.id,selected:[pendingAttack]}); setPendingAttack(null) }}>Angriff starten</button><button onClick={()=>setPendingAttack(null)}>Abbrechen</button></section>}
           {!showDecision && pendingAttack === null && !disabled && <p className="arena-action-guide">{prompt ? 'Markierte Karte anklicken · Phasenwechsel über den Kreis' : 'Dein Gegner entscheidet …'}</p>}

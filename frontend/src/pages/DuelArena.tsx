@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import type { EngineCard, Side } from './DuelWorkerTable'
 import type { DuelLocation, WorkerPrompt } from './DuelDecisions'
 import cardBack from '../assets/card-back.jpg'
@@ -7,7 +7,7 @@ import { effectAvailableAt } from './duelFeedback'
 import { DuelPlayerHUD } from './DuelPlayerHUD'
 
 type Props = { sides: Side[]; seat: number; card: (value: EngineCard | null, key: string, covered?: boolean, location?: DuelLocation) => ReactNode;
-  activeLocation: DuelLocation | null; chooseLocation: (location: DuelLocation) => void; children?: ReactNode;
+  activeLocation: DuelLocation | null; chooseLocation: (location: DuelLocation, complete?: boolean) => void; children?: ReactNode;
   confirmSelection: () => void; selectionValid: boolean; selectionLabel: string;
   prompt?: WorkerPrompt | null; disabled: boolean; zoneSelection: number[]; chooseZone: (index: number) => void;
   chooseAction: (index: number, target?: DuelLocation) => void; phase: number; turn: number; turnNumber: number }
@@ -33,7 +33,7 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
       onDrop={event => { event.preventDefault(); if (canDrop && dragging !== null) setDrop({ index: dragging, target: { owner, zone, sequence } }); setDragging(null) }}
       data-duel-owner={owner} data-duel-zone={zone} data-duel-sequence={sequence} aria-label={`${owner === seat ? 'Deine' : 'Gegnerische'} ${label}`}>
       {zoneChoice >= 0 && <button className="arena-zone-choice" aria-label={`${label} auswählen`} disabled={disabled} aria-pressed={zoneSelection.includes(zoneChoice)} onClick={() => chooseZone(zoneChoice)} />}
-      {options.length > 0 && <button className="arena-action-hotspot" aria-label={`${label} ${prompt?.select ? 'auswählen' : 'Aktionen'}`} aria-pressed={selected} onClick={() => chooseLocation({owner,zone,sequence})} />}
+      {options.length > 0 && <button className="arena-action-hotspot" aria-label={`${label} ${prompt?.select ? 'auswählen' : 'Aktionen'}`} aria-pressed={selected} onClick={event => { if(event.detail < 2) chooseLocation({owner,zone,sequence}) }} onDoubleClick={() => { if(prompt?.select) chooseLocation({owner,zone,sequence},true) }} />}
       {options.length > 0 && <span className="arena-action-badge" aria-hidden="true">{attackReady ? '⚔' : prompt?.select ? selected ? '✓' : '◎' : '✦'}</span>}
       {activeAt(owner,zone,sequence) && options.length > 0 && !prompt?.select && !prompt?.counter && <div className="arena-card-actions" aria-label="Kartenaktionen">{options.map(choice => <button key={choice.index} disabled={disabled} onClick={() => chooseAction(choice.index)}>{choice.label}</button>)}</div>}
       {activeAt(owner,zone,sequence) && selected && prompt?.select && <div className="arena-card-actions" aria-label="Auswahl auf dem Feld"><button disabled={disabled || !selectionValid} onClick={confirmSelection}>{selectionLabel}</button><button disabled={disabled} onClick={()=>chooseLocation({owner,zone,sequence})}>Abwählen</button></div>}
@@ -62,7 +62,7 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
   return <div className={'duel-arena ' + (turn === seat ? 'is-own-turn' : 'is-opponent-turn')} aria-label="Duellarena">
     {[1 - seat, seat].map(owner => <article className={'duel-player-field arena-player ' + (owner === seat ? 'arena-own' : 'arena-opponent')} key={owner}>
       <DuelPlayerHUD owner={owner} own={owner === seat} lp={sides[owner].lp} active={turn === owner} hand={sides[owner].hand.length} />
-      <div className="duel-hand arena-hand" data-duel-owner={owner} data-duel-zone={2}>{sides[owner].hand.map((value, index) => {
+      <div className="duel-hand arena-hand" style={{'--hand-count':Math.max(1,sides[owner].hand.length)} as CSSProperties} data-duel-owner={owner} data-duel-zone={2}>{sides[owner].hand.map((value, index) => {
         const options = owner === seat && !disabled ? actions(index, drop?.index === index ? drop.target.zone : undefined) : []
         const handChoices = !disabled ? optionsAt(owner,2,index) : []
         return <div className={'arena-hand-card' + (drop?.index === index || activeAt(owner,2,index) ? ' placement-open' : '') + (handChoices.length ? ' action-available' : '') + (handChoices.some(choice => zoneSelection.includes(choice.index)) ? ' zone-selected' : '')} key={index} draggable={options.some(choice => choice.action !== 'activate')}
