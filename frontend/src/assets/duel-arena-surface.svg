@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <defs>
+    <linearGradient id="metal" x2="0" y2="1"><stop stop-color="#2b3b48"/><stop offset=".5" stop-color="#142532"/><stop offset="1" stop-color="#233643"/></linearGradient>
+    <pattern id="tile" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M50 2L98 50 50 98 2 50Z" fill="url(#metal)" stroke="#567183" stroke-opacity=".2"/><path d="M50 12L88 50 50 88 12 50Z" fill="none" stroke="#071019" stroke-opacity=".5"/><path d="M50 3L97 50M3 50L50 3" fill="none" stroke="#a5c7dc" stroke-opacity=".12"/></pattern>
+    <radialGradient id="vignette"><stop stop-color="#050b12" stop-opacity="0"/><stop offset="1" stop-color="#050b12" stop-opacity=".85"/></radialGradient>
+  </defs>
+  <path fill="#0e1a25" d="M0 0H1200V900H0z"/>
+  <path fill="url(#tile)" d="M0 0H1200V900H0z"/>
+  <g fill="none" stroke="#749aaf" stroke-opacity=".17">
+    <circle cx="600" cy="450" r="278"/><circle cx="600" cy="450" r="264" stroke-dasharray="2 14" stroke-width="5"/><circle cx="600" cy="450" r="240"/>
+    <path d="M600 125L875 285V610L600 775 325 610V285Z" stroke-width="2"/><path d="M600 178L830 314V585L600 721 370 585V314Z"/>
+    <path d="M0 438H320M880 438H1200M0 462H320M880 462H1200M600 0V170M600 730V900"/>
+  </g>
+  <g fill="#101e2b" stroke="#4b687a" stroke-opacity=".35"><path d="M0 0H95L130 40V370L85 410H0Z"/><path d="M1200 0H1105L1070 40V370L1115 410H1200Z"/><path d="M0 900H95L130 860V530L85 490H0Z"/><path d="M1200 900H1105L1070 860V530L1115 490H1200Z"/></g>
+  <path fill="url(#vignette)" d="M0 0H1200V900H0z"/>
+</svg>

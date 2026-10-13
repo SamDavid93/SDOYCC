@@ -4,6 +4,7 @@ import type { DuelLocation, WorkerPrompt } from './DuelDecisions'
 import cardBack from '../assets/card-back.jpg'
 import { DuelPhaseControl } from './DuelPhaseControl'
 import { effectAvailableAt } from './duelFeedback'
+import { DuelPlayerHUD } from './DuelPlayerHUD'
 
 type Props = { sides: Side[]; seat: number; card: (value: EngineCard | null, key: string, covered?: boolean, location?: DuelLocation) => ReactNode;
   activeLocation: DuelLocation | null; chooseLocation: (location: DuelLocation) => void; children?: ReactNode;
@@ -60,7 +61,7 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
   }
   return <div className={'duel-arena ' + (turn === seat ? 'is-own-turn' : 'is-opponent-turn')} aria-label="Duellarena">
     {[1 - seat, seat].map(owner => <article className={'duel-player-field arena-player ' + (owner === seat ? 'arena-own' : 'arena-opponent')} key={owner}>
-      <header><h2>{owner === seat ? 'Dein Spielfeld' : 'Gegnerisches Spielfeld'}</h2><strong className="duel-life" key={sides[owner].lp}>{sides[owner].lp.toLocaleString('de-DE')} LP</strong></header>
+      <DuelPlayerHUD owner={owner} own={owner === seat} lp={sides[owner].lp} active={turn === owner} hand={sides[owner].hand.length} />
       <div className="duel-hand arena-hand" data-duel-owner={owner} data-duel-zone={2}>{sides[owner].hand.map((value, index) => {
         const options = owner === seat && !disabled ? actions(index, drop?.index === index ? drop.target.zone : undefined) : []
         const handChoices = !disabled ? optionsAt(owner,2,index) : []

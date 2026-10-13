@@ -46,6 +46,10 @@ window.__log=()=>{frame.board.events.push({id:3,kind:'attack',affected_cards:[{r
 window.__effect=(seat)=>{frame.seat=seat;frame.board.seat=seat;frame.board.prompt=null;frame.board.events.push({id:frame.board.events.length+1,kind:'chain',card,source:{owner:0,zone:4,sequence:0},number:1,effect:'Ein bestätigter Testeffekt'});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__feedback=(chain=false)=>{frame.seat=0;frame.board.seat=0;frame.board.turn=0;frame.board.boards[0]={...side,hand:[card],grave:[card],extra:[card],removed:[card],field:[{zone:4,sequence:0,position:1,card},{zone:8,sequence:0,position:8,card}]};frame.board.prompt={id:300,title:chain?'Auf die Kette reagieren':'Aktion wählen',choices:[2,4,8,16,32,64,1].map(zone=>({label:'Aktivieren: Testkarte '+zone,card,...(chain?{}:{action:'activate'}),location:{owner:0,zone,sequence:0}}))};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__announce=(kind,phase,player=1)=>{frame.board.events.push({id:Math.max(0,...frame.board.events.map(e=>e.id))+1,kind,phase,player,number:2});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__scene=(event)=>{frame.board.seat=frame.seat=0;frame.board.turn=0;frame.board.phase=4;frame.board.prompt=null;
+const visible={...card,image_url:'/scene-card.jpg',atk:3000,defense:2500};
+frame.board.boards=[{...side,lp:8000,hand:Array(6).fill(visible),grave:[visible],extra:[null,null],removed:[],field:[{zone:4,sequence:0,position:1,card:visible},{zone:4,sequence:2,position:4,card:visible},{zone:8,sequence:1,position:8,card:visible}]},{...side,lp:event?.kind==='lp'?7000:8000,hand:Array(4).fill(null),grave:[],extra:[null],removed:[],field:[{zone:4,sequence:0,position:8,card:null},{zone:4,sequence:2,position:1,card:visible},{zone:8,sequence:1,position:8,card:null}]}];
+if(event)frame.board.events.push({...event,id:Math.max(0,...frame.board.events.map(e=>e.id))+1});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="presentation" onExit={()=>{}} />)
 ''', encoding='utf8')
         env = {**os.environ, 'VITE_BASE_PATH': '/'}
@@ -62,6 +66,8 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     errors = []
                     page.on('pageerror', lambda error: errors.append(str(error)))
                     page.route('**/test-card.svg', lambda route: route.fulfill(content_type='image/svg+xml', body='<svg xmlns="http://www.w3.org/2000/svg" width="80" height="120"><rect width="80" height="120" fill="teal"/></svg>'))
+                    artwork=ROOT/'cache/cards-original/89631139.img'
+                    page.route('**/scene-card.jpg', lambda route: route.fulfill(content_type='image/jpeg', body=artwork.read_bytes()) if artwork.exists() else route.fulfill(content_type='image/svg+xml',body='<svg xmlns="http://www.w3.org/2000/svg" width="80" height="120"><rect width="80" height="120" fill="teal"/></svg>'))
                     page.goto(url + '/' + folder.name + '/index.html')
                     expect(page.locator('.duel-chain-overlay')).to_be_visible()
                     for owner in (0,1):
@@ -204,9 +210,71 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     expect(page.get_by_role('status',name='Phasenwechsel',exact=True)).to_contain_text('Standby-Phase',timeout=5000)
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
                     page.screenshot(path=str(ROOT/'artifacts/duel-feedback-mobile.png'),full_page=True)
+                    # Event animations use exact locations and never expose a hidden card face.
+                    expect(page.locator('.arena-phase-announcement')).to_have_count(0,timeout=5000)
+                    page.emulate_media(reduced_motion='no-preference')
+                    page.set_viewport_size({'width':1440,'height':1000})
+                    page.evaluate('window.__scene()')
+                    page.evaluate('window.scrollTo(0,0)')
+                    page.screenshot(path=str(ROOT/'artifacts/duel-premium-arena.png'),full_page=True)
+                    for method in ('normal','fusion','synchro','xyz','link','ritual','pendulum','covered'):
+                        page.evaluate('(method)=>window.__scene({kind:"summon",method,player:0,location:{owner:0,zone:4,sequence:0}})',method)
+                        scene=page.locator(f'.duel-scene-motion[data-summon-method="{method}"]')
+                        expect(scene.locator('.duel-summon-portal')).to_have_count(1)
+                        assert scene.evaluate('(e)=>getComputedStyle(e).pointerEvents')=='none'
+                        assert scene.locator('image').count()==0
+                        if method=='synchro':
+                            page.wait_for_timeout(300)
+                            page.screenshot(path=str(ROOT/'artifacts/duel-premium-summon.png'))
+                        expect(scene).to_have_count(0,timeout=5000)
+                    page.evaluate('window.__scene({kind:"attack",attacker:{owner:0,zone:4,sequence:0},defender:{owner:1,zone:4,sequence:0}})')
+                    expect(page.locator('.duel-attack-ray')).to_have_count(1)
+                    page.wait_for_timeout(350)
+                    page.screenshot(path=str(ROOT/'artifacts/duel-premium-attack.png'))
+                    expect(page.locator('.duel-attack-ray')).to_have_count(0,timeout=5000)
+                    page.evaluate('window.__scene({kind:"attack",attacker:{owner:0,zone:4,sequence:0},direct:true})')
+                    expect(page.locator('.duel-attack-ray')).to_have_count(1)
+                    expect(page.locator('.duel-attack-ray')).to_have_count(0,timeout=5000)
+                    page.evaluate('window.__scene({kind:"lp",player:1,value:7000,delta:-1000})')
+                    expect(page.locator('.duel-lp-delta')).to_contain_text('1.000')
+                    expect(page.locator('[data-duel-hud="1"] .duel-life')).to_contain_text('7.000')
+                    page.wait_for_timeout(300)
+                    page.screenshot(path=str(ROOT/'artifacts/duel-premium-damage.png'))
+                    expect(page.locator('.duel-lp-delta')).to_have_count(0,timeout=5000)
+                    page.evaluate('window.__scene({kind:"draw",player:1,count:1})')
+                    moving=page.locator('.duel-travel-card image')
+                    expect(moving).to_have_count(1)
+                    assert 'card-back' in moving.get_attribute('href')
+                    expect(moving).to_have_count(0,timeout=5000)
+                    # Selecting animation reduction also suppresses SVG travel without OS settings.
+                    page.get_by_label('Duellmenü',exact=True).click()
+                    page.get_by_label('Animationen',exact=True).select_option('reduced')
+                    page.get_by_label('Duellmenü',exact=True).click()
+                    page.evaluate('window.__scene({kind:"draw",player:1,count:1})')
+                    expect(page.locator('.duel-scene-motion[data-event-kind="draw"]')).to_have_count(1)
+                    assert page.locator('.duel-travel-card').count()==0
+                    page.evaluate('window.__scene({kind:"summon",method:"link",player:0,location:{owner:0,zone:4,sequence:0}})')
+                    portal=page.locator('.duel-summon-portal')
+                    expect(portal).to_have_count(1)
+                    assert portal.evaluate('(e)=>getComputedStyle(e).animationName')=='none'
+                    expect(portal).to_have_count(0,timeout=5000)
+                    for width,height in ((1280,720),(1920,1080),(390,844)):
+                        page.set_viewport_size({'width':width,'height':height})
+                        page.evaluate('window.__scene()')
+                        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+                        arena=page.locator('.duel-arena').bounding_box()
+                        assert arena and (width<=760 or arena['y']+arena['height']<=height),arena
+                        page.screenshot(path=str(ROOT/f'artifacts/duel-premium-{width}.png'),full_page=True)
+                    page.set_viewport_size({'width':1440,'height':1000})
+                    for winner,title in ((0,'Sieg'),(1,'Niederlage'),(None,'Unentschieden')):
+                        page.evaluate('(winner)=>window.__scene({kind:"win",winner})',winner)
+                        expect(page.get_by_role('status',name='Duellergebnis')).to_contain_text(title)
+                        expect(page.get_by_role('status',name='Duellergebnis')).to_have_count(0,timeout=5000)
+                    page.evaluate('window.__scene({kind:"chain_step",step:75,number:1})')
+                    expect(page.get_by_role('status',name='Negierter Effekt')).to_contain_text('Aktivierung negiert')
                     assert not errors, errors
                     browser.close()
-                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','effect reveal and viewer for both seats','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion'],'console_errors':errors}))
+                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','effect reveal and viewer for both seats','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','720p and 1080p arena fits viewport','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement'],'console_errors':errors}))
             finally:
                 process.terminate()
                 try: process.wait(timeout=10)

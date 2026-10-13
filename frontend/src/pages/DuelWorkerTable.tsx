@@ -8,6 +8,7 @@ import { DuelArena } from './DuelArena'
 import { duelPhaseName } from './DuelPhaseControl'
 import { effectAvailableAt } from './duelFeedback'
 import './duel-arena.css'
+import './duel-premium.css'
 import cardBack from '../assets/card-back.jpg'
 
 export type EngineCard = { code: number; name: string; description?: string; image_url?: string; fallback_image_url?: string; atk?: number; defense?: number }
@@ -126,7 +127,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     if (index >= 0) send('answer', { prompt: prompt.id, selected: [index] })
   }, [prompt?.id, connected, busy])
   const card = (value: EngineCard | null, key: string, covered = false, location?: DuelLocation) => <button key={key} className={'duel-playing-card' + (!value || covered ? ' covered' : '') + (location && !disabled && effectAvailableAt(prompt,location) ? ' effect-available' : '')} disabled={!value && !(location && choicesAt(location).length && !disabled)} onClick={() => { if (value) { setPreview(value); setPreviewEffect(null) } if (location) chooseLocation(location) }} aria-label={value ? value.name + ' ansehen' : 'Verdeckte Karte'}>{!value || covered ? <img src={cardBack} alt="Kartenrückseite" draggable={false} /> : <>{value.image_url && <img key={value.image_url} src={API_BASE_URL.replace(/\/api\/?$/, '') + value.image_url} alt="" loading="lazy" onError={event => imageFailed(event, value)} />}<strong>{value.name}</strong><small>{value.atk !== undefined ? `ATK ${value.atk} · DEF ${value.defense}` : 'Kartentext ansehen'}</small></>}</button>
-  return <section className="duel-worker-table">
+  return <section className={'duel-worker-table' + (board && result && !terminal(result) && result.match?.phase !== 'sideboarding' ? ' is-playing' : '')}>
     <ErrorBox message={error} />
     <p className="duel-connection-status" role="status">{connected ? 'Mit dem Duell verbunden' : result && terminal(result) ? 'Duell abgeschlossen' : 'Duellverbindung herstellen …'}</p>
     {error && !result && <button onClick={onExit}>Zur Lobby-Übersicht</button>}
