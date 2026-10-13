@@ -279,23 +279,19 @@ def run():
                     expect(page.get_by_role('button', name='Gast bestätigen', exact=True)).to_be_visible(timeout=10000)
                     page.get_by_role('button', name='Gast bestätigen', exact=True).click()
                     guest_page.get_by_label('Dein Deck', exact=True).select_option(guest_deck_id)
-                    expect(guest_page.get_by_role('button', name='Deck auswählen', exact=True)).to_be_enabled(timeout=10000)
-                    guest_page.get_by_role('button', name='Deck auswählen', exact=True).click()
                     expect(guest_page.locator('.duel-own-deck>p').first).to_have_text('Private Gaststrategie')
                     assert 'Private Gaststrategie' not in page.locator('.duel-room').inner_text()
-                    expect(page.get_by_role('button', name='Mein Deck bestätigen', exact=True)).to_be_enabled(timeout=10000)
-                    page.get_by_role('button', name='Mein Deck bestätigen', exact=True).click()
-                    expect(guest_page.locator('.duel-confirmation-status span').first).to_contain_text('Deck bestätigt', timeout=10000)
-                    guest_page.get_by_role('button', name='Mein Deck bestätigen', exact=True).click()
-                    expect(page.get_by_role('region', name='Deckbestätigung')).to_contain_text('Beide Decks bestätigt', timeout=10000)
+                    expect(page.locator('.duel-seat').nth(1)).to_contain_text('Bereit', timeout=10000)
+                    expect(page.locator('.duel-confirmation')).to_have_count(0)
                     expect(guest_page.locator('.duel-start-note')).to_contain_text('ausgeschaltet')
                     page.screenshot(path=str(artifacts / 'lobby-desktop.png'), full_page=True)
                     guest_page.set_viewport_size({'width': 390, 'height': 844})
                     guest_page.wait_for_function("document.querySelector('.sidebar').getBoundingClientRect().right <= 0")
                     assert guest_page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Mobile lobby overflow'
                     guest_page.screenshot(path=str(artifacts / 'lobby-mobile.png'), full_page=True)
-                    guest_page.get_by_role('button', name='Bestätigung zurücknehmen', exact=True).click()
-                    expect(page.locator('.duel-confirmation-status')).not_to_contain_text('Deck bestätigt', timeout=10000)
+                    guest_page.get_by_label('Dein Deck', exact=True).select_option('')
+                    expect(page.locator('.duel-seat').nth(1)).to_contain_text('Deckauswahl offen', timeout=10000)
+                    expect(page.locator('.duel-seat').first).to_contain_text('Bereit')
                     guest_page.get_by_role('button', name='Lobby verlassen', exact=True).click()
                     expect(guest_page.locator('.duel-entry-grid')).to_be_visible()
                     expect(page.locator('.duel-seat').nth(1)).to_contain_text('Platz frei', timeout=10000)
@@ -303,7 +299,7 @@ def run():
                     page.get_by_role('button', name='Lobby schließen', exact=True).click()
                     expect(page.locator('.duel-entry-grid')).to_be_visible()
                     assert not errors, errors
-                    report = {'status': 'passed', 'tests': ['create', 'rapid-autosave', 'real-rule-ydk-import', 'formal-check', 'ownership', 'engine-gate', 'preview-escape', 'test-hand', 'ydk-export', 'failed-save-draft-recovery', 'edit-conflict', 'mobile-tabs', 'compact-three-pane-layout', 'individual-copy-grid', 'persistent-card-preview', 'mobile-card-preview', 'archive-restore', 'duplicate', 'two-account-lobby', 'host-approval', 'private-deck-choice', 'two-account-deck-confirmation', 'withdraw-confirmation', 'mobile-lobby', 'leave-close', 'immutable-share-link', 'anonymous-template-view', 'private-notes-omitted', 'copy-own-draft', 'revoke-link'], 'console_errors': errors, 'production_modified': False}
+                    report = {'status': 'passed', 'tests': ['create', 'rapid-autosave', 'real-rule-ydk-import', 'formal-check', 'ownership', 'engine-gate', 'preview-escape', 'test-hand', 'ydk-export', 'failed-save-draft-recovery', 'edit-conflict', 'mobile-tabs', 'compact-three-pane-layout', 'individual-copy-grid', 'persistent-card-preview', 'mobile-card-preview', 'archive-restore', 'duplicate', 'two-account-lobby', 'host-approval', 'private-deck-choice', 'immediate-deck-selection', 'withdraw-by-clearing-selection', 'mobile-lobby', 'leave-close', 'immutable-share-link', 'anonymous-template-view', 'private-notes-omitted', 'copy-own-draft', 'revoke-link'], 'console_errors': errors, 'production_modified': False}
                     (artifacts / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf8')
                     print(json.dumps(report)); browser.close()
             finally:

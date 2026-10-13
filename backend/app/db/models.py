@@ -128,7 +128,7 @@ class DuelMatchProgress(Base):
 
 
 class DuelDeckConfirmation(Base):
-    """Consent to the exact two-player deck selection; never a game-start ticket."""
+    """Authorization for an own deck choice or the legacy two-player selection."""
     __tablename__ = "duel_deck_confirmations"
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
     lobby_id: Mapped[str] = mapped_column(ForeignKey("duel_lobbies.id"), index=True)

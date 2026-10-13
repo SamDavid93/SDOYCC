@@ -1,8 +1,4 @@
-"""Private pre-match lobbies. No engine launch or inventory reservation in D3a.
-
-All membership changes serialize through the existing workflow mutex. Deck
-confirmation is available; actual game start still awaits the complete worker.
-"""
+"""Private lobbies with accepted participants and immediately saved deck selections."""
 from datetime import datetime, timedelta
 import json
 import re
@@ -25,6 +21,7 @@ from app.db.session import get_db
 from app.modules.decks import own_deck, summary
 from app.modules.duel_rules import profile_payload, validate_deck
 from app.modules.duel_confirmation import clear_confirmations, confirmation_context, confirmed_players, worker_consent_players
+from app.modules.duel_confirmation import selection_ready, record_selection, discard_selection
 from app.modules.economy import finish, replay
 from app.modules.duel_admission import restricted, require_player
 from app.modules.workflow import Auth, Command, Key, action, lock_users, writer
@@ -37,6 +34,7 @@ ACTIVE = ('open', 'full')
 class CreateLobby(Command):
     deck_id: str = Field(min_length=36, max_length=36)
     mode: Literal['single', 'match'] = 'single'
+    ready: bool = Field(default=False, strict=True)
 
 
 class JoinLobby(Command):
@@ -48,7 +46,8 @@ class LobbyVersion(Command):
 
 
 class ChooseDeck(LobbyVersion):
-    deck_id: str = Field(min_length=36, max_length=36)
+    deck_id: str | None = Field(min_length=36, max_length=36)
+    ready: bool = Field(default=False, strict=True)
 
 
 class GuestDecision(LobbyVersion):
@@ -91,7 +90,8 @@ def cleanup_lobbies(db):
             close_lobby(db, lobby, 'expired'); continue
         for seat in seats:
             if seat.seat == 1 and not eligible(db, seat, now):
-                clear_confirmations(db, lobby)
+                clear_confirmations(db, lobby, preserve_selections=True)
+                discard_selection(db, seat.user_id)
                 db.delete(seat); lobby.state = 'open'; lobby.version += 1
     db.flush()
 
@@ -116,8 +116,8 @@ def room_payload(db, lobby, user_id):
     elif not admission['accepting_new']: blocker = 'Wartung: Neue Duelle sind vorübergehend pausiert.'
     elif not admission['available_slots']: blocker = 'Alle Duellplätze sind belegt. Warte auf einen freien Platz.'
     elif not profile or not profile.engine_approved or not profile.region_approved: blocker = 'Der gewählte Regelstand benötigt die Engine- und Regionsfreigabe.'
-    elif len(confirmed) != 2: blocker = 'Beide Spieler müssen ihre aktuelle Deckauswahl bestätigen.'
-    elif len(worker_consents) != 2: blocker = 'Beide Spieler müssen dem Duellstart zustimmen.'
+    elif not context: blocker = 'Der Gast muss angenommen sein und beide Spieler müssen ein aktuelles Deck auswählen.'
+    elif len(confirmed) != 2 or len(worker_consents) != 2: blocker = 'Beide Spieler müssen ein aktuelles Deck auswählen.'
     else: blocker = ''
     return {'id': lobby.id, 'code': 'SDO-' + lobby.code[:4] + '-' + lobby.code[4:], 'host_id': lobby.host_id,
             'version': lobby.version, 'state': lobby.state if active else 'expired',
@@ -131,6 +131,7 @@ def room_payload(db, lobby, user_id):
             'own_deck_changed': bool(own_list and (own_list.version != own.deck_version or own_list.archived or own_list.profile_id != lobby.profile_id)),
             'members': [{'user_id': s.user_id, 'name': db.get(User, s.user_id).display_name, 'seat': s.seat,
                          'accepted': s.accepted, 'deck_selected': bool(s.deck_id),
+                         'deck_ready': selection_ready(db, lobby, s),
                          'deck_confirmed': s.user_id in confirmed, 'worker_consented': s.user_id in worker_consents} for s in members],
             'can_start': not blocker, 'start_blocker': blocker, 'admission': admission}
 
@@ -156,6 +157,12 @@ def chosen_deck(db, user_id, deck_id, profile_id=None):
     return deck
 
 
+def check_selected_deck(db, user_id, deck):
+    check = validate_deck(db, user_id, json.loads(deck.entries_json), db.get(DuelRuleProfile, deck.profile_id))
+    if not check['rules_ok'] or not check['stock_ok']:
+        raise HTTPException(409, 'Dein Deck erfüllt die Deckregeln oder Kartenverfügbarkeit noch nicht. Prüfe es unter Meine Decks.')
+
+
 @router.get('/me')
 def my_lobby(db: Database, user=Depends(current_user)):
     seat = db.get(DuelLobbySeat, user.id)
@@ -174,6 +181,7 @@ def create_lobby(body: CreateLobby, db: Database, authorization: Auth = None, id
     cleanup_lobbies(db)
     if db.get(DuelLobbySeat, user.id): raise HTTPException(409, 'Du bist bereits in einer Lobby. Verlasse sie zuerst.')
     deck = chosen_deck(db, user.id, body.deck_id)
+    if body.ready: check_selected_deck(db, user.id, deck)
     for _ in range(10):
         code = ''.join(secrets.choice('ABCDEFGHJKLMNPQRSTUVWXYZ23456789') for _ in range(8))
         if not db.scalar(select(DuelLobby.id).where(DuelLobby.code == code)): break
@@ -185,6 +193,7 @@ def create_lobby(body: CreateLobby, db: Database, authorization: Auth = None, id
     db.add(DuelLobbySeat(user_id=user.id, lobby_id=lobby.id, seat=0, accepted=True, deck_id=deck.id,
                          deck_version=deck.version, session_hash=getattr(user, '_authenticated_session', None)))
     db.flush()
+    if body.ready: record_selection(db, lobby, db.get(DuelLobbySeat, user.id))
     return finish(db, user, idempotency_key, fingerprint, room_payload(db, lobby, user.id))
 
 
@@ -205,7 +214,7 @@ def join_lobby(body: JoinLobby, db: Database, authorization: Auth = None, idempo
     lobby = db.scalar(select(DuelLobby).where(DuelLobby.code == code, DuelLobby.state == 'open'))
     if not lobby: raise HTTPException(404, 'Keine freie Lobby mit diesem Code gefunden.')
     lock_users(db, [lobby.host_id, user.id])
-    clear_confirmations(db, lobby)
+    clear_confirmations(db, lobby, preserve_selections=True)
     db.add(DuelLobbySeat(user_id=user.id, lobby_id=lobby.id, seat=1, accepted=False,
                          session_hash=getattr(user, '_authenticated_session', None)))
     lobby.state = 'full'; lobby.version += 1; lobby.expires_at = datetime.utcnow() + timedelta(minutes=15)
@@ -219,9 +228,11 @@ def guest_decision(lobby_id: str, body: GuestDecision, db: Database, authorizati
     if seat.seat != 0: raise HTTPException(403, 'Nur der Gastgeber darf einen Gast bestätigen oder entfernen.')
     guest = db.scalar(select(DuelLobbySeat).where(DuelLobbySeat.lobby_id == lobby.id, DuelLobbySeat.seat == 1))
     if not guest: raise HTTPException(409, 'Es wartet kein Gast in dieser Lobby.')
-    clear_confirmations(db, lobby)
+    clear_confirmations(db, lobby, preserve_selections=True)
     if body.accept: guest.accepted = True
-    else: db.delete(guest); lobby.state = 'open'
+    else:
+        discard_selection(db, guest.user_id)
+        db.delete(guest); lobby.state = 'open'
     lobby.version += 1; lobby.expires_at = datetime.utcnow() + timedelta(minutes=15)
     db.flush(); result = room_payload(db, lobby, user.id); db.commit()
     return result
@@ -231,10 +242,15 @@ def guest_decision(lobby_id: str, body: GuestDecision, db: Database, authorizati
 def select_deck(lobby_id: str, body: ChooseDeck, db: Database, authorization: Auth = None, idempotency_key: Key = None):
     user, lobby, seat = mutation(db, authorization, idempotency_key, lobby_id, body)
     if not seat.accepted: raise HTTPException(409, 'Warte zunächst auf die Bestätigung des Gastgebers.')
-    deck = chosen_deck(db, user.id, body.deck_id, lobby.profile_id)
-    clear_confirmations(db, lobby)
-    seat.deck_id = deck.id; seat.deck_version = deck.version
+    if getattr(user, '_authenticated_session', None) != seat.session_hash:
+        raise HTTPException(403, 'Verwende die ursprüngliche Lobby-Anmeldung.')
+    deck = chosen_deck(db, user.id, body.deck_id, lobby.profile_id) if body.deck_id else None
+    if body.ready and deck: check_selected_deck(db, user.id, deck)
+    clear_confirmations(db, lobby, preserve_selections=True)
+    discard_selection(db, user.id)
+    seat.deck_id = deck.id if deck else None; seat.deck_version = deck.version if deck else None
     lobby.version += 1; lobby.expires_at = datetime.utcnow() + timedelta(minutes=15)
+    if body.ready and deck: record_selection(db, lobby, seat)
     db.flush(); result = room_payload(db, lobby, user.id); db.commit()
     return result
 
@@ -249,7 +265,8 @@ def leave_lobby(lobby_id: str, body: LobbyVersion, db: Database, authorization: 
     if lobby.version != body.version: raise HTTPException(409, 'Lobby verändert. Bitte erneut versuchen.')
     if seat.seat == 0: close_lobby(db, lobby)
     else:
-        clear_confirmations(db, lobby)
+        clear_confirmations(db, lobby, preserve_selections=True)
+        discard_selection(db, user.id)
         db.delete(seat); lobby.state = 'open'; lobby.version += 1
     db.commit()
     return {'left': True}

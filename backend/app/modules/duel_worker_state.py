@@ -73,7 +73,7 @@ def begin(db, lobby_id, version, authorization, key, instance, check_snapshot, m
     from app.modules.duel_admission import require_slot
     require_slot(db)  # Same global transaction as the reservation/start receipt.
     if len(worker_consent_players(db, lobby)) != 2:
-        raise HTTPException(409, 'Beide Spieler müssen dem lokalen Testduell ausdrücklich zustimmen.')
+        raise HTTPException(409, 'Beide Spieler müssen zuerst ein aktuelles Deck auswählen.')
     receipt = prepare_pair(db, lobby_id, version)
     snapshot = json.loads(receipt.snapshot_json)
     check_snapshot(snapshot)  # Exact pinned sources and supported pool, never caller-supplied decks.

@@ -74,7 +74,7 @@ def run(manual=False):
                         print('Separate temporäre Datenbank; echte Konten, Karten und .env bleiben unverändert.', flush=True)
                         print('Im ersten Fenster: Private Lobby erstellen. Im zweiten: Code eingeben und beitreten.', flush=True)
                         print('Gast bestätigen, im Gastfenster das vorbereitete Deck auswählen.', flush=True)
-                        print('Beide Decks bestätigen, beide dem lokalen Testduell zustimmen; Gastgeber startet.', flush=True)
+                        print('Die Deckauswahl wird sofort gespeichert. Gastgeber drückt Match starten.', flush=True)
                         print('Du kannst Deckverwaltung, Einzelduell/Match, Sideboarding, Neuladen und Historie testen.', flush=True)
                         print('Serveradresse: ' + ui_url + '/#/duel-zone', flush=True)
                         input('\nZum Beenden hier Enter drücken. Die Testdaten werden danach entfernt.\n')
@@ -87,18 +87,18 @@ def run(manual=False):
                     expect(host.get_by_role('button', name='Gast bestätigen', exact=True)).to_be_visible(timeout=10000)
                     host.get_by_role('button', name='Gast bestätigen', exact=True).click()
                     guest.get_by_label('Dein Deck', exact=True).select_option(guest_deck)
-                    expect(guest.get_by_role('button', name='Deck auswählen', exact=True)).to_be_enabled(timeout=10000)
-                    guest.get_by_role('button', name='Deck auswählen', exact=True).click()
-                    expect(host.get_by_role('button', name='Mein Deck bestätigen', exact=True)).to_be_enabled(timeout=10000)
-                    host.get_by_role('button', name='Mein Deck bestätigen', exact=True).click()
-                    expect(guest.locator('.duel-confirmation-status span').first).to_contain_text('Deck bestätigt', timeout=10000)
-                    guest.get_by_role('button', name='Mein Deck bestätigen', exact=True).click()
-                    expect(host.get_by_role('button', name='Dem lokalen Testduell zustimmen', exact=True)).to_be_enabled(timeout=10000)
-                    host.get_by_role('button', name='Dem lokalen Testduell zustimmen', exact=True).click()
-                    expect(guest.locator('.duel-worker-optin [role=status]')).to_contain_text('Jaden D.: Test zugestimmt', timeout=10000)
-                    guest.get_by_role('button', name='Dem lokalen Testduell zustimmen', exact=True).click()
-                    expect(host.get_by_role('button', name='Lokales Testduell starten', exact=True)).to_be_enabled(timeout=10000)
-                    host.get_by_role('button', name='Lokales Testduell starten', exact=True).click()
+                    expect(host.get_by_role('button', name='Match starten', exact=True)).to_be_enabled(timeout=10000)
+                    for page in pages:
+                        expect(page.locator('.duel-confirmation')).to_have_count(0)
+                        expect(page.locator('.duel-worker-optin')).to_have_count(0)
+                    # Clearing the selection withdraws readiness without clearing the other player's deck.
+                    guest.get_by_label('Dein Deck', exact=True).select_option('')
+                    expect(host.get_by_role('button', name='Match starten', exact=True)).to_be_disabled(timeout=10000)
+                    expect(host.locator('.duel-seat').first).to_contain_text('Bereit')
+                    guest.get_by_label('Dein Deck', exact=True).select_option(guest_deck)
+                    expect(host.get_by_role('button', name='Match starten', exact=True)).to_be_enabled(timeout=10000)
+                    host.screenshot(path=str(artifacts / 'simple-start-lobby.png'), full_page=True)
+                    host.get_by_role('button', name='Match starten', exact=True).click()
                     for page in pages: expect(page.locator('.duel-worker-table')).to_be_visible(timeout=15000)
                     for page in pages: expect(page.locator('.duel-player-field')).to_have_count(2, timeout=15000)
                     for page in pages:
@@ -222,7 +222,7 @@ def run(manual=False):
                     expect(host.get_by_text('Keine aktive Duellsperre', exact=True)).to_be_visible()
                     assert not errors, errors
                     report = {'status': 'passed', 'native_core': True, 'production_modified': False,
-                        'tests': ['two-hub-sessions', 'explicit-two-player-consent', 'snapshot-worker-start', 'private-hands', 'native-answer','named-summon-log-for-both-seats','shared-turn-end-request-and-completion', 'card-preview', 'browser-reload', 'mobile-layout', 'cancel-surrender', 'surrender-and-result', 'reservation-release', 'no-inventory-or-journal-change', 'one-worker-run', 'authenticated-websocket', 'credentials-not-in-urls', 'private-history-playback', 'cancel-maintenance', 'admin-pause-admission', 'admin-resume-admission', 'versioned-rule-review', 'duel-only-restriction', 'duel-restriction-revocation'], 'console_errors': errors}
+                        'tests': ['two-hub-sessions', 'deck-choice-authorizes-start-without-extra-confirmations','deselect-revokes-readiness-without-resetting-other-deck', 'snapshot-worker-start', 'private-hands', 'native-answer','named-summon-log-for-both-seats','shared-turn-end-request-and-completion', 'card-preview', 'browser-reload', 'mobile-layout', 'cancel-surrender', 'surrender-and-result', 'reservation-release', 'no-inventory-or-journal-change', 'one-worker-run', 'authenticated-websocket', 'credentials-not-in-urls', 'private-history-playback', 'cancel-maintenance', 'admin-pause-admission', 'admin-resume-admission', 'versioned-rule-review', 'duel-only-restriction', 'duel-restriction-revocation'], 'console_errors': errors}
                     (artifacts / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf8')
                     print(json.dumps(report)); browser.close()
             finally:

@@ -72,7 +72,7 @@ def prepare_pair(db, lobby_id, expected_version):
                 or any(not s.accepted or not eligible(db, s, now) for s in seats)):
             raise HTTPException(409, 'Beide bestätigten Spieler und ein aktueller Lobby-Stand sind erforderlich.')
         if confirmed_players(db, lobby) != {seat.user_id for seat in seats}:
-            raise HTTPException(409, 'Beide Spieler müssen ihre aktuelle Deckauswahl ausdrücklich bestätigen.')
+            raise HTTPException(409, 'Beide Spieler müssen ein aktuelles Deck auswählen.')
         confirmations = db.scalars(select(DuelDeckConfirmation).where(DuelDeckConfirmation.lobby_id == lobby.id)).all()
         profile = db.get(DuelRuleProfile, lobby.profile_id)
         if not profile or not profile.engine_approved or not profile.region_approved:

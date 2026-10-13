@@ -42,6 +42,23 @@ class LobbyTests(DeckTestCase):
         self.assertEqual(response.status_code, 200, response.text)
         return response.json()
 
+    def test_ready_host_choice_survives_join_and_acceptance_but_guest_cannot_choose_early(self):
+        response = self.post('/lobbies', {'deck_id': self.host_deck['id'], 'ready': True})
+        self.assertEqual(response.status_code, 200, response.text)
+        room = response.json()
+        self.assertTrue(room['members'][0]['deck_ready'])
+        self.join(room)
+        room = self.mine()
+        response = self.post(f'/lobbies/{room["id"]}/deck',
+            {'version': room['version'], 'deck_id': self.guest_deck['id'], 'ready': True}, self.other_headers)
+        self.assertEqual(response.status_code, 409)
+        room = self.post(f'/lobbies/{room["id"]}/guest', {'version': room['version'], 'accept': True}).json()
+        self.assertTrue(room['members'][0]['deck_ready'])
+        self.assertFalse(room['can_start'])
+        self.assertFalse(room['members'][1]['deck_ready'])
+        with self.sessions() as db:
+            self.assertEqual(db.scalar(select(func.sum(VariantInventory.reserved))), 0)
+
     def join(self, room, headers=None):
         return self.post('/join', {'code': room['code']}, headers or self.other_headers)
 

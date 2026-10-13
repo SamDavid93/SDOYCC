@@ -84,6 +84,69 @@ class WorkerTests(PreparationFixture):
         return self.client.post('/api/duel-zone/worker/start', json={'lobby_id': self.room['id'], 'version': self.room['version']},
             headers={**self.headers, 'Idempotency-Key': str(uuid4())})
 
+    def select_ready_decks(self):
+        for deck, headers in zip(self.decks, (self.headers, self.other_headers)):
+            response = self.client.post(f'/api/duel-zone/lobbies/{self.room["id"]}/deck',
+                json={'version': self.room['version'], 'deck_id': deck['id'], 'ready': True},
+                headers={**headers, 'Idempotency-Key': str(uuid4())})
+            self.assertEqual(response.status_code, 200, response.text)
+            self.room = response.json()
+
+    def test_deck_selection_starts_directly_without_separate_confirmation_calls(self):
+        self.select_ready_decks()
+        self.assertTrue(self.room['can_start'])
+        self.assertTrue(all(member['deck_ready'] for member in self.room['members']))
+        self.assertEqual(self.total(), 0)
+        response = self.start_worker()
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()['state'], 'running')
+        self.assertEqual(self.total(), 86)
+
+    def test_deselecting_deck_blocks_start_and_preserves_other_players_choice(self):
+        self.select_ready_decks()
+        response = self.client.post(f'/api/duel-zone/lobbies/{self.room["id"]}/deck',
+            json={'version': self.room['version'], 'deck_id': None, 'ready': False},
+            headers={**self.other_headers, 'Idempotency-Key': str(uuid4())})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.room = response.json()
+        self.assertFalse(self.room['can_start'])
+        self.assertTrue(self.room['members'][0]['deck_ready'])
+        self.assertFalse(self.room['members'][1]['deck_ready'])
+        self.assertEqual(self.start_worker().status_code, 409)
+        self.assertEqual(self.total(), 0)
+        self.select_ready_decks()
+        self.assertEqual(self.start_worker().status_code, 200)
+
+    def test_ready_selection_requires_original_session_and_current_deck_version(self):
+        self.select_ready_decks()
+        with self.sessions() as db:
+            other_session = {'Authorization': 'Bearer ' + create_session(db, db.get(User, 2))}
+            from app.db.models import PlayerDeck
+            db.get(PlayerDeck, self.decks[1]['id']).version += 1
+            db.commit()
+        response = self.client.post(f'/api/duel-zone/lobbies/{self.room["id"]}/deck',
+            json={'version': self.room['version'], 'deck_id': self.decks[1]['id'], 'ready': True},
+            headers={**other_session, 'Idempotency-Key': str(uuid4())})
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.start_worker().status_code, 409)
+        self.assertEqual(self.total(), 0)
+
+    def test_ready_selection_does_not_bypass_changed_stock_or_profile_approval(self):
+        self.select_ready_decks()
+        with self.sessions() as db:
+            from app.db.models import DuelRuleProfile
+            db.get(DuelRuleProfile, self.profile).region_approved = False
+            db.commit()
+        self.assertEqual(self.start_worker().status_code, 409)
+        self.assertEqual(self.total(), 0)
+        with self.sessions() as db:
+            db.get(DuelRuleProfile, self.profile).region_approved = True
+            stock = db.scalar(select(VariantInventory).where(VariantInventory.user_id == 2, VariantInventory.quantity > 0))
+            stock.quantity = 0
+            db.commit()
+        self.assertEqual(self.start_worker().status_code, 409)
+        self.assertEqual(self.total(), 0)
+
     def get_run(self, run_id, headers=None):
         return self.client.get('/api/duel-zone/worker/runs/' + run_id, headers=headers or self.headers)
 
