@@ -45,6 +45,7 @@ def participants_valid(db, run):
     from app.modules.duel_admission import restricted
     for participant in json.loads(run.participants_json):
         user = db.get(User, participant['user_id'], populate_existing=True)
+        if participant.get('practice') and (not user or user.role not in ('admin','super_admin')): return False
         session = db.get(AuthSession, participant['session_hash'], populate_existing=True)
         if (not user or not user.is_active or not user.password_hash or restricted(db, user.id) or not session
                 or session.user_id != user.id or session.expires_at <= datetime.utcnow()): return False
@@ -138,4 +139,5 @@ def finish_stopped(db, run_id, instance, reason, winner=None, replay=None):
 
 def public_receipt(run):
     return {'id': run.id, 'state': run.state, 'reason': run.reason, 'winner_seat': run.winner_seat,
+            'practice': any(p.get('practice') for p in json.loads(run.participants_json)),
             'ended_at': run.ended_at.isoformat() + 'Z' if run.ended_at else None}

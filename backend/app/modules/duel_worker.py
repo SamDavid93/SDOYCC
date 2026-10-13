@@ -92,6 +92,8 @@ class LiveRun:
     clock_started: float = field(default_factory=time.monotonic)
     clock_turn: int = 0
     side_started: float | None = None
+    practice: bool = False
+    bot_task: object | None = None
 
     def pause_clock(self):
         now = time.monotonic()
@@ -185,17 +187,19 @@ class WorkerService:
         replay = {**live.history, 'truncated': live.history_truncated} if live.history['0'] else None
         await self.database(state.finish_stopped, run_id, self.instance, *live.pending_outcome, replay)
         live.terminal = True
+        if live.bot_task and live.bot_task is not asyncio.current_task(): live.bot_task.cancel()
         if live.match:
             live.match['phase'] = 'finished' if live.pending_outcome[0] in {'engine', 'surrender', 'decision_timeout', 'sideboard_forfeit'} else 'aborted'
             live.match['winner'] = live.pending_outcome[1]
 
-    async def start(self, lobby_id, version, authorization, key):
+    async def start(self, lobby_id, version, authorization, key, *, practice=False):
         async with self.creation_lock:
             await asyncio.to_thread(self.refresh_artwork)
             engine, projection = self.adapter.create()  # Constructors never spawn a process.
             manifest = self.adapter.manifest() if hasattr(self.adapter, 'manifest') else None
             # The commit must complete even if the HTTP start request disappears.
-            begin = asyncio.create_task(self.database(state.begin, lobby_id, version, authorization, key, self.instance, self.adapter.check, manifest))
+            from app.modules.duel_practice import begin as practice_begin
+            begin = asyncio.create_task(self.database(practice_begin if practice else state.begin, lobby_id, version, authorization, key, self.instance, self.adapter.check, manifest))
             cancelled = False
             try: run_id, snapshot = await asyncio.shield(begin)
             except asyncio.CancelledError:
@@ -204,6 +208,7 @@ class WorkerService:
             if snapshot is not None:
                 if hasattr(engine, 'bind'): engine.bind(run_id, self.instance)
                 live = LiveRun(engine, projection); self.runs[run_id] = live
+                live.practice = bool(snapshot.get('practice'))
                 if snapshot.get('mode') == 'match':
                     from app.modules.duel_matches import initial
                     live.match = initial(snapshot)
@@ -221,8 +226,47 @@ class WorkerService:
                         await asyncio.shield(self.stop(run_id, live, 'worker_failure'))
                         if isinstance(error, asyncio.CancelledError): raise
                         raise HTTPException(503, 'Der Testworker konnte nicht starten. Reservierungen wurden nach dem Prozessstopp freigegeben.')
+                if live.practice: live.bot_task = asyncio.create_task(self.bot_loop(run_id,live))
             elif cancelled: raise asyncio.CancelledError
             return await self.view(run_id, authorization)
+
+    async def bot_loop(self, run_id, live):
+        from app.modules.duel_practice import answer
+        turn, acted, decisions = None, set(), 0
+        try:
+            while not live.terminal:
+                await asyncio.sleep(.55)
+                async with live.lock:
+                    if live.terminal: return
+                    live.seen[1] = time.monotonic()
+                    if live.projection.turn_number != turn:
+                        turn=live.projection.turn_number;acted.clear();decisions=0
+                    prompt=live.projection.prompt
+                    if not prompt or live.engine_seats[prompt['owner']] != 1: continue
+                    def valid(db):
+                        from app.db.models import DuelWorkerRun
+                        return state.participants_valid(db,db.get(DuelWorkerRun,run_id))
+                    if not await self.database(valid):
+                        await self.stop(run_id,live,'session_ended');return
+                    await self.check_clock(run_id,live)
+                    if live.terminal: return
+                    decisions+=1
+                    if decisions>200: raise ValueError('Test bot decision limit exceeded')
+                    response=answer(live.projection,acted)
+                    live.pause_clock()
+                    packet=await live.engine.command({'op':'respond','response':base64.b64encode(response).decode()})
+                    await self.consume_packet(live,packet)
+                    live.tick_clock();live.capture()
+                    if live.projection.ended:
+                        winner=live.engine_seats[live.projection.winner] if live.projection.winner in (0,1) else None
+                        await self.stop(run_id,live,'engine',winner)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception('KI-Testduell %s konnte eine Entscheidung nicht ausführen.',run_id)
+            async with live.lock:
+                if not live.terminal: await self.stop(run_id,live,'worker_failure')
 
     async def recover_orphans(self, only=None):
         from sqlalchemy import select
@@ -450,6 +494,10 @@ class Start(Command):
     version: int = Field(ge=1, strict=True)
 
 
+class PracticeStart(Command):
+    deck_id: str = Field(min_length=36,max_length=36)
+
+
 class Answer(Command):
     prompt: int = Field(ge=1, strict=True)
     selected: list[Annotated[int, Field(strict=True, ge=0)]] = Field(max_length=100)
@@ -479,6 +527,11 @@ async def submit_sideboard(run_id: str, body: Sideboard, request: Request, autho
 @router.post('/start')
 async def start(body: Start, request: Request, authorization: Auth = None, idempotency_key: Key = None):
     return await service(request).start(body.lobby_id, body.version, authorization, idempotency_key)
+
+
+@router.post('/practice')
+async def practice(body: PracticeStart, request: Request, authorization: Auth = None, idempotency_key: Key = None):
+    return await service(request).start(body.deck_id,1,authorization,idempotency_key,practice=True)
 
 
 @router.post('/consent')

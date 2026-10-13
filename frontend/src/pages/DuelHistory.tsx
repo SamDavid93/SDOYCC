@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/transport'
 import { ErrorBox, Pager, useRead, type Page } from '../components/Workflow'
 
-type Receipt = { id: string; state: string; reason: string; ended_at: string; seat: number; winner_seat: number | null; replay_available: boolean; match?: { score: number[]; game: number } | null }
+type Receipt = { practice?: boolean; id: string; state: string; reason: string; ended_at: string; seat: number; winner_seat: number | null; replay_available: boolean; match?: { score: number[]; game: number } | null }
 type Frame = { revision: number; seat: number; game?: number; turn_number: number; boards: { lp: number; hand: ({ name: string } | null)[]; field: { card: { name: string } | null }[] }[] }
 type Replay = Receipt & { format: string; frames: Frame[]; truncated: boolean; expires_at: string }
 
@@ -27,7 +27,7 @@ export function DuelHistory() {
   const frame = selected?.frames[index]
   return <details className="deck-panel duel-history"><summary>Meine abgeschlossenen Duelle</summary>
     <ErrorBox message={error || history.error} />
-    {history.data?.items.map(row => <article key={row.id}><p>{new Date(row.ended_at).toLocaleString('de-DE')} · {row.state === 'aborted' ? 'Ohne Wertung abgebrochen' : row.winner_seat === null ? 'Unentschieden' : row.winner_seat === row.seat ? 'Gewonnen' : 'Verloren'}</p>
+    {history.data?.items.map(row => <article key={row.id}><p>{row.practice && 'KI-Testduell · '}{new Date(row.ended_at).toLocaleString('de-DE')} · {row.state === 'aborted' ? 'Ohne Wertung abgebrochen' : row.winner_seat === null ? 'Unentschieden' : row.winner_seat === row.seat ? 'Gewonnen' : 'Verloren'}</p>
       {row.match && <p>Match: {row.match.score[row.seat]} : {row.match.score[1-row.seat]} · {row.match.game} Spiele</p>}
       <button disabled={!row.replay_available} onClick={() => void open(row.id)}>{row.replay_available ? 'Privaten Spielverlauf ansehen' : 'Spielverlauf nicht verfügbar'}</button>
     </article>)}

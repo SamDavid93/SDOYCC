@@ -18,6 +18,9 @@ export function DuelZone() {
   const { user } = useSession(), action = useAction()
   const [room, setRoom] = useState<Room | null>(), [error, setError] = useState(''), [tick, setTick] = useState(0)
   const [mode, setMode] = useState<'single' | 'match'>('single')
+  const [opponent,setOpponent] = useState<'player'|'bot'>('player')
+  const canPractice = user?.role === 'admin' || user?.role === 'super_admin'
+  const practice = canPractice && opponent === 'bot'
   const [deckId, setDeckId] = useState(''), [code, setCode] = useState(''), [feedback, setFeedback] = useState('')
   const runKey = 'sdoycc-test-duel:' + user?.id
   const [runId, setRunId] = useState<string | null>(() => sessionStorage.getItem(runKey))
@@ -57,11 +60,11 @@ export function DuelZone() {
     <div className="duel-hub-layout"><main className="duel-hub-main">
     {!user?.twitch_id && <p className="deck-warning">Lobbys benötigen ein registriertes Twitch-Konto. Die lokale Demo kann weiterhin Deckentwürfe erstellen.</p>}
     {room === undefined ? <p role="status">Deine Lobby wird geladen …</p> : !room ? <section className="duel-mode-card">
-      <div className="duel-mode-topline"><span>PRIVATE LOBBY</span><span>2 Spieler · 360 Sekunden</span></div>
+      <div className="duel-mode-topline"><span>{practice ? 'ADMIN-TESTDUELL' : 'PRIVATE LOBBY'}</span><span>{practice ? 'Du gegen die Test-KI' : '2 Spieler · 360 Sekunden'}</span></div>
       <div className="duel-mode-art" aria-hidden="true"><div className="duel-mode-emblem"><Swords size={88} strokeWidth={1.2} /></div><span>SDOYCC</span></div>
-      <div className="duel-mode-copy"><p className="eyebrow accent">DEIN DECK. DEINE STRATEGIE.</p><h2>{mode === 'single' ? 'Einzelduell' : 'Best of Three'}</h2><p>{mode === 'single' ? 'Ein Spiel. Zwei Duellanten. Fordere deinen Gegner heraus.' : 'Wer zuerst zwei Spiele gewinnt, entscheidet das Match.'}</p></div>
-      <div className="duel-mode-switch" aria-label="Spielmodus"><button aria-pressed={mode === 'single'} onClick={()=>setMode('single')}>Einzelduell<small>Ein Spiel</small></button><button aria-pressed={mode === 'match'} onClick={()=>setMode('match')}>Match<small>Bis zum zweiten Sieg</small></button></div>
-      <ol className="duel-hub-steps"><li><b>1</b>Deck auswählen</li><li><b>2</b>Code teilen</li><li><b>3</b>Gast annehmen & starten</li></ol>
+      <div className="duel-mode-copy"><p className="eyebrow accent">DEIN DECK. DEINE STRATEGIE.</p><h2>{practice ? 'KI-Testduell' : mode === 'single' ? 'Einzelduell' : 'Best of Three'}</h2><p>{practice ? 'Teste den Spielablauf allein. Die KI beschwört, greift an und beendet ihre Züge selbst.' : mode === 'single' ? 'Ein Spiel. Zwei Duellanten. Fordere deinen Gegner heraus.' : 'Wer zuerst zwei Spiele gewinnt, entscheidet das Match.'}</p></div>
+      {!practice && <div className="duel-mode-switch" aria-label="Spielmodus"><button aria-pressed={mode === 'single'} onClick={()=>setMode('single')}>Einzelduell<small>Ein Spiel</small></button><button aria-pressed={mode === 'match'} onClick={()=>setMode('match')}>Match<small>Bis zum zweiten Sieg</small></button></div>}
+      <ol className="duel-hub-steps"><li><b>1</b>Deck auswählen</li><li><b>2</b>{practice ? 'Test-KI auswählen' : 'Code teilen'}</li><li><b>3</b>{practice ? 'Starten & testen' : 'Gast annehmen & starten'}</li></ol>
     </section> : <section className="duel-room">
       <header className="duel-room-heading"><div><p className="eyebrow accent">DEINE PRIVATE LOBBY</p><h2>{room.code}</h2><p>{room.profile.name} · {room.mode === 'match' ? 'Match bis zum zweiten Sieg' : 'Einzelduell'}</p></div><div className="deck-actions"><button onClick={() => { void navigator.clipboard.writeText(room.code).then(() => setFeedback('Lobby-Code kopiert.')).catch(() => setFeedback('Bitte den angezeigten Code markieren und kopieren.')) }}><Copy size={16} />Code kopieren</button><button disabled={action.busy} onClick={() => { if (!host || window.confirm('Lobby schließen? Dein Gegner verlässt dadurch ebenfalls den Raum.')) void command(`/duel-zone/lobbies/${room.id}/leave`, { version: room.version }) }}>{host ? 'Lobby schließen' : 'Lobby verlassen'}</button></div></header>
       {feedback && <p role="status">{feedback}</p>}
@@ -77,11 +80,13 @@ export function DuelZone() {
       <DuelHistory />
       <NavLink className="duel-hub-link" to="/decks">Meine Decks <span>→</span></NavLink>
       {!room && room !== undefined && <>
-        <form className="duel-hub-launch" onSubmit={e=>{e.preventDefault();if(selected)void command('/duel-zone/lobbies',{deck_id:selected.id,mode,ready:true})}}>
+        <form className="duel-hub-launch" onSubmit={e=>{e.preventDefault();if(!selected)return;if(practice)void action.run<WorkerResult>('/duel-zone/worker/practice',{deck_id:selected.id}).then(value=>{if(value){setRunId(value.id);sessionStorage.setItem(runKey,value.id)}});else void command('/duel-zone/lobbies',{deck_id:selected.id,mode,ready:true})}}>
           <div className="duel-hub-deck"><img src={cardBack} alt="" /><div><span>DEIN DECK</span><strong>{selected?.name || 'Wähle dein Deck'}</strong>{selected && <small>{selected.counts.main} Main · {selected.counts.extra} Extra · {selected.counts.side} Side</small>}</div></div>
           {deckSelect}
+          {canPractice && <label>Gegner<select aria-label="Gegner" disabled={action.busy} value={opponent} onChange={e=>setOpponent(e.target.value as 'player'|'bot')}><option value="player">Spieler · Private Lobby</option><option value="bot">Test-KI · Nur für Admins</option></select></label>}
+          {practice && <p>Einzelduell mit einfachem KI-Deck. Keine Belohnungen, keine Bestandsänderung. Beenden jederzeit über „Duell aufgeben“.</p>}
           {choices.length === 0 && <p>Erstelle zuerst ein aktives Deck mit Regelstand unter „Meine Decks“.</p>}
-          <button className="primary-button duel-hub-play" disabled={action.busy || !selected || !user?.twitch_id}><Swords size={20} />Private Lobby erstellen</button>
+          <button className="primary-button duel-hub-play" disabled={action.busy || !selected || !user?.twitch_id}><Swords size={20} />{practice ? 'KI-Testduell starten' : 'Private Lobby erstellen'}</button>
         </form>
         <details className="duel-hub-join"><summary><DoorOpen size={18} />Mit Code beitreten</summary><form onSubmit={e=>{e.preventDefault();void command('/duel-zone/join',{code:code.trim().toUpperCase()})}}><label>Lobby-Code<input value={code} onChange={e=>setCode(e.target.value.toUpperCase())} maxLength={13} minLength={8} placeholder="SDO-7K4P-9M2R" required autoComplete="off" /></label><button className="primary-button" disabled={action.busy || !user?.twitch_id}>Beitreten</button></form></details>
       </>}
