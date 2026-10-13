@@ -5,6 +5,8 @@ import { api } from '../api/transport'
 import { useSession } from '../Session'
 import { ErrorBox, useAction, useRead } from '../components/Workflow'
 import './decks.css'
+import './duel-lobby.css'
+import cardBack from '../assets/card-back.jpg'
 import { DuelWorkerTable, type WorkerResult } from './DuelWorkerTable'
 import { DuelHistory } from './DuelHistory'
 
@@ -49,14 +51,17 @@ export function DuelZone() {
   }} disabled={action.busy || Boolean(room && (!ownSeat?.accepted || room.state === 'expired'))}><option value="">Deck auswählen</option>{choices.map(deck => <option key={deck.id} value={deck.id}>{deck.name} · {deck.counts.main}/{deck.counts.extra}/{deck.counts.side}</option>)}</select></label>
   if (runId) return <div className="page-wrap decks-page"><DuelWorkerTable key={runId} runId={runId} onExit={() => { sessionStorage.removeItem(runKey); setRunId(null); setRoom(null); setTick(n => n+1) }} /></div>
   return <div className="page-wrap decks-page duel-zone-page">
-    <section className="deck-hero"><div><p className="eyebrow accent">EIN RAUM. ZWEI STRATEGIEN.</p><h1>DuelZone</h1><p>Eröffne eine private Lobby und lade deinen Gegner mit einem Raumcode ein. Deine Deckliste bleibt dabei privat.</p></div><Swords className="deck-hero-symbol" size={90} /></section>
-    <p className="deck-phase-note">Deck auswählen, Gast annehmen und <strong>Match starten</strong>. Eure Karten werden erst beim Start reserviert.</p>
-    <ErrorBox message={error || action.error || decks.error} /><DuelHistory />
+    <header className="duel-hub-heading"><div><p className="eyebrow accent">SDOYCC · SPIELEN</p><h1>Duellzone</h1></div><span className="duel-hub-status"><ShieldCheck size={16} />Private Duelle</span></header>
+    <ErrorBox message={error || action.error || decks.error} />
+    <div className="duel-hub-layout"><main className="duel-hub-main">
     {!user?.twitch_id && <p className="deck-warning">Lobbys benötigen ein registriertes Twitch-Konto. Die lokale Demo kann weiterhin Deckentwürfe erstellen.</p>}
-    {room === undefined ? <p role="status">Deine Lobby wird geladen …</p> : !room ? <div className="duel-entry-grid">
-      <form className="deck-panel" onSubmit={e => { e.preventDefault(); if (selected) void command('/duel-zone/lobbies', { deck_id: selected.id, mode, ready: true }) }}><Swords size={26} /><h2>Deine Lobby eröffnen</h2><p>Wähle dein Deck. Der Regelstand gilt für beide Spieler.</p>{deckSelect}<label>Spielmodus<select value={mode} onChange={event => setMode(event.target.value as 'single' | 'match')}><option value="single">Einzelduell</option><option value="match">Match bis zum zweiten Sieg</option></select></label><button className="primary-button" disabled={action.busy || !selected || !user?.twitch_id}>Private Lobby erstellen</button>{choices.length === 0 && <p>Du benötigst zunächst ein aktives Deck mit Regelstand.</p>}<NavLink to="/decks">Meine Decks bearbeiten →</NavLink></form>
-      <form className="deck-panel" onSubmit={e => { e.preventDefault(); void command('/duel-zone/join', { code: code.trim().toUpperCase() }) }}><DoorOpen size={26} /><h2>Einer Lobby beitreten</h2><p>Dein Gegner teilt den Raumcode mit dir und bestätigt anschließend deinen Platz.</p><label>Lobby-Code<input value={code} onChange={e => setCode(e.target.value.toUpperCase())} maxLength={13} minLength={8} placeholder="SDO-7K4P-9M2R" required autoComplete="off" /></label><button className="primary-button" disabled={action.busy || !user?.twitch_id}>Beitreten</button></form>
-    </div> : <section className="duel-room">
+    {room === undefined ? <p role="status">Deine Lobby wird geladen …</p> : !room ? <section className="duel-mode-card">
+      <div className="duel-mode-topline"><span>PRIVATE LOBBY</span><span>2 Spieler · 360 Sekunden</span></div>
+      <div className="duel-mode-art" aria-hidden="true"><div className="duel-mode-emblem"><Swords size={88} strokeWidth={1.2} /></div><span>SDOYCC</span></div>
+      <div className="duel-mode-copy"><p className="eyebrow accent">DEIN DECK. DEINE STRATEGIE.</p><h2>{mode === 'single' ? 'Einzelduell' : 'Best of Three'}</h2><p>{mode === 'single' ? 'Ein Spiel. Zwei Duellanten. Fordere deinen Gegner heraus.' : 'Wer zuerst zwei Spiele gewinnt, entscheidet das Match.'}</p></div>
+      <div className="duel-mode-switch" aria-label="Spielmodus"><button aria-pressed={mode === 'single'} onClick={()=>setMode('single')}>Einzelduell<small>Ein Spiel</small></button><button aria-pressed={mode === 'match'} onClick={()=>setMode('match')}>Match<small>Bis zum zweiten Sieg</small></button></div>
+      <ol className="duel-hub-steps"><li><b>1</b>Deck auswählen</li><li><b>2</b>Code teilen</li><li><b>3</b>Gast annehmen & starten</li></ol>
+    </section> : <section className="duel-room">
       <header className="duel-room-heading"><div><p className="eyebrow accent">DEINE PRIVATE LOBBY</p><h2>{room.code}</h2><p>{room.profile.name} · {room.mode === 'match' ? 'Match bis zum zweiten Sieg' : 'Einzelduell'}</p></div><div className="deck-actions"><button onClick={() => { void navigator.clipboard.writeText(room.code).then(() => setFeedback('Lobby-Code kopiert.')).catch(() => setFeedback('Bitte den angezeigten Code markieren und kopieren.')) }}><Copy size={16} />Code kopieren</button><button disabled={action.busy} onClick={() => { if (!host || window.confirm('Lobby schließen? Dein Gegner verlässt dadurch ebenfalls den Raum.')) void command(`/duel-zone/lobbies/${room.id}/leave`, { version: room.version }) }}>{host ? 'Lobby schließen' : 'Lobby verlassen'}</button></div></header>
       {feedback && <p role="status">{feedback}</p>}
       {room.state === 'expired' && <p className="api-notice" role="alert">Die Lobby ist abgelaufen oder eine Anmeldung wurde beendet. Verlasse sie, um neu zu beginnen.</p>}
@@ -66,5 +71,20 @@ export function DuelZone() {
         void action.run<WorkerResult>('/duel-zone/worker/start', { lobby_id: room.id, version: room.version }).then(value => { if (value) { setRunId(value.id); sessionStorage.setItem(runKey, value.id) } })
       }}>Match starten</button>}</div></div>
     </section>}
+    </main><aside className="duel-hub-sidebar" aria-label="Duelloptionen">
+      <details className="duel-hub-details"><summary>So funktioniert’s</summary><p>Erstelle eine Lobby und teile den Code. Sobald dein Gegner angenommen ist und beide ein Deck ausgewählt haben, startet der Gastgeber das Match.</p><p>Die Decklisten bleiben privat. Der Regelstand und dein Kartenbestand werden beim Start geprüft.</p></details>
+      <DuelHistory />
+      <NavLink className="duel-hub-link" to="/decks">Meine Decks <span>→</span></NavLink>
+      {!room && room !== undefined && <>
+        <form className="duel-hub-launch" onSubmit={e=>{e.preventDefault();if(selected)void command('/duel-zone/lobbies',{deck_id:selected.id,mode,ready:true})}}>
+          <div className="duel-hub-deck"><img src={cardBack} alt="" /><div><span>DEIN DECK</span><strong>{selected?.name || 'Wähle dein Deck'}</strong>{selected && <small>{selected.counts.main} Main · {selected.counts.extra} Extra · {selected.counts.side} Side</small>}</div></div>
+          {deckSelect}
+          {choices.length === 0 && <p>Erstelle zuerst ein aktives Deck mit Regelstand unter „Meine Decks“.</p>}
+          <button className="primary-button duel-hub-play" disabled={action.busy || !selected || !user?.twitch_id}><Swords size={20} />Private Lobby erstellen</button>
+        </form>
+        <details className="duel-hub-join"><summary><DoorOpen size={18} />Mit Code beitreten</summary><form onSubmit={e=>{e.preventDefault();void command('/duel-zone/join',{code:code.trim().toUpperCase()})}}><label>Lobby-Code<input value={code} onChange={e=>setCode(e.target.value.toUpperCase())} maxLength={13} minLength={8} placeholder="SDO-7K4P-9M2R" required autoComplete="off" /></label><button className="primary-button" disabled={action.busy || !user?.twitch_id}>Beitreten</button></form></details>
+      </>}
+      {room && <div className="duel-hub-room-info"><ShieldCheck size={24} /><strong>{room.profile.name}</strong><p>{room.mode === 'match' ? 'Match · Best of Three' : 'Einzelduell'}</p><small>Deine Deckauswahl wird sofort gespeichert. Dein Gegner sieht nur deine Bereitschaft.</small></div>}
+    </aside></div>
   </div>
 }
