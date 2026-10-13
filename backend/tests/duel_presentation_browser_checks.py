@@ -73,6 +73,8 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     for owner in (0,1):
                         monster = page.locator(f'.arena-slot[data-duel-owner="{owner}"][data-duel-zone="4"][data-duel-sequence="0"] .duel-playing-card')
                         assert abs(monster.evaluate('(e)=>new DOMMatrix(getComputedStyle(e).transform).m12')) > .99
+                        if owner==1:
+                            assert monster.evaluate('(e)=>getComputedStyle(e).opacity')=='1'
                         spell = page.locator(f'.arena-slot[data-duel-owner="{owner}"][data-duel-zone="8"][data-duel-sequence="0"] .duel-playing-card')
                         assert spell.evaluate('(e)=>getComputedStyle(e).transform') == 'none'
                     expect(page.locator('.duel-chain-card')).to_have_count(1)
