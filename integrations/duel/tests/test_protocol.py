@@ -14,6 +14,38 @@ CATALOG = {101: {'name': 'Testkarte', 'description': 'Privater Text', 'atk': 100
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_turn_end_request_is_public_but_not_a_completed_turn(self):
+        self.p.turn_number = 1
+        self.p.new_prompt(0, 'Aktion wählen', [self.p.choice('Zug beenden', struct.pack('<i', 7))])
+        self.p.prompt['id'] = 9
+        for selected in ([9], []):
+            with self.assertRaises(ValueError): self.p.respond(0, 9, selected)
+        self.assertEqual(self.p.events, [])
+        self.assertEqual(self.p.respond(0, 9, [0]), struct.pack('<i', 7))
+        self.p.respond(0, 9, [0])
+        for seat in (0, 1):
+            self.assertEqual([event['kind'] for event in self.p.public_events(seat)], ['phase_request'])
+        # A chain can intervene before the native core actually advances the turn.
+        self.consume_message(bytes([41]) + struct.pack('<H', 512))
+        self.assertNotIn('turn_end', [event['kind'] for event in self.p.events])
+        self.consume_message(bytes([40, 1]))
+        self.assertEqual([event['kind'] for event in self.p.events][-2:], ['turn_end', 'turn'])
+        self.assertEqual(self.p.events[-2]['player'], 0)
+        self.assertEqual(self.p.events[-1]['player'], 1)
+
+    def test_phase_event_records_owner_and_turn_number(self):
+        self.p.turn = 1; self.p.turn_number = 3
+        self.consume_message(bytes([41]) + struct.pack('<H', 2))
+        event = self.p.public_events(0)[-1]
+        self.assertEqual((event['phase'], event['player'], event['number']), (2, 1, 3))
+
+    def test_effect_yes_no_exposes_location_only_to_deciding_seat(self):
+        self.consume_message(bytes([12]) + struct.pack('<BIBBIIQ', 0, 101, 0, 16, 2, 1, 101 << 4))
+        prompt = self.p.view(0)['prompt']
+        self.assertEqual(prompt['effect_location']['zone'], 16)
+        self.assertEqual(prompt['effect_location']['sequence'], 2)
+        self.assertIsNone(self.p.view(1)['prompt'])
+
     def consume_message(self, message):
         self.p.consume({'status': 0, 'messages': [base64.b64encode(message).decode()]})
 

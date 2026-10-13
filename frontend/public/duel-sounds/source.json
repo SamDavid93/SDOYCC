@@ -1,0 +1,21 @@
+{
+  "repository": "https://github.com/Lahrenheit/EDOPRO-Soundpack",
+  "commit": "36eef0bb3226c20941dbc25571c5fa52380a11b8",
+  "files": {
+    "attack.wav": "1a780099fc57ae9e7f59d2bad2539d1f26e17eafb790e03f038da4375683c9b1",
+    "addcounter.wav": "b7ea428764d165b71d77e0c5732e2cbbbe78df4ee7e53d69daa5122f28e9571d",
+    "damage.wav": "cb55f6bd772ac7edab5e0e52786cca8f844581dea7e8b26dc155437e3b8ca7e9",
+    "equip.wav": "559fc985b997f4a1a2f8f518ec5676217afd4cb9e5d4a19842300bb2abfd1da6",
+    "flip.wav": "efd75bef2a4c1a1c0ff1e13911ddac900141b207d0f080d872ae1f5ee8fbcc4c",
+    "gainlp.wav": "88e92d88f63375702a54ae947a034729e5ad1bfc2f8e2a959e6b7a05a831a779",
+    "nextturn.wav": "d6a41c4b01bc521302f2bc82833692806b68c92a23a99c2e30be09dbb07daa16",
+    "phase.wav": "d744658dbdc1ca6606206ffa8095beed837538c9a8dc266e035083a01b80e51e",
+    "set.wav": "32a1797c303f0a36944c502f815824af2294e2000b09becf2ddf840088c753a4",
+    "shuffle.wav": "a0fbb54746ceaaca12044ddb4dee17e9249e1aa814deb1a71b21eeef727b1028",
+    "summon.wav": "d1ca6044dea170e41e581aa8dc60c12db997985542a3889b03398a239de49152",
+    "draw.wav": "e07192360d6acee7b2ec02cf0c936fb0c93644a8ca77e61a004bdb6d492e30f2",
+    "coinflip.wav": "2e6a433366e27552cd3892380c641d67e7cfa85f87e7cdb3031851010d461000",
+    "diceroll.wav": "95613e512a25db24420c4bcf4adeb949adcb412d9a10ad9176bfd4e10a462b9f",
+    "removecounter.wav": "b7ea428764d165b71d77e0c5732e2cbbbe78df4ee7e53d69daa5122f28e9571d"
+  }
+}

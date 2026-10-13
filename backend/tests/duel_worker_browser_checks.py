@@ -129,6 +129,9 @@ def run(manual=False):
                     expect(host.locator('.arena-slot[data-duel-owner="0"][data-duel-zone="4"][data-duel-sequence="2"] .duel-playing-card')).to_be_visible(timeout=10000)
                     host.locator('.arena-phase-orb').click()
                     host.get_by_role('button', name='Endphase · Zug beenden', exact=True).click()
+                    for page in (host, guest):
+                        expect(page.locator('.duel-event-log')).to_contain_text('Beendet Zug', timeout=10000)
+                        expect(page.locator('.duel-event-log')).to_contain_text('Zug beendet', timeout=10000)
                     # The ordinary action buttons lead to the same clickable
                     # place prompt, including correct owner mapping on seat 1.
                     expect(guest.locator('.arena-own .arena-hand-card.action-available').first).to_be_visible(timeout=10000)
@@ -219,7 +222,7 @@ def run(manual=False):
                     expect(host.get_by_text('Keine aktive Duellsperre', exact=True)).to_be_visible()
                     assert not errors, errors
                     report = {'status': 'passed', 'native_core': True, 'production_modified': False,
-                        'tests': ['two-hub-sessions', 'explicit-two-player-consent', 'snapshot-worker-start', 'private-hands', 'native-answer','named-summon-log-for-both-seats', 'card-preview', 'browser-reload', 'mobile-layout', 'cancel-surrender', 'surrender-and-result', 'reservation-release', 'no-inventory-or-journal-change', 'one-worker-run', 'authenticated-websocket', 'credentials-not-in-urls', 'private-history-playback', 'cancel-maintenance', 'admin-pause-admission', 'admin-resume-admission', 'versioned-rule-review', 'duel-only-restriction', 'duel-restriction-revocation'], 'console_errors': errors}
+                        'tests': ['two-hub-sessions', 'explicit-two-player-consent', 'snapshot-worker-start', 'private-hands', 'native-answer','named-summon-log-for-both-seats','shared-turn-end-request-and-completion', 'card-preview', 'browser-reload', 'mobile-layout', 'cancel-surrender', 'surrender-and-result', 'reservation-release', 'no-inventory-or-journal-change', 'one-worker-run', 'authenticated-websocket', 'credentials-not-in-urls', 'private-history-playback', 'cancel-maintenance', 'admin-pause-admission', 'admin-resume-admission', 'versioned-rule-review', 'duel-only-restriction', 'duel-restriction-revocation'], 'console_errors': errors}
                     (artifacts / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf8')
                     print(json.dumps(report)); browser.close()
             finally:

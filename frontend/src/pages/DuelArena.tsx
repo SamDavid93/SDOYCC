@@ -3,6 +3,7 @@ import type { EngineCard, Side } from './DuelWorkerTable'
 import type { DuelLocation, WorkerPrompt } from './DuelDecisions'
 import cardBack from '../assets/card-back.jpg'
 import { DuelPhaseControl } from './DuelPhaseControl'
+import { effectAvailableAt } from './duelFeedback'
 
 type Props = { sides: Side[]; seat: number; card: (value: EngineCard | null, key: string, covered?: boolean, location?: DuelLocation) => ReactNode;
   activeLocation: DuelLocation | null; chooseLocation: (location: DuelLocation) => void; children?: ReactNode;
@@ -22,10 +23,11 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
     const entry = sides[owner].field.find(value => value.zone === zone && value.sequence === sequence)
     const options = !disabled && prompt?.kind !== 'zones' ? optionsAt(owner, zone, sequence) : []
     const attackReady = options.some(choice => choice.action === 'attack')
+    const effectReady = !disabled && effectAvailableAt(prompt, {owner, zone, sequence})
     const selected = options.some(choice => zoneSelection.includes(choice.index))
     const zoneChoice = prompt?.kind === 'zones' ? prompt.choices.findIndex(choice => choice.location?.owner === owner && choice.location.zone === zone && choice.location.sequence === sequence) ?? -1 : -1
     const canDrop = !disabled && owner === seat && !entry && (zone === 4 || zone === 8) && dragging !== null && actions(dragging, zone).length > 0
-    return <div key={`${zone}:${sequence}`} className={'arena-slot' + (zone === 4 && entry && (entry.position & 12) ? ' defense-position' : '') + (entry?.disabled ? ' zone-disabled' : '') + (zoneChoice >= 0 && !disabled ? ' zone-selectable' : '') + (zoneSelection.includes(zoneChoice) || selected ? ' zone-selected' : '') + (canDrop ? ' zone-droppable' : '') + (options.length ? ' action-available' : '') + (attackReady ? ' attack-ready' : '') + (activeAt(owner,zone,sequence) ? ' action-focused' : '')}
+    return <div key={`${zone}:${sequence}`} className={'arena-slot' + (zone === 4 && entry && (entry.position & 12) ? ' defense-position' : '') + (entry?.disabled ? ' zone-disabled' : '') + (zoneChoice >= 0 && !disabled ? ' zone-selectable' : '') + (zoneSelection.includes(zoneChoice) || selected ? ' zone-selected' : '') + (canDrop ? ' zone-droppable' : '') + (options.length ? ' action-available' : '') + (attackReady ? ' attack-ready' : '') + (effectReady ? ' effect-available' : '') + (activeAt(owner,zone,sequence) ? ' action-focused' : '')}
       onDragOver={event => { if (canDrop) { event.preventDefault(); event.dataTransfer.dropEffect = 'move' } }}
       onDrop={event => { event.preventDefault(); if (canDrop && dragging !== null) setDrop({ index: dragging, target: { owner, zone, sequence } }); setDragging(null) }}
       data-duel-owner={owner} data-duel-zone={zone} data-duel-sequence={sequence} aria-label={`${owner === seat ? 'Deine' : 'Gegnerische'} ${label}`}>
@@ -47,8 +49,14 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
   }
   function pile(owner: number, zone: number, label: string, values: (EngineCard | null)[]) {
     const available = !disabled && prompt?.choices.some(choice => choice.location?.owner === owner && choice.location.zone === zone)
-    return <details className={'arena-pile' + (available ? ' action-available' : '')} open={available || undefined} data-duel-owner={owner} data-duel-zone={zone}><summary>{label}<strong>{values.length}</strong></summary>
+    const effectReady = !disabled && (values.some((_, sequence) => effectAvailableAt(prompt, {owner,zone,sequence})) || prompt?.choices.some(choice => choice.location?.owner === owner && choice.location.zone === zone && effectAvailableAt(prompt, choice.location)))
+    return <details className={'arena-pile' + (available ? ' action-available' : '') + (effectReady ? ' effect-available' : '')} open={activeLocation?.owner === owner && activeLocation.zone === zone || undefined} data-duel-owner={owner} data-duel-zone={zone}><summary>{label}{effectReady && <span className="arena-effect-label">✦ Effekt verfügbar</span>}<strong>{values.length}</strong></summary>
       <div className="arena-pile-content">{values.map((value, index) => card(value, `${zone}:${index}`, false, {owner,zone,sequence:index}))}{!values.length && <small>Leer</small>}</div></details>
+  }
+  function deck(owner: number) {
+    const available = !disabled && prompt?.choices.some(choice => choice.location?.owner === owner && choice.location.zone === 1)
+    const effectReady = available && prompt?.choices.some(choice => choice.location?.owner === owner && choice.location.zone === 1 && effectAvailableAt(prompt, choice.location))
+    return <button className={'arena-pile arena-deck' + (available ? ' action-available' : '') + (effectReady ? ' effect-available' : '')} disabled={!available} onClick={()=>{ const choice=prompt?.choices.find(choice=>choice.location?.owner===owner && choice.location.zone===1); if(choice?.location) chooseLocation(choice.location) }} data-duel-owner={owner} data-duel-zone={1} aria-label="Deckaktionen">{sides[owner].deck > 0 && <img src={cardBack} alt="Deckrückseite" />}<span>Deck</span>{effectReady && <span className="arena-effect-label">✦ Effekt verfügbar</span>}<strong>{sides[owner].deck}</strong></button>
   }
   return <div className={'duel-arena ' + (turn === seat ? 'is-own-turn' : 'is-opponent-turn')} aria-label="Duellarena">
     {[1 - seat, seat].map(owner => <article className={'duel-player-field arena-player ' + (owner === seat ? 'arena-own' : 'arena-opponent')} key={owner}>
@@ -70,7 +78,7 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
           <div className="arena-spell-row">{Array.from({ length: 5 }, (_, index) => slot(owner, 8, owner === seat ? index : 4 - index, `${index === 0 || index === 4 ? 'Zauber / Pendel' : 'Zauber / Falle'} ${(owner === seat ? index : 4 - index) + 1}`))}</div>
           {sides[owner].field.some(value => value.zone === 8 && value.sequence >= 6) && <div className="arena-legacy-pendulum">{slot(owner, 8, 6, 'Pendel links')}{slot(owner, 8, 7, 'Pendel rechts')}</div>}
         </div>
-        <div className="arena-flank"><div className="arena-pile arena-deck" data-duel-owner={owner} data-duel-zone={1}>{sides[owner].deck > 0 && <img src={cardBack} alt="Deckrückseite" />}<span>Deck</span><strong>{sides[owner].deck}</strong></div>{pile(owner, 16, 'Friedhof', sides[owner].grave)}{pile(owner, 32, 'Verbannt', sides[owner].removed || [])}</div>
+        <div className="arena-flank">{deck(owner)}{pile(owner, 16, 'Friedhof', sides[owner].grave)}{pile(owner, 32, 'Verbannt', sides[owner].removed || [])}</div>
       </div>
     </article>)}
     <div className="arena-extra-row" aria-label="Extra-Monsterzonen">{[0, 1].map(index => {

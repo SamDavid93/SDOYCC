@@ -160,6 +160,7 @@ class Projection:
                 self.new_prompt(owner, 'Effekt von ' + self.catalog[code]['name'] + ' aktivieren?',
                     [self.choice('Ja', struct.pack('<i', 1), code), self.choice('Nein', struct.pack('<i', 0), code)])
                 self.prompt['effect_card'] = self.card(code)
+                self.prompt['effect_location'] = location
             elif msg in (14, 143):
                 owner, count = r.read('BB')
                 choices = []
@@ -285,14 +286,17 @@ class Projection:
                 self.field[owner][(zone, seq)] = {'code': code, 'position': new}
                 self.event('position', player=owner, _affected=self.named_card('Karte', code, [{'owner': owner, 'zone': zone, 'position': old}, {'owner': owner, 'zone': zone, 'position': new}]))
             elif msg == 40:
+                if self.turn_number:
+                    self.event('turn_end', player=self.turn, number=self.turn_number)
                 self.turn = r.read('B'); self.turn_number += 1
                 self.event('turn', player=self.turn, number=self.turn_number)
             elif msg == 41:
-                self.phase = r.read('H'); self.event('phase', phase=self.phase)
+                self.phase = r.read('H'); self.event('phase', phase=self.phase, player=self.turn, number=self.turn_number)
             elif msg in (91, 92, 94, 100):
                 owner, value = r.read('BI')
+                previous = self.lp[owner]
                 self.lp[owner] = value if msg == 94 else max(0, self.lp[owner] + (value if msg == 92 else -value))
-                self.event('lp', player=owner, value=self.lp[owner])
+                self.event('lp', player=owner, value=self.lp[owner], delta=self.lp[owner] - previous)
             elif msg == 5:
                 winner, reason = r.read('BB')
                 if winner not in (0, 1, 2): raise ValueError('Invalid native winner')
@@ -440,6 +444,9 @@ class Projection:
                 if not valid: raise ValueError('Ungültige Materialsumme')
             return struct.pack('<' + 'I' * (2 + len(selected)), 0, len(selected), *selected)
         if len(selected) != 1: raise ValueError('Genau eine Aktion wählen')
+        if p['title'] == 'Aktion wählen' and p['choices'][selected[0]]['label'] == 'Zug beenden' and not p.get('_announced_end'):
+            self.event('phase_request', player=owner, phase=512, number=self.turn_number)
+            p['_announced_end'] = True
         return p['choices'][selected[0]]['_response']
 
     def public_choice(self, choice):

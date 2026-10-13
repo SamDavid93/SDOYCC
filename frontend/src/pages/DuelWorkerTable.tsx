@@ -6,6 +6,7 @@ import { DuelDecisions, type WorkerPrompt, type DuelLocation } from './DuelDecis
 import { DuelSideboard, type MatchProgress } from './DuelSideboard'
 import { DuelArena } from './DuelArena'
 import { duelPhaseName } from './DuelPhaseControl'
+import { effectAvailableAt } from './duelFeedback'
 import './duel-arena.css'
 import cardBack from '../assets/card-back.jpg'
 
@@ -124,7 +125,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     placement.current = null
     if (index >= 0) send('answer', { prompt: prompt.id, selected: [index] })
   }, [prompt?.id, connected, busy])
-  const card = (value: EngineCard | null, key: string, covered = false, location?: DuelLocation) => <button key={key} className={'duel-playing-card' + (!value || covered ? ' covered' : '')} disabled={!value && !(location && choicesAt(location).length && !disabled)} onClick={() => { if (value) { setPreview(value); setPreviewEffect(null) } if (location) chooseLocation(location) }} aria-label={value ? value.name + ' ansehen' : 'Verdeckte Karte'}>{!value || covered ? <img src={cardBack} alt="Kartenrückseite" draggable={false} /> : <>{value.image_url && <img key={value.image_url} src={API_BASE_URL.replace(/\/api\/?$/, '') + value.image_url} alt="" loading="lazy" onError={event => imageFailed(event, value)} />}<strong>{value.name}</strong><small>{value.atk !== undefined ? `ATK ${value.atk} · DEF ${value.defense}` : 'Kartentext ansehen'}</small></>}</button>
+  const card = (value: EngineCard | null, key: string, covered = false, location?: DuelLocation) => <button key={key} className={'duel-playing-card' + (!value || covered ? ' covered' : '') + (location && !disabled && effectAvailableAt(prompt,location) ? ' effect-available' : '')} disabled={!value && !(location && choicesAt(location).length && !disabled)} onClick={() => { if (value) { setPreview(value); setPreviewEffect(null) } if (location) chooseLocation(location) }} aria-label={value ? value.name + ' ansehen' : 'Verdeckte Karte'}>{!value || covered ? <img src={cardBack} alt="Kartenrückseite" draggable={false} /> : <>{value.image_url && <img key={value.image_url} src={API_BASE_URL.replace(/\/api\/?$/, '') + value.image_url} alt="" loading="lazy" onError={event => imageFailed(event, value)} />}<strong>{value.name}</strong><small>{value.atk !== undefined ? `ATK ${value.atk} · DEF ${value.defense}` : 'Kartentext ansehen'}</small></>}</button>
   return <section className="duel-worker-table">
     <ErrorBox message={error} />
     <p className="duel-connection-status" role="status">{connected ? 'Mit dem Duell verbunden' : result && terminal(result) ? 'Duell abgeschlossen' : 'Duellverbindung herstellen …'}</p>
@@ -154,7 +155,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
             else send('answer', { prompt: prompt.id, selected: [index] })
           }} chooseAction={chooseAction}>
           <div className="arena-hud" role="status"><span>Zug {board.turn_number} · {board.turn === board.seat ? 'Dein Zug' : 'Gegnerischer Zug'} · {duelPhaseName(board.phase)}</span>{result?.clock && <span role="timer">Du {Math.ceil(result.clock.remaining[result.seat])} s · Gegner {Math.ceil(result.clock.remaining[1-result.seat])} s</span>}</div>
-          <DuelAnimations events={board.events} runId={runId} onEffect={showEffect} seat={board.seat} disabled={disabled} surrender={() => { if(window.confirm('Duell wirklich aufgeben?')) send('surrender',{}) }} />
+          <DuelAnimations events={board.events} runId={runId} onEffect={showEffect} seat={board.seat} phase={board.phase} turn={board.turn} turnNumber={board.turn_number} disabled={disabled} surrender={() => { if(window.confirm('Duell wirklich aufgeben?')) send('surrender',{}) }} />
           {pendingAttack !== null && prompt && <section className="arena-attack-confirm" role="dialog" aria-label="Angriff vorbereiten"><h2>⚔ Angriff starten?</h2><p>{prompt.choices[pendingAttack]?.card?.name || 'Dein Monster'} soll angreifen. Danach wählst du ein erlaubtes Ziel.</p><button disabled={disabled} onClick={()=>{ attackStartedAfter.current = Math.max(0,...board.events.map(event=>event.id)); setAttackFlow(true); send('answer',{prompt:prompt.id,selected:[pendingAttack]}); setPendingAttack(null) }}>Angriff starten</button><button onClick={()=>setPendingAttack(null)}>Abbrechen</button></section>}
           {!showDecision && pendingAttack === null && !disabled && <p className="arena-action-guide">{prompt ? 'Markierte Karte anklicken · Phasenwechsel über den Kreis' : 'Dein Gegner entscheidet …'}</p>}
           {showDecision && result && !terminal(result) && <div className={chainReaction ? 'duel-chain-overlay' : 'arena-decision-overlay' + (selectOnField || prompt?.kind === 'zones' ? ' arena-field-selection-guide' : '')} role={chainReaction ? 'region' : undefined} aria-label={chainReaction ? 'Kettenreaktion' : undefined}>

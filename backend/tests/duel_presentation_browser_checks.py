@@ -44,6 +44,8 @@ window.__battle=()=>{frame.board.turn=0;frame.board.phase=16;frame.board.boards[
 window.__targets=()=>{frame.board.prompt={id:101,title:'Karten auswählen',select:true,minimum:1,maximum:1,choices:[{label:'Verdeckte Karte',card:null,location:{owner:1,zone:4,sequence:0}},{label:'Testkarte',card,location:{owner:1,zone:4,sequence:1}}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__log=()=>{frame.board.events.push({id:3,kind:'attack',affected_cards:[{role:'Angreifer',name:'Testkarte'},{role:'Ziel',name:'Verdeckte Karte'}]},{id:4,kind:'chain_step',step:73,number:1,affected_cards:[{role:'Effektkarte',name:'Testkarte'}]});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__effect=(seat)=>{frame.seat=seat;frame.board.seat=seat;frame.board.prompt=null;frame.board.events.push({id:frame.board.events.length+1,kind:'chain',card,source:{owner:0,zone:4,sequence:0},number:1,effect:'Ein bestätigter Testeffekt'});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__feedback=(chain=false)=>{frame.seat=0;frame.board.seat=0;frame.board.turn=0;frame.board.boards[0]={...side,hand:[card],grave:[card],extra:[card],removed:[card],field:[{zone:4,sequence:0,position:1,card},{zone:8,sequence:0,position:8,card}]};frame.board.prompt={id:300,title:chain?'Auf die Kette reagieren':'Aktion wählen',choices:[2,4,8,16,32,64,1].map(zone=>({label:'Aktivieren: Testkarte '+zone,card,...(chain?{}:{action:'activate'}),location:{owner:0,zone,sequence:0}}))};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__announce=(kind,phase,player=1)=>{frame.board.events.push({id:Math.max(0,...frame.board.events.map(e=>e.id))+1,kind,phase,player,number:2});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="presentation" onExit={()=>{}} />)
 ''', encoding='utf8')
         env = {**os.environ, 'VITE_BASE_PATH': '/'}
@@ -56,6 +58,7 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                 with sync_playwright() as pw:
                     browser = pw.chromium.launch(channel='msedge', headless=True)
                     page = browser.new_page(viewport={'width':1440,'height':1000})
+                    page.add_init_script("""window.__soundStarts=0; const OriginalAudioContext=window.AudioContext; window.AudioContext=class extends OriginalAudioContext { createBufferSource(){const node=super.createBufferSource();const start=node.start.bind(node);node.start=(...args)=>{window.__soundStarts++;return start(...args)};return node} };""")
                     errors = []
                     page.on('pageerror', lambda error: errors.append(str(error)))
                     page.route('**/test-card.svg', lambda route: route.fulfill(content_type='image/svg+xml', body='<svg xmlns="http://www.w3.org/2000/svg" width="80" height="120"><rect width="80" height="120" fill="teal"/></svg>'))
@@ -152,9 +155,58 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     expect(page.locator('.duel-event-log')).to_contain_text('Angreifer: Testkarte')
                     expect(page.locator('.duel-event-log')).to_contain_text('Ziel: Verdeckte Karte')
                     expect(page.locator('.duel-event-log')).to_contain_text('Effekt aufgelöst · 1 · Effektkarte: Testkarte')
+                    page.get_by_label('Duellmenü',exact=True).click()
+                    page.evaluate('window.__feedback()')
+                    for zone in (4,8):
+                        expect(page.locator(f'.arena-own .arena-slot[data-duel-zone="{zone}"].effect-available')).to_have_count(1)
+                    for zone in (16,32,64,1):
+                        pile=page.locator(f'.arena-own .arena-pile[data-duel-zone="{zone}"]')
+                        expect(pile).to_have_class(__import__('re').compile('effect-available'))
+                        assert pile.evaluate('(e)=>getComputedStyle(e).animationName')=='duel-effect-pulse'
+                    expect(page.locator('.arena-own .arena-hand .duel-playing-card.effect-available')).to_have_count(1)
+                    page.screenshot(path=str(ROOT/'artifacts/duel-effects-gold.png'))
+                    page.locator('.arena-own .arena-pile[data-duel-zone="16"] summary').click()
+                    page.locator('.arena-own .arena-pile[data-duel-zone="16"] .duel-playing-card').click()
+                    page.get_by_role('button',name='Aktivieren: Testkarte 16',exact=True).click()
+                    assert page.evaluate('window.__answers.at(-1).selected') == [3]
+                    expect(page.locator('.effect-available')).to_have_count(0)
+                    page.evaluate('window.__feedback(true)')
+                    expect(page.locator('.arena-own .arena-pile[data-duel-zone="32"].effect-available')).to_have_count(1)
+                    # Finish the synthetic decision so phase-only frames cannot glow.
+                    page.evaluate('window.__socket.send(JSON.stringify({type:"answer",selected:[0]}))')
+                    for kind,phase,title in [('phase_request',512,'Beendet Zug'),('phase',512,'Endphase'),('turn_end',None,'Zug beendet'),('turn',None,'Dein Zug'),('phase',1,'Ziehphase'),('phase',2,'Standby-Phase'),('phase',4,'Hauptphase 1')]:
+                        page.evaluate('([kind,phase,player])=>window.__announce(kind,phase,player)',[kind,phase,0 if kind in ('turn','phase') and phase!=512 else 1])
+                        banner=page.get_by_role('status',name='Phasenwechsel',exact=True)
+                        expect(banner).to_contain_text(title,timeout=10000)
+                        assert banner.evaluate('(e)=>getComputedStyle(e).pointerEvents')=='none'
+                        if kind=='phase_request':
+                            expect(banner).to_contain_text('Reaktionen sind noch möglich')
+                            assert page.locator('.arena-phase-announcement.is-opponent-turn').count()==1
+                        if phase==2:
+                            page.wait_for_timeout(300)
+                            page.screenshot(path=str(ROOT/'artifacts/duel-phase-announcement.png'))
+                        expect(banner).to_have_count(0,timeout=5000)
+                    page.get_by_label('Duellmenü',exact=True).click()
+                    expect(page.get_by_role('button',name='Ton an',exact=True)).to_have_attribute('aria-pressed','true')
+                    page.get_by_role('button',name='Ton an',exact=True).click()
+                    assert page.evaluate('localStorage.getItem("duel-sound")')=='off'
+                    assert page.evaluate('window.__soundStarts') > 0
+                    before=page.evaluate('window.__soundStarts')
+                    page.evaluate('window.__announce("phase",256,0)')
+                    expect(page.get_by_role('status',name='Phasenwechsel',exact=True)).to_contain_text('Hauptphase 2')
+                    assert page.evaluate('window.__soundStarts')==before
+                    page.get_by_label('Duellmenü',exact=True).click()
+                    page.set_viewport_size({'width':390,'height':844})
+                    page.emulate_media(reduced_motion='reduce')
+                    page.evaluate('window.__feedback()')
+                    assert page.locator('.arena-own .arena-pile[data-duel-zone="32"]').evaluate('(e)=>getComputedStyle(e).animationName')=='none'
+                    page.evaluate('window.__announce("phase",2,0)')
+                    expect(page.get_by_role('status',name='Phasenwechsel',exact=True)).to_contain_text('Standby-Phase',timeout=5000)
+                    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+                    page.screenshot(path=str(ROOT/'artifacts/duel-feedback-mobile.png'),full_page=True)
                     assert not errors, errors
                     browser.close()
-                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','effect reveal and viewer for both seats','named cards and chain resolution in duel log'],'console_errors':errors}))
+                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','effect reveal and viewer for both seats','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion'],'console_errors':errors}))
             finally:
                 process.terminate()
                 try: process.wait(timeout=10)

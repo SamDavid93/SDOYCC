@@ -3,6 +3,7 @@ import { API_BASE_URL } from '../api/transport'
 
 export type DuelLocation = { owner: number; zone: number; sequence: number }
 export type WorkerPrompt = { id: number; title: string; kind?: string; placement?: boolean; hint?: string; select?: boolean; ordered?: boolean; cancel?: boolean;
+  effect_location?: DuelLocation;
   effect_card?: { code: number; name: string; image_url?: string; description?: string };
   counter?: boolean; counter_limits?: number[]; counter_total?: number; minimum?: number; maximum?: number;
   choices: { label: string; card: { name: string; image_url?: string } | null; action?: string; location?: DuelLocation }[] }
@@ -37,7 +38,7 @@ export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZo
     {prompt && prompt.choices.length > 30 && <label>Karten / Optionen suchen<input value={filter} onChange={event => { setFilter(event.target.value); setLimit(60) }} /></label>}
     {!hideChoices && <div className="duel-choice-list">{prompt && choices.slice(0, limit).map(({ choice, index }) => prompt.counter ?
       <label key={index}>{choice.label} · höchstens {prompt.counter_limits?.[index]}<input type="number" min={0} max={prompt.counter_limits?.[index]} value={selection[index] || 0} disabled={disabled} onChange={event => setSelection(old => old.map((value, i) => i === index ? Math.max(0, Math.min(prompt.counter_limits?.[index] || 0, Math.floor(Number(event.target.value)))) : value))} /></label> :
-      <button key={index} disabled={disabled} aria-pressed={prompt.select ? selection.includes(index) : undefined} onClick={() => prompt.select ? setSelection(old => old.includes(index) ? old.filter(i => i !== index) : [...old, index]) : send('answer', { prompt: prompt.id, selected: [index] })}>
+      <button key={index} className={!disabled && (choice.action === 'activate' || (chain && choice.card) || (prompt.effect_location && choice.label === 'Ja')) ? 'effect-available' : undefined} disabled={disabled} aria-pressed={prompt.select ? selection.includes(index) : undefined} onClick={() => prompt.select ? setSelection(old => old.includes(index) ? old.filter(i => i !== index) : [...old, index]) : send('answer', { prompt: prompt.id, selected: [index] })}>
         {choice.card?.image_url && <img className="duel-chain-card" src={API_BASE_URL.replace(/\/api\/?$/, '') + choice.card.image_url} alt="" onError={event => { event.currentTarget.hidden = true }} />}
         <span>{prompt.ordered && selection.includes(index) && `${selection.indexOf(index) + 1}. `}{choice.label}</span>
       </button>)}</div>}
