@@ -51,8 +51,14 @@ export function DuelAnimations({ events, runId, onEffect, seat, disabled, surren
     const unseen = events.filter(event => event.id > watermark.current!).sort((a, b) => a.id - b.id)
     watermark.current = Math.max(watermark.current, newest)
     if (document.hidden) return
+    // The viewer follows confirmed effects immediately, independently of animation playback.
+    const effects = unseen.filter(event => event.kind === 'chain' && event.card)
+    const latestEffect = effects.at(-1)
+    if (latestEffect?.card) onEffect?.(latestEffect.card, latestEffect.effect)
+    if (sound) effects.filter(event => event.source?.owner === seat).forEach(event => audio.current?.play(event))
     const shown = unseen.filter(event => {
       if (event.kind === 'information') return false
+      if (event.kind === 'chain' && event.source?.owner === seat) return false
       if (event.kind !== 'phase') return true
       const phase = event.phase && event.phase >= 8 && event.phase <= 128 ? 8 : event.phase
       const key = `${event.player}:${event.number}:${phase}`
@@ -61,14 +67,16 @@ export function DuelAnimations({ events, runId, onEffect, seat, disabled, surren
       return true
     })
     if (shown.length) setQueue(old => [...old, ...shown].slice(-30))
-  }, [events])
+  }, [events, onEffect, seat, sound])
   useEffect(() => {
     if (active || !queue.length) return
     setActive(queue[0]); setQueue(old => old.slice(1))
   }, [active, queue])
   useEffect(() => {
     if (!active) return
-    const timer = setTimeout(() => { if (active.kind === 'chain' && active.card) onEffect?.(active.card, active.effect); setActive(null) }, active.kind === 'win' ? 2400 : active.kind === 'chain' && active.card ? 2000 : phaseAnnouncement(active,seat) ? 1500 : mode === 'full' ? 950 : mode === 'fast' ? 240 : 300)
+    const routine = ['move','position','shuffle','counter','material','equip','unequip','target','untarget','hint','zones'].includes(active.kind)
+    const duration = active.kind === 'win' ? 1800 : active.kind === 'chain' && active.card ? (mode === 'fast' ? 450 : 900) : phaseAnnouncement(active,seat) ? 850 : active.kind === 'chain_step' ? 180 : routine ? 90 : mode === 'full' ? 650 : mode === 'fast' ? 220 : 180
+    const timer = setTimeout(() => setActive(null), duration)
     return () => clearTimeout(timer)
   }, [active, mode, onEffect, seat])
   useEffect(() => {
@@ -103,7 +111,7 @@ export function DuelAnimations({ events, runId, onEffect, seat, disabled, surren
     {announcement && <section className={'arena-phase-announcement ' + (announcement.own ? 'is-own-turn' : 'is-opponent-turn')} role="status" aria-label="Phasenwechsel" key={`phase:${active!.id}`}><small>{announcement.detail}</small><strong>{announcement.title}</strong></section>}
     {active?.kind === 'win' && <section className={'duel-result-announcement ' + (active.winner === seat ? 'is-victory' : active.winner == null ? 'is-draw' : 'is-defeat')} role="status" aria-label="Duellergebnis" key={`result:${active.id}`}><small>Duell abgeschlossen</small><strong>{active.winner === undefined ? 'Duell beendet' : active.winner === null ? 'Unentschieden' : active.winner === seat ? 'Sieg' : 'Niederlage'}</strong><span>Das Ergebnis wurde bestätigt.</span></section>}
     {(active?.kind === 'negate' || active?.kind === 'chain_step' && [75,76].includes(active.step || 0)) && <section className="duel-negate-announcement" role="status" aria-label="Negierter Effekt"><span aria-hidden="true">×</span><strong>{active.step === 75 ? 'Aktivierung negiert' : 'Effekt negiert'}</strong></section>}
-    {active?.kind === 'chain' && active.card && <section className="duel-effect-reveal" role="status" aria-label="Aktivierter Karteneffekt" data-effect-owner={active.source?.owner === seat ? 'own' : 'opponent'} key={`effect:${active.id}`}>
+    {active?.kind === 'chain' && active.card && active.source?.owner !== seat && <section className="duel-effect-reveal" role="status" aria-label="Aktivierter Karteneffekt" data-effect-owner="opponent" key={`effect:${active.id}`}>
       <div className="duel-effect-orbit" aria-hidden="true" /><b className="duel-chain-number" aria-hidden="true">{active.number || 1}</b>
       <span>{active.source?.owner === seat ? 'Dein Effekt' : 'Gegner aktiviert'} · Kettenglied {active.number}</span>
       {active.card.image_url && <img src={API_BASE_URL.replace(/\/api\/?$/, '') + active.card.image_url} alt={active.card.name} onError={event => { const img=event.currentTarget; if(active.card?.fallback_image_url && !img.dataset.fallback){img.dataset.fallback='1';img.src=API_BASE_URL.replace(/\/api\/?$/, '')+active.card.fallback_image_url}else img.hidden=true }} />}

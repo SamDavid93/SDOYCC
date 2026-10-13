@@ -154,9 +154,12 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     assert page.evaluate('window.__answers[6].selected') == [0]
                     for seat in (0,1):
                         page.evaluate('(seat)=>window.__effect(seat)',seat)
-                        expect(page.get_by_role('status',name='Aktivierter Karteneffekt')).to_be_visible()
-                        expect(page.locator('.duel-effect-reveal')).to_contain_text('Dein Effekt' if seat==0 else 'Gegner aktiviert')
+                        if seat==0:
+                            expect(page.get_by_role('status',name='Aktivierter Karteneffekt')).to_have_count(0)
+                            expect(page.locator('.duel-inspector-effect')).to_contain_text('Ein bestätigter Testeffekt',timeout=500)
                         if seat==1:
+                            expect(page.get_by_role('status',name='Aktivierter Karteneffekt')).to_be_visible()
+                            expect(page.locator('.duel-effect-reveal')).to_contain_text('Gegner aktiviert')
                             assert orb.evaluate('(e)=>getComputedStyle(e).borderTopColor') == 'rgb(225, 72, 105)'
                             page.screenshot(path=str(ROOT / 'artifacts/duel-field-effect.png'))
                         expect(page.locator('.duel-inspector-effect')).to_contain_text('Ein bestätigter Testeffekt',timeout=5000)
@@ -272,6 +275,11 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                         arena=page.locator('.duel-arena').bounding_box()
                         assert arena and (width<=760 or arena['y']+arena['height']<=height),arena
                         page.screenshot(path=str(ROOT/f'artifacts/duel-premium-{width}.png'),full_page=True)
+                        if width>760:
+                            page.evaluate('document.documentElement.style.setProperty("--site-footer-height","60px")')
+                            arena=page.locator('.duel-arena').bounding_box()
+                            assert arena and arena['y']+arena['height'] <= height-60,arena
+                            page.evaluate('document.documentElement.style.removeProperty("--site-footer-height")')
                     page.set_viewport_size({'width':1440,'height':1000})
                     for winner,title in ((0,'Sieg'),(1,'Niederlage'),(None,'Unentschieden')):
                         page.evaluate('(winner)=>window.__scene({kind:"win",winner})',winner)
@@ -366,7 +374,7 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     assert not key_warnings, key_warnings
                     assert not errors, errors
                     browser.close()
-                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','effect reveal and viewer for both seats','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','720p and 1080p arena fits viewport','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement','one-card double-click submits exactly once','incomplete multi-selection stays open','maximum selection cannot be exceeded','double-click preserves original selection order','step selection auto-finishes only after engine confirms completion','double-click selects own hand cards','larger own hand fits mobile','required-card count remains visible on mobile','periodic clock state cannot acknowledge a pending action','two shared extra zones retain physical identity across controller and prompt changes for both seats and viewports','occupied shared zones stay visible and placement preserves original indexes'],'console_errors':errors}))
+                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','own effect updates viewer immediately without center animation; opponent effect remains visible','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','larger arena fits 720p and 1080p including footer allowance','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement','one-card double-click submits exactly once','incomplete multi-selection stays open','maximum selection cannot be exceeded','double-click preserves original selection order','step selection auto-finishes only after engine confirms completion','double-click selects own hand cards','larger own hand fits mobile','required-card count remains visible on mobile','periodic clock state cannot acknowledge a pending action','two shared extra zones retain physical identity across controller and prompt changes for both seats and viewports','occupied shared zones stay visible and placement preserves original indexes'],'console_errors':errors}))
             finally:
                 process.terminate()
                 try: process.wait(timeout=10)

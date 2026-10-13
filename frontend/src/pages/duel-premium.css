@@ -66,3 +66,16 @@
 @media(max-width:760px){.duel-arena{--own-hand-size:66px}.duel-selection-progress{grid-template-columns:1fr;gap:4px;padding:9px}.duel-selection-progress>strong{font-size:14px}.duel-selection-progress>b{font-size:11px}.arena-field-selection-guide .duel-selection-progress>strong{font-size:11px}.arena-field-selection-guide .duel-selection-progress>b{font-size:10px}}
 .duel-arena .arena-player{min-width:0}
 .duel-arena .arena-decision-overlay:not(.arena-field-selection-guide){max-height:60vh}.arena-decision-overlay .duel-chain-card{width:58px;height:84px}
+/* Spend the available screen height on cards rather than HUD spacing. */
+@media(min-width:761px){
+  .page-wrap:has(.duel-worker-table.is-playing){max-width:none;padding:6px 10px}
+  .duel-arena-shell{grid-template-columns:clamp(180px,15vw,240px) minmax(0,1fr);gap:10px;margin:4px 0}
+  .duel-card-inspector{max-height:calc(100dvh - var(--site-footer-height,0px) - 40px)}
+  .duel-arena{--field-zone-size:clamp(42px,calc((100dvh - var(--site-footer-height,0px) - 530px)/5),155px);--own-hand-size:clamp(84px,8vw,120px);padding:40px 18px 22px;gap:8px}
+  .duel-arena .arena-player{gap:7px}
+  .arena-player>header.duel-player-hud{min-height:44px;padding:5px 10px}
+  .duel-player-emblem{width:30px;height:30px}.arena-player .duel-life{font-size:25px}.duel-player-identity>span{margin-top:2px}
+  .arena-main-zones{gap:10px}.arena-extra-row{padding-block:2px}
+  .duel-effect-reveal{pointer-events:none}
+}
+@media(max-height:800px) and (min-width:761px){.duel-arena{--own-hand-size:80px;--field-zone-size:clamp(42px,calc((100dvh - var(--site-footer-height,0px) - 450px)/5),100px)}}
