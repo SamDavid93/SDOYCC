@@ -21,6 +21,8 @@ def run():
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { DuelWorkerTable } from '../src/pages/DuelWorkerTable'
+import { bossSummon } from '../src/pages/DuelSummonCutin'
+import { bossSoundFor, DuelSoundPlayer } from '../src/pages/duelSounds'
 import '../src/styles.css'
 import '../src/pages/decks.css'
 sessionStorage.setItem('hub-session', 'synthetic-presentation-token')
@@ -31,6 +33,10 @@ boards:[{...side,field:[{zone:4,sequence:0,position:8,card},{zone:8,sequence:0,p
 {...side,field:[{zone:4,sequence:0,position:8,card:null},{zone:8,sequence:0,position:8,card:null}]}],
 prompt:{id:7,title:'Auf die Kette reagieren',choices:[{label:'Effekt: Testkarte',card},{label:'Nicht anketten',card:null}]}}}
 window.__answers=[]
+window.__bossSounds=[]
+const originalBossSound=DuelSoundPlayer.prototype.playBossSummon
+DuelSoundPlayer.prototype.playBossSummon=function(event,seconds){window.__bossSounds.push(bossSoundFor(event));return originalBossSound.call(this,event,seconds)}
+window.__bossEligible=(event,seat)=>bossSummon(event,seat)
 class Socket {
 static OPEN=1;readyState=1
 constructor(){window.__socket=this;setTimeout(()=>this.onopen?.(),0)}
@@ -55,6 +61,7 @@ if(event)frame.board.events.push({...event,id:Math.max(0,...frame.board.events.m
 window.__extra=(owners,seat,offer=false)=>{frame.board.seat=frame.seat=seat;frame.board.prompt=offer?{id:900+frame.board.revision,kind:'zones',minimum:1,maximum:1,choices:[{label:'Right',location:{owner:seat,zone:4,sequence:6}},{label:'Left',location:{owner:seat,zone:4,sequence:5}}]}:null;frame.board.boards.forEach(s=>s.field=s.field.filter(e=>e.zone!==4||e.sequence<5));owners.forEach((owner,i)=>{if(owner!==null)frame.board.boards[owner].field.push({zone:4,sequence:owner===seat?5+i:6-i,position:1,card})});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__pileFlow=()=>{window.__scene();const extra={...card,name:'Synchro-Test',type:0x2001};frame.board.boards[0].extra=[{...card,name:'Nicht beschwoerbar'},extra,{...card,name:'Fusion-Test'}];frame.board.prompt={id:1100+frame.board.revision,title:'Aktion wählen',choices:[{label:'Zug beenden',card:null},{label:'Spezialbeschwören: Synchro-Test',card:extra,action:'special_summon',location:{owner:0,zone:64,sequence:1}},{label:'Aktivieren: Synchro-Test',card:extra,action:'activate',location:{owner:0,zone:64,sequence:1}},{label:'Spezialbeschwören: Fusion-Test',card:{...card,name:'Fusion-Test'},action:'special_summon',location:{owner:0,zone:64,sequence:2}}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__pileStep=(stage)=>{frame.board.prompt={id:1200+frame.board.revision,title:stage==='materials'?'Materialien wählen':stage==='zones'?'Zone wählen':'Aktion wählen',...(stage==='materials'?{select:true,minimum:2,maximum:2}:stage==='zones'?{kind:'zones',placement:true}:{}),choices:stage==='materials'?[0,1].map(sequence=>({label:'Material '+sequence,card,location:{owner:0,zone:4,sequence}})):stage==='zones'?[6,2].map(sequence=>({label:'Zone '+sequence,card:null,location:{owner:0,zone:4,sequence}})):[{label:'Zug beenden',card:null}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__boss=(overrides={})=>window.__scene({kind:'summon',method:'synchro',player:1,location:{owner:1,zone:4,sequence:2,position:1},card:{...card,name:'Blue-Eyes White Dragon',image_url:'/scene-card.jpg',level:8,type:0x2001,attribute:16,atk:3000,defense:2500},...overrides})
 createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="presentation" onExit={()=>{}} />)
 ''', encoding='utf8')
         env = {**os.environ, 'VITE_BASE_PATH': '/'}
@@ -417,10 +424,60 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                         assert bounds and bounds['x']>=0 and bounds['x']+bounds['width']<=width+1,bounds
                         page.keyboard.press('Escape')
                         expect(extra).not_to_have_attribute('open','')
+                    page.set_viewport_size({'width':1440,'height':1000})
+                    page.get_by_label('Duellmenü',exact=True).click()
+                    page.get_by_label('Animationen',exact=True).select_option('full')
+                    page.get_by_label('Boss-Cut-ins',exact=True).check()
+                    sound_button=page.get_by_role('button',name='Ton aus',exact=True)
+                    if sound_button.count():sound_button.click()
+                    page.get_by_label('Duellmenü',exact=True).click()
+                    assert not page.evaluate('window.__bossEligible({kind:"summon",player:0,card:{level:12,atk:4000}},0)')
+                    assert not page.evaluate('window.__bossEligible({kind:"summon",player:1,method:"covered",card:{level:12,atk:4000}},0)')
+                    assert not page.evaluate('window.__bossEligible({kind:"summon",player:1,card:{level:4,atk:1900}},0)')
+                    assert page.evaluate('window.__bossEligible({kind:"summon",player:1,card:{level:3,type:0x4000000,atk:2000}},0)')
+                    page.evaluate('window.__boss()')
+                    cutin=page.get_by_role('status',name='Gegnerisches Bossmonster beschworen')
+                    expect(cutin).to_be_visible()
+                    expect(cutin).to_contain_text('Blue-Eyes White Dragon')
+                    expect(cutin).to_contain_text('ATK 3000')
+                    assert cutin.evaluate('(e)=>getComputedStyle(e).pointerEvents')=='none'
+                    page.wait_for_timeout(350)
+                    page.screenshot(path=str(ROOT/'artifacts/duel-boss-cutin-desktop.png'))
+                    assert page.evaluate('window.__bossSounds.at(-1)')=='boss-light'
+                    page.evaluate('window.__showChain()')
+                    expect(cutin).to_have_class(__import__('re').compile('is-compact'))
+                    expect(page.locator('.duel-chain-overlay')).to_be_visible()
+                    page.get_by_role('button',name='Nicht anketten',exact=True).click()
+                    assert page.evaluate('window.__answers.at(-1).selected')==[1]
+                    expect(cutin).to_have_count(0,timeout=3000)
+                    page.evaluate('window.__boss({player:0})')
+                    page.wait_for_timeout(500)
+                    expect(cutin).to_have_count(0)
+                    page.wait_for_timeout(300)
+                    page.set_viewport_size({'width':390,'height':844})
+                    page.evaluate('window.__boss({method:"xyz"})')
+                    expect(cutin).to_be_visible()
+                    page.wait_for_timeout(300)
+                    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+                    page.screenshot(path=str(ROOT/'artifacts/duel-boss-cutin-mobile.png'),full_page=True)
+                    expect(cutin).to_have_count(0,timeout=3000)
+                    page.get_by_label('Duellmenü',exact=True).click()
+                    page.get_by_label('Animationen',exact=True).select_option('reduced')
+                    page.get_by_label('Duellmenü',exact=True).click()
+                    page.evaluate('window.__boss()')
+                    expect(cutin).to_have_class(__import__('re').compile('cutin-reduced'))
+                    assert cutin.evaluate('(e)=>getComputedStyle(e).animationName')=='none'
+                    expect(cutin).to_have_count(0,timeout=2000)
+                    page.get_by_label('Duellmenü',exact=True).click()
+                    page.get_by_label('Boss-Cut-ins',exact=True).uncheck()
+                    page.get_by_label('Duellmenü',exact=True).click()
+                    page.evaluate('window.__boss()')
+                    page.wait_for_timeout(400)
+                    expect(cutin).to_have_count(0)
                     assert not key_warnings, key_warnings
                     assert not errors, errors
                     browser.close()
-                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','own effect updates viewer immediately without center animation; opponent effect remains visible','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','larger arena fits 720p and 1080p including footer allowance','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement','one-card double-click submits exactly once','incomplete multi-selection stays open','maximum selection cannot be exceeded','double-click preserves original selection order','step selection auto-finishes only after engine confirms completion','double-click selects own hand cards','larger own hand fits mobile','required-card count remains visible on mobile','periodic clock state cannot acknowledge a pending action','two shared extra zones retain physical identity across controller and prompt changes for both seats and viewports','occupied shared zones stay visible and placement preserves original indexes','extra deck lists only legal summons and separates browsing','grave and banished action lists preserve original engine indexes','summon guidance keeps card method and material or zone step visible','pile menus fit mobile and close with Escape'],'console_errors':errors}))
+                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','own effect updates viewer immediately without center animation; opponent effect remains visible','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','larger arena fits 720p and 1080p including footer allowance','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement','one-card double-click submits exactly once','incomplete multi-selection stays open','maximum selection cannot be exceeded','double-click preserves original selection order','step selection auto-finishes only after engine confirms completion','double-click selects own hand cards','larger own hand fits mobile','required-card count remains visible on mobile','periodic clock state cannot acknowledge a pending action','two shared extra zones retain physical identity across controller and prompt changes for both seats and viewports','occupied shared zones stay visible and placement preserves original indexes','extra deck lists only legal summons and separates browsing','grave and banished action lists preserve original engine indexes','summon guidance keeps card method and material or zone step visible','pile menus fit mobile and close with Escape','opponent boss summon cut-ins with attribute-matched original sound','own weak and covered monsters never trigger a cut-in','decisions compact the cut-in without blocking chain answers','desktop mobile reduced-motion and cut-in disable controls'],'console_errors':errors}))
             finally:
                 process.terminate()
                 try: process.wait(timeout=10)

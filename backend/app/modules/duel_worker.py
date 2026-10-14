@@ -50,9 +50,9 @@ class NativeAdapter:
             'banlist_sha256': hashlib.sha256((self.root / 'lists/0TCG.lflist.conf').read_bytes()).hexdigest()}
         with sqlite3.connect((self.root / 'cards/cards.cdb').as_uri() + '?mode=ro', uri=True) as db:
             rows = db.execute('SELECT d.id,t.name,t.desc,d.atk,d.def,d.type,d.race,d.attribute,d.setcode,d.alias,' +
-                ','.join('t.str' + str(i) for i in range(1, 17)) + ' FROM datas d JOIN texts t ON d.id=t.id '
+                ','.join('t.str' + str(i) for i in range(1, 17)) + ',d.level FROM datas d JOIN texts t ON d.id=t.id '
                 '').fetchall()
-        self.catalog = {row[0]: dict(zip(('name', 'description', 'atk', 'defense', 'type', 'race', 'attribute', 'setcode', 'alias'), row[1:10]), options=list(row[10:])) for row in rows}
+        self.catalog = {row[0]: dict(zip(('name', 'description', 'atk', 'defense', 'type', 'race', 'attribute', 'setcode', 'alias'), row[1:10]), options=list(row[10:26]), level=row[26] & 255) for row in rows}
 
     def check(self, snapshot):
         if any(snapshot['sources'].get(key) != value for key, value in self.sources.items()):

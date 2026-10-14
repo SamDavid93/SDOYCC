@@ -73,6 +73,20 @@ class BoundaryTests(unittest.TestCase):
         self.consume_message(bytes([62]) + struct.pack('<IBBII', 101, 0, 4, 0, 8))
         self.assertEqual(self.p.public_events(0)[-1]['affected_cards'][0]['name'], 'Testkarte')
         self.assertEqual(self.p.public_events(1)[-1]['affected_cards'][0]['name'], 'Verdeckte Karte')
+        for seat in (0,1): self.assertIsNone(self.p.public_events(seat)[-1]['card'])
+
+    def test_face_up_summon_snapshot_has_public_visual_metadata(self):
+        self.p.catalog[101]={**CATALOG[101],'level':8,'type':0x2001,'attribute':16,'image_url':'/api/cards/1/art/original'}
+        self.consume_message(bytes([62])+struct.pack('<IBBII',101,1,4,5,1))
+        for seat in (0,1):
+            event=self.p.public_events(seat)[-1]
+            self.assertEqual(event['method'],'synchro')
+            self.assertEqual(event['card']['level'],8)
+            self.assertEqual(event['card']['attribute'],16)
+            self.assertEqual(event['card']['name'],'Testkarte')
+        # Later catalog changes cannot change the name or metadata in the recorded event.
+        self.p.catalog[101]['level']=1
+        self.assertEqual(self.p.public_events(0)[-1]['card']['level'],8)
 
     def test_attack_log_names_attacker_and_hides_set_target(self):
         self.p.field[0][(4, 0)] = {'code': 101, 'position': 1}

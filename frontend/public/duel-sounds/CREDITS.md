@@ -22,4 +22,13 @@ Aus [Lahrenheit / EDOPRO-Soundpack](https://github.com/Lahrenheit/EDOPRO-Soundpa
 
 [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) · [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)
 
-Weitere Signale werden in SDOYCC durch eigenen Web-Audio-Code erzeugt. Hintergrundmusik und Sounds ohne ausgewiesene Lizenz werden nicht mitgeliefert.
+Weitere Signale werden in SDOYCC durch eigenen Web-Audio-Code erzeugt. Hintergrundmusik wird nicht mitgeliefert. Die separat vom Projekteigentümer bereitgestellten Cut-in-Sounds sind unten dokumentiert.
+
+## Vom Projekteigentümer bereitgestellte Master-Duel-Cut-ins
+
+Die sieben `boss-*.wav` stammen aus dem vom Projekteigentümer ausdrücklich
+bereitgestellten [Soundordner](https://drive.google.com/drive/folders/1nazZgXiDJVaPnG-E5QZS6JTwzEp9bDQj).
+Originalnamen: `SE_MONSTER_CUTIN_DARK`, `DIVINE`, `EARTH`, `FIRE`, `LIGHT`, `WATER`
+und `WIND`. Die WAV-Dateien wurden unverändert übernommen und nur lokal umbenannt.
+Dateizuordnung, Herkunft und SHA-256-Prüfsummen stehen in `master-duel-source.json`.
+Diese Dateien fallen nicht unter die oben genannten Freesound-Lizenzen.

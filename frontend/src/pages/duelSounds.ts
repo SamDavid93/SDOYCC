@@ -12,6 +12,8 @@ const soundFor = (event: DuelEvent) => {
   return ({ draw: 'draw', shuffle: 'shuffle', lp: 'damage', equip: 'equip', coin: 'coinflip', dice: 'diceroll' } as Record<string, string>)[event.kind]
 }
 
+export const bossSoundFor = (event:DuelEvent) => 'boss-'+(({1:'earth',2:'water',4:'fire',8:'wind',16:'light',32:'dark',64:'divine'} as Record<number,string>)[event.card?.attribute || 32] || 'dark')
+
 /** All audio starts after a real user gesture; assets are served by our own site. */
 export class DuelSoundPlayer {
   private context: AudioContext | null = null
@@ -26,7 +28,7 @@ export class DuelSoundPlayer {
     if (!this.gain) { this.gain = this.context.createGain(); this.gain.connect(this.context.destination) }
     this.gain.gain.value = this.volume
     if (this.context.state !== 'running') await this.context.resume()
-    for (const name of ['phase', 'nextturn', 'draw', 'attack', 'summon', 'set', 'shuffle', 'flip', 'damage', 'gainlp', 'equip', 'addcounter', 'removecounter', 'coinflip', 'diceroll']) void this.load(name)
+    for (const name of ['phase', 'nextturn', 'draw', 'attack', 'summon', 'set', 'shuffle', 'flip', 'damage', 'gainlp', 'equip', 'addcounter', 'removecounter', 'coinflip', 'diceroll','boss-dark','boss-light','boss-earth','boss-water','boss-fire','boss-wind','boss-divine']) void this.load(name)
   }
 
   private async load(name: string) {
@@ -67,6 +69,20 @@ export class DuelSoundPlayer {
       this.sources.add(oscillator); oscillator.onended = () => { this.sources.delete(oscillator); oscillator.disconnect(); envelope.disconnect() }
       oscillator.start(at); oscillator.stop(at + .17)
     })
+  }
+
+  playBossSummon(event:DuelEvent, seconds=1.65) {
+    if(!this.context || this.context.state!=='running' || !this.gain)return
+    const name=bossSoundFor(event),buffer=this.buffers.get(name)
+    if(!buffer){void this.load(name);this.play(event);return}
+    const source=this.context.createBufferSource(),envelope=this.context.createGain(),at=this.context.currentTime
+    source.buffer=buffer;source.connect(envelope);envelope.connect(this.gain)
+    envelope.gain.setValueAtTime(.8,at)
+    envelope.gain.setValueAtTime(.8,at+Math.max(.1,seconds-.25))
+    envelope.gain.exponentialRampToValueAtTime(.001,at+seconds)
+    this.sources.add(source)
+    source.onended=()=>{this.sources.delete(source);source.disconnect();envelope.disconnect()}
+    source.start();source.stop(at+Math.min(buffer.duration,seconds))
   }
 
   stop() { for (const source of this.sources) { try { source.stop() } catch { /* Already finished. */ } }; this.sources.clear() }

@@ -312,7 +312,9 @@ class Projection:
                 code = r.read('I'); info = r.loc()
                 bits = self.catalog.get(code, {}).get('type', 0)
                 method = 'covered' if not info['position'] & 5 else 'flip' if msg == 64 else 'normal' if msg == 60 else 'fusion' if bits & 0x40 else 'synchro' if bits & 0x2000 else 'xyz' if bits & 0x800000 else 'link' if bits & 0x4000000 else 'ritual' if bits & 0x80 else 'pendulum' if bits & 0x1000000 else 'special'
-                self.event('summon', player=info['owner'], location=info, method=method, _affected=self.named_card('Karte', code, [info]))
+                self.event('summon', player=info['owner'], location=info, method=method,
+                    card=self.card(code) if info['position'] & 5 and code in self.catalog else None,
+                    _affected=self.named_card('Karte', code, [info]))
             elif msg == 70:
                 code = r.read('I'); source = r.loc(); player, zone, sequence, description, number = r.read('BBIQI')
                 options = self.catalog.get(code, {}).get('options', [])

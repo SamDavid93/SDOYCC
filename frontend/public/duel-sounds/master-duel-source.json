@@ -1,0 +1,56 @@
+{
+  "source": "https://drive.google.com/drive/folders/1nazZgXiDJVaPnG-E5QZS6JTwzEp9bDQj",
+  "provided_by": "project owner",
+  "modified": false,
+  "files": [
+    {
+      "file": "boss-dark.wav",
+      "original_name": "SE_MONSTER_CUTIN_DARK.wav",
+      "drive_file_id": "1-KK1bTcvW6CvL6mO9mFy_nyyFn-SLn4h",
+      "seconds": 2.991,
+      "sha256": "b8df602f3d5032e2f369b4e26954e6d31b54843433718306829fcfd5d981ce8b"
+    },
+    {
+      "file": "boss-divine.wav",
+      "original_name": "SE_MONSTER_CUTIN_DIVINE.wav",
+      "drive_file_id": "1KRXcnhM3-c1lUjKsh7t1GxCbEEObHXjp",
+      "seconds": 2.766,
+      "sha256": "257d6ec12652d4a9f0c70eee8e05d57268614eddea403c30758ed6801bfe9e50"
+    },
+    {
+      "file": "boss-earth.wav",
+      "original_name": "SE_MONSTER_CUTIN_EARTH.wav",
+      "drive_file_id": "1KUks4HwOXNNiT7LhhuvguQdBWZiPZ65t",
+      "seconds": 2.877,
+      "sha256": "e1aaa0ff609c0d46ab42d8004be94750c06ea256825e1a9826611bf9a5f18c58"
+    },
+    {
+      "file": "boss-fire.wav",
+      "original_name": "SE_MONSTER_CUTIN_FIRE.wav",
+      "drive_file_id": "17RntAga4NqeEWd28_JqQ07DXtyQ42BVd",
+      "seconds": 2.899,
+      "sha256": "229dc4956a329e416ed70369206f9c55ebae3977f771d0ec1d1c7be3188b6862"
+    },
+    {
+      "file": "boss-light.wav",
+      "original_name": "SE_MONSTER_CUTIN_LIGHT.wav",
+      "drive_file_id": "1clhq3cutloGMW5qVlEfcN4Sc2NIrbs57",
+      "seconds": 2.736,
+      "sha256": "6763d30239075003f9bbf00ac328d5f534e09ef454098c54bb3991e596f37ab8"
+    },
+    {
+      "file": "boss-water.wav",
+      "original_name": "SE_MONSTER_CUTIN_WATER.wav",
+      "drive_file_id": "13hRm32tLsNISelUDL2ZehbwGDgloGUbd",
+      "seconds": 2.865,
+      "sha256": "c36ee5fd09e1d700751328f921e9309a3935ce1f61edb65a2cfb371e40b65bec"
+    },
+    {
+      "file": "boss-wind.wav",
+      "original_name": "SE_MONSTER_CUTIN_WIND.wav",
+      "drive_file_id": "1lvNHaXJ5Pnu_UMzmgJnP684wp91qDdS3",
+      "seconds": 3.08,
+      "sha256": "c5f783a7be98c3253857419006fbad6408cc99ab6af30e54ea0ee2962a22fe06"
+    }
+  ]
+}
