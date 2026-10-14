@@ -1,0 +1,29 @@
+/* The clock mirrors the phase dial without inserting another playing zone. */
+.duel-arena .arena-extra-row{position:relative}
+.duel-arena .arena-timer-control{grid-column:1;grid-row:1;justify-self:center;align-self:center;position:relative;width:100%;max-width:128px;height:0;min-width:0;z-index:9;pointer-events:none;--clock-accent:#69b7ff;--clock-glow:#3a89ec44}
+.arena-timer-dial{position:absolute;left:50%;top:50%;translate:-50% -50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;aspect-ratio:1;border:2px solid #68809d;border-radius:50%;background:radial-gradient(ellipse at 35% 25%,#173b60,#081525 75%);box-shadow:inset 0 0 0 4px #060f1ccc,inset 0 0 25px #0007,0 0 0 4px #050e1b88,0 0 22px var(--clock-glow);color:#edf7ff;text-align:center;isolation:isolate}
+.arena-timer-dial::before{content:'';position:absolute;inset:-7px;border:1px dashed #7394b75c;border-radius:50%;z-index:-1}
+.arena-timer-ring{position:absolute;inset:0;width:100%;height:100%;rotate:-90deg;pointer-events:none;overflow:visible}
+.arena-timer-ring circle{fill:none;stroke-width:2;stroke-linecap:round}
+.arena-timer-track{stroke:#7293b52b}
+.arena-timer-progress{stroke:var(--clock-accent);filter:drop-shadow(0 0 2px var(--clock-accent));transition:stroke-dasharray .15s linear}
+.arena-timer-caption{font-size:clamp(6px,.58vw,9px);font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#b3c9df;line-height:1}
+.arena-timer-value{font:700 clamp(20px,2.1vw,34px)/1.05 'DM Mono',monospace;letter-spacing:-.06em;color:#f3f9ff;font-variant-numeric:tabular-nums;text-shadow:0 0 16px var(--clock-glow)}
+.arena-timer-status{display:flex;align-items:center;justify-content:center;gap:3px;font-size:clamp(5px,.48vw,8px);line-height:1.2;max-width:94%;white-space:nowrap;color:#a9bfd4}
+.arena-timer-status svg{width:10px;height:10px;flex-shrink:0}
+.arena-timer-opponent{display:flex;align-items:center;gap:4px;margin-top:2px;padding-top:4px;border-top:1px solid #7293b533;color:#a3b8ce;font-size:clamp(6px,.55vw,9px);line-height:1;white-space:nowrap}
+.arena-timer-opponent>b{font-family:'DM Mono',monospace;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.arena-timer-control[data-clock-active=own]{--clock-accent:#83c8ff;--clock-glow:#368ef365}
+.arena-timer-control[data-clock-active=own] .arena-timer-dial{border-color:#72b8ed}
+.arena-timer-control[data-clock-active=own] .arena-timer-status{color:#b5e0ff}
+.arena-timer-control[data-clock-active=opponent]{--clock-glow:#cf315528}
+.arena-timer-opponent[data-active=true]{color:#ff9bb4;border-color:#dc53734d}
+.arena-timer-opponent[data-active=true]::before{content:'';width:4px;height:4px;border-radius:50%;background:#ff7c9e;box-shadow:0 0 7px #e33d6b}
+.arena-timer-control[data-clock-active=paused]{--clock-accent:#91a7bd;--clock-glow:#5d73951a}
+.arena-timer-control[data-clock-active=paused] .arena-timer-ring{opacity:.65}
+.arena-timer-control.is-low-time{--clock-accent:#ffc46e;--clock-glow:#ffab4d55}
+.arena-timer-control.is-low-time .arena-timer-value{color:#ffdaa0}
+.arena-timer-control.is-low-time[data-clock-active=own] .arena-timer-status{color:#ffcf8a}
+@media(max-height:800px) and (min-width:761px){.duel-arena .arena-timer-control{max-width:92px}.arena-timer-dial{gap:2px}.arena-timer-value{font-size:clamp(20px,2vw,28px)}.arena-timer-caption{font-size:7px}.arena-timer-status{font-size:6px}.arena-timer-opponent{font-size:7px;padding-top:3px;margin-top:0}}
+@media(max-width:760px){.duel-arena .arena-timer-control{max-width:76px}.arena-timer-dial{gap:2px;border-width:1px}.arena-timer-dial::before{inset:-4px}.arena-timer-value{font-size:clamp(13px,3.6vw,23px)}.arena-timer-caption{font-size:5px;letter-spacing:.07em}.arena-timer-status{font-size:5px;gap:2px}.arena-timer-status svg{width:7px;height:7px}.arena-timer-status>span{display:none}.arena-timer-opponent{font-size:5px;gap:2px;padding-top:2px;margin-top:0}.arena-timer-opponent[data-active=true]::before{width:3px;height:3px}}
+@media(prefers-reduced-motion:reduce){.arena-timer-progress{transition:none}}

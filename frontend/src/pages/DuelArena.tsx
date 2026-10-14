@@ -7,13 +7,14 @@ import { effectAvailableAt } from './duelFeedback'
 import { DuelPlayerHUD } from './DuelPlayerHUD'
 import { DuelActionLabel, setActionsLast } from './DuelActionLabel'
 import { DuelPile } from './DuelPile'
+import { DuelTimer, type DuelTimerState } from './DuelTimer'
 
 type Props = { sides: Side[]; seat: number; card: (value: EngineCard | null, key: string, covered?: boolean, location?: DuelLocation) => ReactNode;
   activeLocation: DuelLocation | null; chooseLocation: (location: DuelLocation, complete?: boolean) => void; children?: ReactNode;
   confirmSelection: () => void; selectionValid: boolean; selectionLabel: string;
   prompt?: WorkerPrompt | null; disabled: boolean; zoneSelection: number[]; chooseZone: (index: number) => void;
-  chooseAction: (index: number, target?: DuelLocation) => void; phase: number; turn: number; turnNumber: number }
-export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, chooseZone, chooseAction, phase, turn, turnNumber, activeLocation, chooseLocation, children, confirmSelection, selectionValid, selectionLabel }: Props) {
+  chooseAction: (index: number, target?: DuelLocation) => void; phase: number; turn: number; turnNumber: number; timer?: DuelTimerState }
+export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, chooseZone, chooseAction, phase, turn, turnNumber, activeLocation, chooseLocation, children, confirmSelection, selectionValid, selectionLabel, timer }: Props) {
   const [dragging, setDragging] = useState<number | null>(null)
   const [drop, setDrop] = useState<{ index: number; target: DuelLocation } | null>(null)
   useEffect(() => { setDrop(null); setDragging(null) }, [prompt?.id])
@@ -89,7 +90,7 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
       const otherOccupied = sides[1 - seat].field.some(value => value.zone === 4 && value.sequence === otherSequence)
       const owner = ownOccupied ? seat : otherOccupied ? 1 - seat : ownAvailable ? seat : 1 - seat
       return slot(owner, 4, owner === seat ? ownSequence : otherSequence, `Extra-Monsterzone ${index + 1}`, `extra:${index}`)
-    })}<DuelPhaseControl phase={phase} turnNumber={turnNumber} active={turn === seat} disabled={disabled} prompt={prompt} choose={chooseAction} /></div>
+    })}<DuelPhaseControl phase={phase} turnNumber={turnNumber} active={turn === seat} disabled={disabled} prompt={prompt} choose={chooseAction} />{timer && <DuelTimer {...timer} />}</div>
     {children}
   </div>
 }

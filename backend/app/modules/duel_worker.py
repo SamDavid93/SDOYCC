@@ -22,6 +22,7 @@ from app.modules.workflow import Auth, Command, Key
 ROOT = Path(__file__).resolve().parents[3]
 INTEGRATION = ROOT / 'integrations/duel'
 router = APIRouter(prefix='/api/duel-zone/worker', tags=['Local duel worker'])
+CLOCK_DELIVERY_GRACE = 30.0
 
 
 def load_module(name):
@@ -94,27 +95,102 @@ class LiveRun:
     side_started: float | None = None
     practice: bool = False
     bot_task: object | None = None
+    clock_decision: tuple | None = None
+    clock_ready: bool = False
+    clock_grace: float = CLOCK_DELIVERY_GRACE
+    clock_waiting_since: float | None = None
+    clock_segments: list = field(default_factory=list)
+    clock_exhausted_at: float | None = None
 
-    def pause_clock(self):
-        now = time.monotonic()
+    def pause_clock(self, now=None):
+        now = max(self.clock_started, time.monotonic() if now is None else now)
         if self.clock_owner is not None:
             owner, other = self.clock_owner, 1 - self.clock_owner
             elapsed = min(self.clock_remaining[owner], max(0, now - self.clock_started))
             self.clock_remaining[owner] = max(0, self.clock_remaining[owner] - elapsed)
+            if self.clock_remaining[owner] <= 0 and self.clock_exhausted_at is None:
+                self.clock_exhausted_at = self.clock_started + elapsed
             recovered = min(360.0 - self.clock_remaining[other], elapsed * .5)
             self.clock_remaining[other] += recovered
             self.clock_recovered[other] += recovered
+            if elapsed:
+                self.clock_segments.append((self.clock_started, self.clock_started + elapsed, owner, recovered))
+                charged_until = self.clock_started + elapsed
+                self.clock_segments = [segment for segment in self.clock_segments if segment[1] > charged_until - CLOCK_DELIVERY_GRACE]
         self.clock_started = now; self.clock_owner = None
 
-    def tick_clock(self):
-        self.pause_clock()
+    def clear_decision(self, now=None):
+        self.pause_clock(now)
+        self.clock_decision = None
+        self.clock_ready = False
+        self.clock_waiting_since = None
+        self.clock_segments = []
+        self.clock_exhausted_at = None
+
+    def tick_clock(self, now=None):
+        now = time.monotonic() if now is None else now
+        self.pause_clock(now)
         if self.projection.turn_number != self.clock_turn:
             self.clock_turn = self.projection.turn_number
-        if not self.terminal and not self.projection.ended and self.projection.prompt:
-            self.clock_owner = self.engine_seats[self.projection.prompt['owner']]
+        prompt = self.projection.prompt
+        actionable = (not self.terminal and not self.projection.ended and prompt
+            and not prompt.get('_empty_chain') and (not self.match or self.match['phase'] == 'playing'))
+        decision = (self.engine_seats[prompt['owner']], prompt['id'], self.projection.revision) if actionable else None
+        if decision != self.clock_decision:
+            self.clock_decision = decision
+            self.clock_ready = bool(decision and self.practice and decision[0] == 1)
+            self.clock_grace = CLOCK_DELIVERY_GRACE
+            self.clock_waiting_since = now if decision and not self.clock_ready else None
+            self.clock_segments = []
+            self.clock_exhausted_at = None
+        if decision and self.clock_ready: self.clock_owner = decision[0]
+
+    def decision_ready(self, seat, prompt, revision):
+        self.tick_clock()
+        if self.clock_decision != (seat, prompt, revision):
+            raise ValueError('Decision is stale or belongs to another player')
+        if not self.clock_ready:
+            now = time.monotonic()
+            self.clock_grace = max(0, self.clock_grace - max(0, now - self.clock_waiting_since))
+            if self.clock_grace <= 0: raise ValueError('Decision delivery timed out')
+            self.clock_waiting_since = None
+            self.clock_ready = True
+            self.clock_started = now
+            self.clock_owner = seat
+            self.clock_segments = []
+
+    def disconnect_decision(self, seat, confirmed_at=None):
+        self.tick_clock()
+        if self.clock_decision and self.clock_decision[0] == seat and self.clock_ready:
+            if confirmed_at is not None:
+                # Socket liveness is observed, not instantaneous. Refund only
+                # server-measured unconfirmed time, using the same finite grace
+                # as delivery/reconnects. Remove the exact recovery it produced.
+                refunded, credited = 0.0, 0.0
+                for start, end, owner, recovered in reversed(self.clock_segments):
+                    if owner != seat: continue
+                    duration = min(max(0, end - max(start, confirmed_at)), max(0, self.clock_grace - refunded))
+                    refunded += duration
+                    credited += max(0, recovered - max(0, end - start - duration) * .5)
+                self.clock_remaining[seat] = min(360, self.clock_remaining[seat] + refunded)
+                self.clock_remaining[1 - seat] = max(0, self.clock_remaining[1 - seat] - credited)
+                self.clock_recovered[1 - seat] = max(0, self.clock_recovered[1 - seat] - credited)
+                self.clock_grace = max(0, self.clock_grace - refunded)
+                if self.clock_remaining[seat] > 0: self.clock_exhausted_at = None
+            self.clock_ready = False
+            self.clock_waiting_since = time.monotonic()
+            self.clock_owner = None
+            self.clock_segments = []
+
+    def delivery_remaining(self):
+        if self.clock_waiting_since is None: return None
+        return max(0, self.clock_grace - max(0, time.monotonic() - self.clock_waiting_since))
 
     def clock(self):
         return {'remaining': [round(value, 1) for value in self.clock_remaining], 'active': self.clock_owner,
+            'readiness_required': True,
+            'waiting_for': self.clock_decision[0] if self.clock_decision and not self.clock_ready else None,
+            'ready_timeout': round(self.delivery_remaining(), 1) if self.clock_waiting_since is not None else None,
             'profile': '360s budget; 50% of opponent decision time recovered, capped at 360s',
             'limit': 360, 'refill_ratio': .5, 'recovered': [round(value, 1) for value in self.clock_recovered],
             'side_remaining': max(0, round(180 - (time.monotonic() - self.side_started), 1)) if self.side_started is not None else None}
@@ -182,7 +258,7 @@ class WorkerService:
         # No inventory is released unless process termination is confirmed. On a DB
         # error keep this object so watchdog can retry settlement with the stopped core.
         if live.pending_outcome is None: live.pending_outcome = (reason, winner)
-        live.pause_clock()
+        live.clear_decision()
         await live.engine.close()
         replay = {**live.history, 'truncated': live.history_truncated} if live.history['0'] else None
         await self.database(state.finish_stopped, run_id, self.instance, *live.pending_outcome, replay)
@@ -253,7 +329,7 @@ class WorkerService:
                     decisions+=1
                     if decisions>200: raise ValueError('Test bot decision limit exceeded')
                     response=answer(live.projection,acted)
-                    live.pause_clock()
+                    live.clear_decision()
                     packet=await live.engine.command({'op':'respond','response':base64.b64encode(response).decode()})
                     await self.consume_packet(live,packet)
                     live.tick_clock();live.capture()
@@ -305,6 +381,7 @@ class WorkerService:
         return await self.database(read)
 
     async def view(self, run_id, authorization, touch=True):
+        received = time.monotonic()
         receipt, seat, valid, owner = await self.inspect(run_id, authorization)
         live = self.runs.get(run_id)
         if not live:
@@ -314,6 +391,7 @@ class WorkerService:
         async with live.lock:
             receipt, seat, valid, owner = await self.inspect(run_id, authorization)
             previous_state = receipt['state']
+            if touch: live.seen[seat] = max(live.seen[seat], received)
             if valid and not live.terminal: await self.check_clock(run_id, live)
             if live.pending_outcome and not live.terminal:
                 await self.stop(run_id, live, *live.pending_outcome)
@@ -321,26 +399,50 @@ class WorkerService:
             if not valid and not live.terminal:
                 await self.stop(run_id, live, 'session_ended')
                 receipt, seat, _, _ = await self.inspect(run_id, authorization)
-            if touch: live.seen[seat] = time.monotonic()
             from app.modules.duel_matches import public
             if previous_state in state.ACTIVE and live.terminal:
                 receipt, seat, valid, owner = await self.inspect(run_id, authorization)
             return {**receipt, 'seat': seat, 'clock': live.clock(), 'board': live.view(seat) if receipt['state'] != 'aborted' else None,
                 'match': public(live.match, seat, self.adapter.catalog) if live.match and hasattr(self.adapter, 'catalog') else public(live.match, seat) if live.match else None}
 
+    async def decision_ready(self, run_id, authorization, prompt, revision, socket):
+        received = time.monotonic()
+        live = self.runs.get(run_id)
+        if not live: raise HTTPException(409, 'Duellworker ist nicht verfuegbar.')
+        async with live.lock:
+            _, seat, valid, _ = await self.inspect(run_id, authorization)
+            if self.sockets.get((run_id, seat)) is not socket: raise HTTPException(409, 'Diese Duellverbindung ist nicht mehr aktuell.')
+            live.seen[seat] = max(live.seen[seat], received)
+            if not valid and not live.terminal: await self.stop(run_id, live, 'session_ended')
+            if not live.terminal: await self.check_clock(run_id, live)
+            if not live.terminal:
+                try: live.decision_ready(seat, prompt, revision)
+                except (ValueError, TypeError): raise HTTPException(409, 'Die Entscheidung ist veraltet oder gehoert zum anderen Spieler.')
+                live.seen[seat] = time.monotonic()
+        return await self.view(run_id, authorization, touch=False)
+
+    async def disconnect(self, run_id, seat, socket, confirmed_at=None):
+        live = self.runs.get(run_id)
+        if not live: return
+        async with live.lock:
+            if self.sockets.get((run_id, seat)) is socket and not live.terminal:
+                live.disconnect_decision(seat, confirmed_at)
+
     async def act(self, run_id, authorization, prompt=None, selected=None, surrender=False, cancel=False):
-        receipt, seat, valid, owner = await self.inspect(run_id, authorization)
+        received = time.monotonic()
         live = self.runs.get(run_id)
         if not live: raise HTTPException(409, 'Worker nicht verfügbar. Keine neue Aktion möglich.')
         async with live.lock:
             # Recheck AFTER waiting for a preceding command or an administrator reset.
             receipt, seat, valid, owner = await self.inspect(run_id, authorization)
-            if valid and not live.terminal: await self.check_clock(run_id, live)
+            live.seen[seat] = max(live.seen[seat], received)
+            if valid and not live.terminal: await self.check_clock(run_id, live, now=received)
             if live.pending_outcome and not live.terminal: await self.stop(run_id, live, *live.pending_outcome)
             elif not valid and not live.terminal: await self.stop(run_id, live, 'session_ended')
             elif not live.terminal:
                 live.seen[seat] = time.monotonic()
                 if surrender:
+                    live.clear_decision(now=received)
                     await live.engine.close()
                     live.projection.surrender(live.engine_seats.index(seat))
                     live.capture()
@@ -350,7 +452,9 @@ class WorkerService:
                     try: response = live.projection.respond(live.engine_seats.index(seat), prompt, selected, cancel)
                     except (ValueError, TypeError): raise HTTPException(409, 'Ungültige, fremde oder veraltete Entscheidung.')
                     try:
-                        live.pause_clock()
+                        # Debit only until the command reached the server. Database,
+                        # engine and delivery work are never player thinking time.
+                        live.clear_decision(now=received)
                         packet = await live.engine.command({'op': 'respond', 'response': base64.b64encode(response).decode()})
                         await self.consume_packet(live, packet)
                         live.tick_clock()
@@ -388,7 +492,7 @@ class WorkerService:
     async def game_ended(self, run_id, live, winner, reason='engine'):
         from app.modules.duel_matches import record_game
         await live.engine.close()
-        live.pause_clock()
+        live.clear_decision()
         progress = record_game(live.match, winner)
         progress['results'][-1]['reason'] = reason
         if getattr(live.projection, 'match_kill', False) and winner is not None:
@@ -397,13 +501,24 @@ class WorkerService:
         live.side_started = time.monotonic() if progress['phase'] == 'sideboarding' else None
         if progress['phase'] == 'finished': await self.stop(run_id, live, reason, winner)
 
-    async def check_clock(self, run_id, live):
-        live.tick_clock()
-        if live.clock_owner is not None and live.clock_remaining[live.clock_owner] <= 0:
+    async def check_clock(self, run_id, live, now=None):
+        live.tick_clock(now)
+        exhausted = live.clock_owner
+        # A half-open connection can cross zero before its loss is detected.
+        # Require server-observed client activity after that crossing before
+        # scoring a loss; otherwise disconnect settlement can refund the gap.
+        # Even an invalid frame proves liveness, so it cannot stall this check.
+        confirmed = (exhausted is not None and ((live.practice and exhausted == 1)
+            or live.seen[exhausted] >= (live.clock_exhausted_at if live.clock_exhausted_at is not None else time.monotonic())))
+        if exhausted is not None and live.clock_remaining[exhausted] <= 0 and confirmed:
             loser = live.clock_owner
             await live.engine.close(); live.projection.surrender(live.engine_seats.index(loser)); live.capture()
             if live.match: await self.game_ended(run_id, live, 1 - loser, 'decision_timeout')
             else: await self.stop(run_id, live, 'decision_timeout', 1 - loser)
+        elif live.clock_waiting_since is not None and live.delivery_remaining() <= 0:
+            # A missing UI/delivery acknowledgement is a transport failure, not
+            # thinking time. Reconnects share the prompt's remaining grace.
+            await self.stop(run_id, live, 'timeout')
         elif live.side_started is not None and time.monotonic() - live.side_started >= 180:
             ready = live.match['ready']
             winner = ready.index(True) if ready.count(True) == 1 else None
@@ -502,6 +617,11 @@ class Answer(Command):
     prompt: int = Field(ge=1, strict=True)
     selected: list[Annotated[int, Field(strict=True, ge=0)]] = Field(max_length=100)
     cancel: bool = Field(default=False, strict=True)
+
+
+class DecisionReady(Command):
+    prompt: int = Field(ge=1, strict=True)
+    revision: int = Field(ge=1, strict=True)
 
 
 class Consent(Start):

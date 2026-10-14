@@ -54,7 +54,9 @@ def run(manual=False):
             backend = subprocess.Popen([sys.executable, '-m', 'uvicorn', 'app.main:app', '--app-dir', 'backend', '--port', str(api_port)], cwd=ROOT, env=env, stdout=log, stderr=log, creationflags=flags)
             frontend = subprocess.Popen([node, str(ROOT / 'node_modules/vite/bin/vite.js'), '--host', '127.0.0.1', '--port', str(ui_port), '--strictPort'], cwd=ROOT / 'frontend', env=env, stdout=log, stderr=log, creationflags=flags)
             try:
-                wait_ready(api_url + '/api/health', backend, timeout=180); wait_ready(ui_url, frontend)
+                # Startup verifies and stages more than 22,000 native engine files.
+                # Allow a cold filesystem scan; gameplay assertions keep their own limits.
+                wait_ready(api_url + '/api/health', backend, timeout=360); wait_ready(ui_url, frontend)
                 host_token, guest_token, host_deck, guest_deck, baseline = seed_worker_database(database_file)
                 with sync_playwright() as pw:
                     browser = pw.chromium.launch(channel='msedge', headless=not manual)

@@ -26,7 +26,8 @@ def run():
             frontend=subprocess.Popen(['C:/Program Files/nodejs/node.exe',str(ROOT/'node_modules/vite/bin/vite.js'),'--host','127.0.0.1','--port',str(ui_port)],cwd=ROOT/'frontend',env=env,stdout=log,stderr=log,creationflags=flags)
             run_id=None;engine=None
             try:
-                wait_ready(api_url+'/api/health',backend,timeout=180);wait_ready(ui_url,frontend)
+                # Native startup verifies/stages more than 22,000 files before health is ready.
+                wait_ready(api_url+'/api/health',backend,timeout=360);wait_ready(ui_url,frontend)
                 token,guest_token,deck,_guest_deck,baseline=seed_worker_database(database)
                 from sqlalchemy import create_engine,select,func
                 from sqlalchemy.orm import Session

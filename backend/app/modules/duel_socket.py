@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
 from app.core.config import settings
-from app.modules.duel_worker import Answer, Surrender, Sideboard, service
+from app.modules.duel_worker import Answer, DecisionReady, Surrender, Sideboard, service
 
 router = APIRouter()
 TERMINAL = {'finished', 'aborted', 'recovery_required'}
@@ -33,6 +33,7 @@ async def worker_socket(socket: WebSocket, run_id: str):
     await socket.accept()
     seat = None
     key = None
+    last_received = None
     try:
         message = await read_frame(socket)
         if set(message) != {'type', 'token'} or message['type'] != 'authenticate' or not isinstance(message['token'], str) or not 20 <= len(message['token']) <= 256:
@@ -64,9 +65,12 @@ async def worker_socket(socket: WebSocket, run_id: str):
                     await socket.close(code=4408); break
                 continue
             last_received = time.monotonic()
+            live = runtime.runs.get(run_id)
+            if live is not None and runtime.sockets.get(key) is socket:
+                live.seen[seat] = max(live.seen[seat], last_received)
             if time.monotonic() - window >= 10: window, count = time.monotonic(), 0
             count += 1
-            if count > 40:
+            if count > 80:
                 await socket.close(code=4429); break
             try:
                 kind = message.pop('type', None)
@@ -74,6 +78,14 @@ async def worker_socket(socket: WebSocket, run_id: str):
                     live = runtime.runs.get(run_id)
                     if live is not None: live.seen[seat] = time.monotonic()
                     await socket.send_json({'type': 'pong'}); continue
+                if kind == 'decision_ready':
+                    body = DecisionReady.model_validate(message)
+                    result = await runtime.decision_ready(run_id, authorization, body.prompt, body.revision, socket)
+                    # Readiness is not an action acknowledgement: it must never
+                    # unlock a still-pending engine answer in the browser.
+                    await socket.send_json({'type': 'state', 'result': result, 'ready_ack': True})
+                    last_sent = json.dumps(result, ensure_ascii=False, sort_keys=True)
+                    continue
                 if kind == 'answer':
                     body = Answer.model_validate(message)
                     result = await runtime.act(run_id, authorization, body.prompt, body.selected, cancel=body.cancel)
@@ -100,4 +112,6 @@ async def worker_socket(socket: WebSocket, run_id: str):
         pass
     finally:
         if key is not None and runtime.sockets.get(key) is socket:
-            runtime.sockets.pop(key, None)
+            try: await runtime.disconnect(run_id, seat, socket, last_received)
+            finally:
+                if runtime.sockets.get(key) is socket: runtime.sockets.pop(key, None)

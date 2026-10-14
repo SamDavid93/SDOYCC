@@ -582,6 +582,87 @@ class WorkerTests(PreparationFixture):
             receive_control('pong')
         self.assertEqual(len(self.adapter.engines[0].commands), 1)
 
+    def test_websocket_clock_waits_for_authenticated_current_prompt_readiness(self):
+        first = self.start_worker().json(); run_id = first['id']
+        self.assertTrue(first['clock']['readiness_required'])
+        self.assertIsNone(first['clock']['active'])
+        self.assertEqual(first['clock']['waiting_for'], 0)
+        self.assertEqual(first['clock']['remaining'], [360, 360])
+        with self.socket_for(run_id) as host, self.socket_for(run_id) as guest:
+            host.send_json({'type': 'authenticate', 'token': self.headers['Authorization'][7:]})
+            guest.send_json({'type': 'authenticate', 'token': self.other_headers['Authorization'][7:]})
+            own = host.receive_json()['result']; guest.receive_json()
+            ready = {'type': 'decision_ready', 'prompt': own['board']['prompt']['id'], 'revision': own['board']['revision']}
+            def receive(socket, expected):
+                for _ in range(25):
+                    value = socket.receive_json()
+                    if expected == 'ready_ack' and value.get('ready_ack'): return value
+                    if value['type'] == expected: return value
+                self.fail('Expected websocket response ' + expected)
+            guest.send_json(ready)
+            self.assertEqual(receive(guest, 'error')['type'], 'error')
+            self.assertIsNone(self.runtime.runs[run_id].clock_owner)
+            for invalid in ({**ready, 'revision': ready['revision'] + 1}, {**ready, 'prompt': True}, {**ready, 'paused': 100}):
+                host.send_json(invalid)
+                self.assertEqual(receive(host, 'error')['type'], 'error')
+            host.send_json(ready)
+            accepted = receive(host, 'ready_ack')
+            self.assertNotIn('ack', accepted)
+            self.assertEqual(accepted['result']['clock']['active'], 0)
+            self.assertIsNone(accepted['result']['clock']['waiting_for'])
+            host.send_json(ready)
+            self.assertEqual(receive(host, 'ready_ack')['result']['clock']['active'], 0)
+            self.assertEqual(len(self.adapter.engines[0].commands), 1)
+            host.send_json({'type': 'answer', 'prompt': ready['prompt'], 'selected': [0]})
+            while True:
+                accepted = host.receive_json()
+                if accepted.get('ack'): break
+            self.assertIsNone(accepted['result']['clock']['active'])
+            self.assertEqual(accepted['result']['clock']['waiting_for'], 1)
+            host.send_json(ready)
+            self.assertEqual(receive(host, 'error')['type'], 'error')
+            self.assertIsNone(self.runtime.runs[run_id].clock_owner)
+
+    def test_readiness_delivery_timeout_aborts_without_charging_or_releasing_before_stop(self):
+        first = self.start_worker().json(); run_id = first['id']; live = self.runtime.runs[run_id]
+        live.clock_remaining = [200, 150]
+        live.clock_waiting_since = time.monotonic() - 31
+        engine = self.adapter.engines[0]; engine.fail_close = True
+        with self.assertRaises(RuntimeError): asyncio.run(self.runtime.check_clock(run_id, live))
+        self.assertEqual(live.clock_remaining, [200, 150])
+        self.assertEqual(live.clock_recovered, [0, 0])
+        self.assertEqual(self.total(), 86)
+        engine.fail_close = False
+        asyncio.run(self.runtime.sweep())
+        result = self.get_run(run_id).json()
+        self.assertEqual(result['reason'], 'timeout')
+        self.assertEqual(result['state'], 'aborted')
+        self.assertEqual(self.total(), 0)
+
+    def test_disconnect_only_current_socket_can_pause_decision_and_reconnect_keeps_grace(self):
+        first = self.start_worker().json(); run_id = first['id']; live = self.runtime.runs[run_id]
+        with self.socket_for(run_id) as host:
+            host.send_json({'type': 'authenticate', 'token': self.headers['Authorization'][7:]})
+            own = host.receive_json()['result']
+            ready = {'type': 'decision_ready', 'prompt': own['board']['prompt']['id'], 'revision': own['board']['revision']}
+            host.send_json(ready)
+            while not host.receive_json().get('ready_ack'): pass
+            old_socket = self.runtime.sockets[(run_id, 0)]
+            asyncio.run(self.runtime.disconnect(run_id, 0, object()))
+            self.assertEqual(live.clock_owner, 0)
+        self.assertIsNone(live.clock_owner)
+        remaining, grace = list(live.clock_remaining), live.clock_grace
+        with self.socket_for(run_id) as replacement:
+            replacement.send_json({'type': 'authenticate', 'token': self.headers['Authorization'][7:]})
+            resumed = replacement.receive_json()['result']
+            self.assertEqual(resumed['clock']['remaining'], [round(value, 1) for value in remaining])
+            self.assertEqual(resumed['clock']['waiting_for'], 0)
+            asyncio.run(self.runtime.disconnect(run_id, 0, old_socket))
+            replacement.send_json(ready)
+            while not replacement.receive_json().get('ready_ack'): pass
+            self.assertEqual(live.clock_owner, 0)
+            self.assertLessEqual(live.clock_grace, grace)
+
     def test_websocket_rejects_missing_credentials_and_production_mode(self):
         run_id = self.start_worker().json()['id']
         with self.socket_for(run_id) as socket:
@@ -594,6 +675,72 @@ class WorkerTests(PreparationFixture):
 
 
 class WorkerCleanupTests(IsolatedAsyncioTestCase):
+    async def test_unconfirmed_offline_exhaustion_is_refunded_before_a_loss_is_recorded(self):
+        clock = [100.0]
+        with patch('app.modules.duel_worker.time.monotonic', side_effect=lambda: clock[0]):
+            projection = load_module('protocol').Projection({}); projection.consume(packet(prompt(0)))
+            engine = FakeEngine(); live = LiveRun(engine, projection)
+            live.tick_clock(); live.decision_ready(0, projection.prompt['id'], projection.revision)
+            live.clock_remaining = [5, 100]
+            service = WorkerService(None, None)
+            service.stop = AsyncMock()
+            clock[0] = 110
+            await service.check_clock('run', live)
+            self.assertEqual(live.clock_remaining, [0, 102.5])
+            self.assertEqual(live.clock_exhausted_at, 105)
+            self.assertFalse(engine.closed)
+            service.stop.assert_not_awaited()
+            live.disconnect_decision(0, confirmed_at=100)
+            self.assertEqual(live.clock_remaining, [5, 100])
+            self.assertEqual(live.clock_recovered, [0, 0])
+            self.assertIsNone(live.clock_exhausted_at)
+            clock[0] = 111
+            live.decision_ready(0, projection.prompt['id'], projection.revision)
+            clock[0] = 117; live.seen[0] = 117
+            await service.check_clock('run', live)
+            self.assertTrue(engine.closed)
+            service.stop.assert_awaited_once_with('run', live, 'decision_timeout', 1)
+
+    async def test_exhausted_disconnect_grace_causes_bounded_neutral_abort(self):
+        clock = [100.0]
+        with patch('app.modules.duel_worker.time.monotonic', side_effect=lambda: clock[0]):
+            projection = load_module('protocol').Projection({}); projection.consume(packet(prompt(0)))
+            live = LiveRun(FakeEngine(), projection)
+            live.tick_clock(); live.decision_ready(0, projection.prompt['id'], projection.revision)
+            live.clock_remaining = [1, 100]; live.clock_grace = 0
+            service = WorkerService(None, None); service.stop = AsyncMock()
+            clock[0] = 110
+            await service.check_clock('run', live)
+            service.stop.assert_not_awaited()
+            live.disconnect_decision(0, confirmed_at=100)
+            await service.check_clock('run', live)
+            service.stop.assert_awaited_once_with('run', live, 'timeout')
+
+    async def test_answer_receipt_excludes_authentication_and_engine_work_from_clock(self):
+        clock = [100.0]
+        with patch('app.modules.duel_worker.time.monotonic', side_effect=lambda: clock[0]):
+            projection = load_module('protocol').Projection({})
+            projection.consume(packet(prompt(0)))
+            engine = FakeEngine(); live = LiveRun(engine, projection)
+            live.tick_clock(); live.decision_ready(0, projection.prompt['id'], projection.revision)
+            live.clock_remaining[1] = 100
+            service = WorkerService(None, None); service.runs['run'] = live
+            async def inspect(*_args):
+                clock[0] += 20
+                return {'state': 'running'}, 0, True, service.instance
+            async def respond(_command):
+                clock[0] += 40
+                return packet(prompt(1))
+            service.inspect = inspect
+            service.view = AsyncMock(return_value={})
+            engine.command = respond
+            clock[0] = 110
+            await service.act('run', 'original-session', projection.prompt['id'], [0])
+            self.assertEqual(live.clock_remaining, [350, 105])
+            self.assertEqual(live.clock_recovered, [0, 5])
+            self.assertIsNone(live.clock_owner)
+            self.assertEqual(live.clock_waiting_since, 170)
+
     async def test_empty_optional_chain_is_passed_before_next_player_prompt(self):
         projection = load_module('protocol').Projection({})
         engine = FakeEngine(); live = LiveRun(engine, projection)

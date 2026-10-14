@@ -54,6 +54,7 @@ class MatchWorkerTests(WorkerTests):
     # Inherited single-duel tests intentionally stay in their original test class.
     def test_clock_exhaustion_scores_game_and_side_timeout_aborts_without_releasing_early(self):
         result = self.start_worker().json(); run_id = result['id']; live = self.runtime.runs[run_id]
+        live.decision_ready(0, result['board']['prompt']['id'], result['board']['revision'])
         live.clock_remaining[0] = .01; live.clock_started = time.monotonic() - 1
         result = self.get_run(run_id).json()
         self.assertEqual(result['match']['score'], [0, 1]); self.assertEqual(result['match']['phase'], 'sideboarding')
@@ -66,6 +67,7 @@ class MatchWorkerTests(WorkerTests):
 
     def test_sideboarding_forfeit_is_distinct_from_neutral_timeout(self):
         result = self.start_worker().json(); run_id = result['id']; live = self.runtime.runs[run_id]
+        live.decision_ready(0, result['board']['prompt']['id'], result['board']['revision'])
         live.clock_remaining[0] = .01; live.clock_started = time.monotonic() - 1
         self.get_run(run_id)
         live.match['ready'] = [True, False]; live.side_started = time.monotonic() - 181
