@@ -1,0 +1,15 @@
+.card-tuner-symbol { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border: 1px solid #b7f1dc; border-radius: 6px; background: #102d31ee; color: #c5ffe8; font-size: 11px; line-height: 1.2; }
+.card-tuner-symbol svg { width: 24px; height: 24px; flex-shrink: 0; }
+.card-tuner-symbol.is-compact { padding: 3px; }
+.card-visual .card-tuner-symbol { position: absolute; z-index: 3; top: 5px; left: 5px; pointer-events: none; }
+.card-visual .card-tuner-symbol svg { width: 21px; height: 21px; }
+.duel-playing-card .card-tuner-symbol { position: absolute; z-index: 3; top: 3px; left: 3px; pointer-events: none; }
+.duel-playing-card .card-tuner-symbol svg { width: 16px; height: 16px; }
+.effect-location-symbols { display: flex; flex-wrap: wrap; gap: 9px; margin: 12px 0; }
+.effect-location-symbol { display: flex; flex: 1 1 66px; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 10px 6px; border: 1px solid #83b9e066; border-radius: 8px; background: #0b2234a8; color: #c0e4ff; }
+.effect-location-symbol svg { width: 42px; height: 42px; stroke-width: 1.7; }
+.effect-location-symbol strong { font-size: 11px; color: inherit; }
+.effect-area-2 { color: #9edbff; }.effect-area-16 { color: #d7c9f4; }.effect-area-32 { color: #f5b7d8; }.effect-area-1 { color: #f2d38c; }
+.duel-effect-context .effect-location-symbols { margin: 6px 0; }
+.duel-effect-context .effect-location-symbol { flex: 0 1 auto; flex-direction: row; padding: 4px 8px; }
+.duel-effect-context .effect-location-symbol svg { width: 24px; height: 24px; }

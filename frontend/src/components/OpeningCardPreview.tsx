@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import type { CardRecord } from '../data/cards'
 import { label } from '../i18n'
 import { CardVisual } from './CardVisual'
+import { TunerBadge } from './CardSymbols'
 
 export function OpeningCardPreview({ card, packName, close, contextLabel = 'Gezogen aus', backLabel = 'Zurück zu deinen Karten' }: { card: CardRecord; packName: string; close: () => void; contextLabel?: string; backLabel?: string }) {
   const dialog = useRef<HTMLDialogElement>(null)
@@ -31,6 +32,7 @@ export function OpeningCardPreview({ card, packName, close, contextLabel = 'Gezo
         <h2 id="opening-card-title">{card.name}</h2>
         <p className="opening-preview-pack">{contextLabel}: <strong>{packName}</strong></p>
         <p>{label(card.type)}</p>
+        <TunerBadge type={card.type} />
         {!!specifications.length && <dl className="opening-preview-specifications">{specifications.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl>}
         <h3>Kartentext</h3>
         {card.description?.trim() && card.description_language === 'en' && <p className="opening-preview-language">Englischer Originaltext · Deutsche Übersetzung nicht verfügbar</p>}

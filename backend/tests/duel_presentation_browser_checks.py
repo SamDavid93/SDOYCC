@@ -30,7 +30,7 @@ import '../src/master-duel-theme.css'
 import '../src/master-duel-content.css'
 import '../src/master-duel-game.css'
 sessionStorage.setItem('hub-session', 'synthetic-presentation-token')
-const card = {code:1,name:'Testkarte',description:'Deutscher Kartentext',image_url:'/test-card.svg',atk:1000,defense:1000}
+const card = {code:1,type:0x1000 | 1,name:'Testkarte',description:'Deutscher Kartentext',image_url:'/test-card.svg',atk:1000,defense:1000}
 const side = {lp:8000,deck:30,hand:[],grave:[],field:[]}
 const frame = {id:'presentation',state:'running',seat:0,clock:{remaining:[360,360],active:null,side_remaining:null,readiness_required:true,waiting_for:0,ready_timeout:30},board:{revision:1,seat:0,turn:0,turn_number:1,phase:4,ended:false,events:[],
 boards:[{...side,field:[{zone:4,sequence:0,position:8,card},{zone:8,sequence:0,position:8,card},{zone:8,sequence:1,position:8,card}]},
@@ -646,6 +646,8 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     expect(page.locator('.duel-effect-context')).to_contain_text('Standby-Monster',timeout=10000)
                     expect(page.locator('.duel-effect-context')).to_contain_text('Ziehe 1 Karte.')
                     expect(page.locator('.duel-card-inspector h2')).to_have_text('Standby-Monster')
+                    expect(page.locator('.duel-card-inspector').get_by_role('img',name='Empf\u00e4nger-Monster')).to_be_visible()
+                    expect(page.locator('.duel-card-inspector .effect-location-symbols')).to_contain_text('Deck')
                     page.wait_for_function('window.__readyFrames.at(-1).prompt===9000')
                     page.screenshot(path=str(ROOT/'artifacts/duel-synced-effect-context.png'),full_page=True)
                     assert not errors, errors

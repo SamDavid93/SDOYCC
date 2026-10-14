@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import type { CardRecord } from '../data/cards'
 import { rarityInfo } from '../i18n'
 import cardBack from '../assets/card-back.jpg'
+import { TunerBadge } from './CardSymbols'
 
 export function CardBack({ failed = false }: { failed?: boolean }) {
   return <div className={`loading-card-back ${failed ? 'image-missing' : ''}`} style={{ backgroundImage: `url(${cardBack})`, backgroundSize: '100% 100%' }} aria-hidden="true"><span className="loading-card-caption">{failed ? 'Kartenbild derzeit nicht verfügbar' : 'Karte wird geladen'}</span>{!failed && <span className="loading-card-dots"><i /><i /><i /></span>}</div>
@@ -19,6 +20,7 @@ export function CardVisual({ card, compact = false, showQuantity = false }: { ca
   const rarity = rarityInfo(card.rarity)
   return <article className={`card-visual ${compact ? 'compact' : ''}`} aria-busy={!loaded && !failed}>
     <div className={`card-image-wrap ${card.tone} ${loaded ? 'card-loaded' : 'card-loading'}`}>
+      <TunerBadge type={card.type} compact />
       {!loaded && <CardBack failed={failed} />}
       {!failed && <img key={source} ref={element => { image.current = element; if (element?.complete && element.naturalWidth && loadedUrl !== source) setLoadedUrl(source) }} src={source} alt={`${original ? 'Originalabbildung' : 'Deutsche Karte'}: ${card.name}`} loading="lazy" decoding="async" width="199" height="290" onLoad={() => setLoadedUrl(source)} onError={() => setFailedUrls(current => [...current, source])} />}
       {loaded && original && <span className="image-language-label" title="Originalabbildung. Die Karteninformationen werden separat auf Deutsch angezeigt, sofern eine Übersetzung vorliegt.">Originalbild</span>}

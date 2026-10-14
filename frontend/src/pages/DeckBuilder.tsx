@@ -1,3 +1,4 @@
+import { TunerBadge } from '../components/CardSymbols'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { Archive, ArrowLeft, Check, Copy, Download, Layers3, Plus, ShieldCheck, Shuffle, Trash2, Upload } from 'lucide-react'
@@ -290,7 +291,7 @@ function DeckEditor({ initial, profiles }: { initial: Deck; profiles: Profile[] 
     <div className="deck-mobile-tabs">{[['deck', 'Mein Deck'], ['catalog', 'Sammlung'], ['preview', 'Karte'], ['review', 'Prüfung']].map(([value, title]) => <button key={value} aria-pressed={pane === value} onClick={() => setPane(value)}>{title}</button>)}</div>
     <div className="deck-workbench">
       <aside className="deck-inspector deck-panel" aria-label="Kartenvorschau">
-        {preview ? <><h2>{preview.name}</h2><div className="deck-inspector-image"><CardVisual card={toCardRecord(preview)} /></div><p className="deck-inspector-type">{label(preview.type)}{preview.level != null ? ` · Stufe / Rang ${preview.level}` : ''}</p>{preview.atk != null && <p className="deck-inspector-stats">ATK <b>{preview.atk}</b> / DEF <b>{preview.defense ?? '?'}</b></p>}
+        {preview ? <><h2>{preview.name}</h2><div className="deck-inspector-image"><CardVisual card={toCardRecord(preview)} /></div><TunerBadge type={preview.type} /><p className="deck-inspector-type">{label(preview.type)}{preview.level != null ? ` · Stufe / Rang ${preview.level}` : ''}</p>{preview.atk != null && <p className="deck-inspector-stats">ATK <b>{preview.atk}</b> / DEF <b>{preview.defense ?? '?'}</b></p>}
         <div className="deck-inspector-budget"><span>Besessen <b>{validation.stock[preview.id]?.owned ?? info[preview.id]?.owned ?? '?'}</b></span><span>Frei <b>{validation.stock[preview.id]?.available ?? info[preview.id]?.available ?? '?'}</b></span><span>Im Deck <b>{inDeck(preview.id)}</b></span><span>Noch möglich <b>{budget(preview.id).remaining}</b></span></div>
         <p className={'deck-inspector-rule ' + (budget(preview.id).reason ? 'is-blocked' : '')}>{budget(preview.id).reason || 'Erlaubt · Linksklick oder ins Deck ziehen.'}</p>
         <div className="deck-inspector-actions"><button disabled={readonly} aria-disabled={!!budget(preview.id).reason} onClick={() => change(preview.id, budget(preview.id).destination as Section, 1)}>+1 Hinzufügen</button><button disabled={readonly || !inDeck(preview.id)} onClick={() => { const entry = draft.entries.find(e => e.card_id === preview.id && e.section === section) || draft.entries.find(e => e.card_id === preview.id); if (entry) change(preview.id, entry.section, -1) }}>−1 Entfernen</button></div>
