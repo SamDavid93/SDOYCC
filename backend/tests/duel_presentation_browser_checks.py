@@ -70,6 +70,7 @@ window.__clock=(active=null,seat=0)=>{frame.seat=seat;frame.clock={remaining:[18
 window.__syncedEffect=()=>{const id=Math.max(0,...frame.board.events.map(e=>e.id));frame.board.events.push({id:id+1,kind:'turn_end',player:1},{id:id+2,kind:'phase',phase:2,player:0,number:2});frame.board.turn=0;frame.board.phase=2;frame.board.prompt={id:9000,title:'Karten auswählen',hint:'Ziehe 1 Karte.',effect_card:{...card,name:'Standby-Monster'},select:true,minimum:1,maximum:1,choices:[{label:'Effektziel',card,location:{owner:0,zone:1,sequence:0}}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__mixedOrigins=()=>{window.__pick(1,1,false,1,5);frame.board.prompt.choices.forEach((c,i)=>{c.location={owner:i===3?1:0,zone:[16,2,1,32,64][i],sequence:0}});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__wideChain=(forced=false)=>{const choices=Array.from({length:20},(_,i)=>({label:'Ketteneffekt '+(i+1)+': Sehr langer Karteneffekt mit mehreren lesbaren Worten',card,location:{owner:0,zone:[2,16,1,32][i%4],sequence:i}}));if(!forced)choices.splice(2,0,{label:'Nicht anketten',card:null});frame.board.prompt={id:9900+frame.board.revision,title:'Auf die Kette reagieren',kind:'chain',choices};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__multiEffects=()=>{window.__wideChain();frame.board.prompt.choices=frame.board.prompt.choices.slice(0,3);frame.board.prompt.choices[1].location={...frame.board.prompt.choices[0].location};frame.board.prompt.choices[0].effect_text='Draw one card.';frame.board.prompt.choices[1].effect_text='Destroy one card.';window.__clockTick()}
 window.__currentDecision=()=>({prompt:frame.board.prompt?.id,revision:frame.board.revision})
 window.__clockTick=()=>window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})
 window.__nextGame=()=>{frame.seat=0;frame.match={version:1,game:2,phase:'playing',score:[1,0],ready:[false,false],chooser:null,next_starter:null};frame.board.revision=1;frame.board.seat=0;frame.board.turn=0;frame.board.events=[{id:1,kind:'phase',phase:4,player:0,number:1}];frame.board.boards.forEach(s=>s.lp=8000);frame.clock={remaining:[360,360],active:null,side_remaining:null,readiness_required:true,waiting_for:0,ready_timeout:30};frame.board.prompt={id:1,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
@@ -453,6 +454,20 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                         assert page.evaluate('window.__answers.length')==answers_before
                         chain.locator('.duel-choice-list button').first.click()
                         assert page.evaluate('window.__answers.at(-1).selected')==[0]
+                    # Two effects on the same physical card must be explained before activation.
+                    for viewport in ({'width':1440,'height':1000}, {'width':390,'height':844}):
+                        page.set_viewport_size(viewport)
+                        page.evaluate('window.__multiEffects()')
+                        before=page.evaluate('window.__answers.length')
+                        page.locator('.duel-chain-overlay .duel-choice-list button').first.click()
+                        dialog=page.locator('.duel-effect-options-popup')
+                        expect(dialog).to_be_visible()
+                        expect(dialog.get_by_text('Draw one card.',exact=True)).to_be_visible()
+                        expect(dialog.get_by_text('Destroy one card.',exact=True)).to_be_visible()
+                        assert page.evaluate('window.__answers.length')==before
+                        page.screenshot(path=str(ROOT/f'artifacts/duel-multiple-effects-{viewport["width"]}.png'),full_page=True)
+                        dialog.locator('.duel-effect-option-list button').nth(1).click()
+                        assert page.evaluate('window.__answers.at(-1).selected')==[1]
                     # Physical shared zones keep their DOM identity when controllers change.
                     page.evaluate('window.__physicalExtraNodes=Array.from(document.querySelectorAll(".arena-extra-row > .arena-slot"))')
                     for viewport in ({'width':1440,'height':1000}, {'width':390,'height':844}):

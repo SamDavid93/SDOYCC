@@ -115,12 +115,14 @@ class Projection:
                         code, controller, zone = r.read('IBB')
                         small = (msg == 11 and group == 2) or (msg == 10 and group == 1)
                         sequence = r.read('B' if small else 'I')
-                        if (msg == 11 and group == 5) or (msg == 10 and group == 0): r.read('QB')
+                        effect = None
+                        if (msg == 11 and group == 5) or (msg == 10 and group == 0): effect, _ = r.read('QB')
                         elif msg == 10 and group == 1: r.read('B')
                         choices.append(self.choice(f'{labels[group]}: {self.catalog[code]["name"]}',
                                                    struct.pack('<i', (index << 16) + group), code))
                         choices[-1].update(action=(['summon', 'special_summon', 'position', 'set_monster', 'set_spell', 'activate'] if msg == 11 else ['activate', 'attack'])[group],
                             location={'owner': controller, 'zone': zone, 'sequence': sequence})
+                        if effect is not None: choices[-1]['effect_text'] = self.effect_text(effect)
                 phase_choices = [(6, 'Kampfphase'), (7, 'Zug beenden')] if msg == 11 else [(2, 'Hauptphase 2'), (3, 'Zug beenden')]
                 for number, text in phase_choices:
                     if r.read('B'): choices.append(self.choice(text, struct.pack('<i', number)))
@@ -161,6 +163,7 @@ class Projection:
                     [self.choice('Ja', struct.pack('<i', 1), code), self.choice('Nein', struct.pack('<i', 0), code)])
                 self.prompt['effect_card'] = self.card(code)
                 self.prompt['effect_location'] = location
+                self.prompt['effect_text'] = self.effect_text(description)
             elif msg in (14, 143):
                 owner, count = r.read('BB')
                 choices = []
@@ -168,7 +171,11 @@ class Projection:
                     value = r.read('Q')
                     label = str(value & 0xffffffff) if msg == 143 else self.description(value, index)
                     choices.append(self.choice(label, struct.pack('<i', index)))
+                    if msg == 14:
+                        choices[-1]['effect_text'] = self.effect_text(value)
+                        if value >> 4 in self.catalog: choices[-1]['code'] = value >> 4
                 self.new_prompt(owner, 'Zahl ansagen' if msg == 143 else 'Effektoption wählen', choices)
+                if msg == 14: self.prompt['kind'] = 'effect_options'
             elif msg == 26:
                 owner, finishable, cancelable = r.read('BBB'); minimum, maximum = r.read('II')
                 choices, selected_count = [], 0
@@ -253,9 +260,10 @@ class Projection:
                 owner, special, forced = r.read('BBB'); r.read('II'); count = r.read('I')
                 choices = []
                 for index in range(count):
-                    code = r.read('I'); location = r.loc(); r.read('QB')
+                    code = r.read('I'); location = r.loc(); description, _ = r.read('QB')
                     choices.append(self.choice('Effekt: ' + self.catalog[code]['name'], struct.pack('<i', index), code))
                     choices[-1]['location'] = location
+                    choices[-1]['effect_text'] = self.effect_text(description)
                 if not forced: choices.append(self.choice('Nicht anketten', struct.pack('<i', -1)))
                 self.new_prompt(owner, 'Auf die Kette reagieren', choices)
                 if not forced and count == 0:
@@ -385,10 +393,13 @@ class Projection:
         return {'label': label, '_response': response, 'code': code}
 
     def description(self, value, index=0):
+        return self.effect_text(value) or f'Option {index + 1} · Effektkennung {value}'
+
+    def effect_text(self, value):
         if value in self.strings: return self.strings[value]
         code, number = value >> 4, value & 15
         options = self.catalog.get(code, {}).get('options', [])
-        return options[number] if number < len(options) and options[number] else f'Option {index + 1} · Effektkennung {value}'
+        return options[number] if number < len(options) and options[number] else None
 
     def surrender(self, owner):
         if type(owner) is not int or owner not in (0, 1) or self.ended:
@@ -456,7 +467,7 @@ class Projection:
 
     def public_choice(self, choice):
         return {'label': choice['label'], 'card': self.card(choice['code']) if choice['code'] else None,
-                **{key: choice[key] for key in ('action', 'location') if key in choice}}
+                **{key: choice[key] for key in ('action', 'location', 'effect_text') if key in choice}}
 
     def view(self, owner):
         if self.query_boards is not None:

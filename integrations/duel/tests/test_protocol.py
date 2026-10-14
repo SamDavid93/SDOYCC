@@ -14,6 +14,38 @@ CATALOG = {101: {'name': 'Testkarte', 'description': 'Privater Text', 'atk': 100
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_activation_options_keep_descriptions_and_original_engine_indices(self):
+        self.p.catalog = {101: {**CATALOG[101], 'options': ['Draw one card.', 'Destroy one card.']}}
+        packet = bytes([11, 0]) + struct.pack('<6I', 0, 0, 0, 0, 0, 2)
+        for option in (0, 1):
+            packet += struct.pack('<IBBIQB', 101, 0, 4, 0, (101 << 4) | option, 0)
+        self.consume_message(packet + bytes([0, 0, 0]))
+        choices = self.p.view(0)['prompt']['choices']
+        self.assertEqual([choice['effect_text'] for choice in choices], ['Draw one card.', 'Destroy one card.'])
+        self.assertEqual(choices[0]['location'], choices[1]['location'])
+        self.assertIsNone(self.p.view(1)['prompt'])
+        self.assertEqual(self.p.respond(0, self.p.prompt['id'], [1]), struct.pack('<i', (1 << 16) | 5))
+
+    def test_native_effect_options_are_explicit_and_preserve_response(self):
+        self.p.catalog = {101: {**CATALOG[101], 'options': ['Draw one card.', 'Destroy one card.']}}
+        self.consume_message(bytes([14, 0, 2]) + struct.pack('<QQ', 101 << 4, (101 << 4) | 1))
+        prompt = self.p.view(0)['prompt']
+        self.assertEqual(prompt['kind'], 'effect_options')
+        self.assertEqual([choice['effect_text'] for choice in prompt['choices']], ['Draw one card.', 'Destroy one card.'])
+        self.assertEqual(prompt['choices'][1]['card']['code'], 101)
+        self.assertEqual(self.p.respond(0, prompt['id'], [1]), struct.pack('<i', 1))
+
+    def test_chain_effect_descriptions_do_not_merge_different_locations(self):
+        self.p.catalog = {101: {**CATALOG[101], 'options': ['Draw one card.', 'Destroy one card.']}}
+        packet = bytes([16, 0, 0, 0]) + struct.pack('<III', 0, 0, 2)
+        for option, zone in ((0, 2), (1, 16)):
+            packet += struct.pack('<IBBIIQB', 101, 0, zone, 0, 1, (101 << 4) | option, 0)
+        self.consume_message(packet)
+        prompt = self.p.view(0)['prompt']
+        self.assertEqual([choice['location']['zone'] for choice in prompt['choices'][:2]], [2, 16])
+        self.assertEqual(prompt['choices'][1]['effect_text'], 'Destroy one card.')
+        self.assertEqual(self.p.respond(0, prompt['id'], [1]), struct.pack('<i', 1))
+
     def test_sparse_field_snapshot_keeps_summons_in_same_slots_for_both_seats(self):
         def board():
             return {'deck': 30, 'zones': {str(zone): [] for zone in (2, 4, 8, 16, 32, 64)}}

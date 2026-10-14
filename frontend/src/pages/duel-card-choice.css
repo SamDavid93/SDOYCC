@@ -7,6 +7,16 @@
 .duel-chain-footer { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; padding-top: 6px; border-top: 1px solid #7bbed433; }
 .duel-chain-footer > span { color: #bed9e9; font-size: 11px; }
 .duel-chain-footer .duel-chain-pass { padding: 9px 18px; font-weight: 700; border: 1px solid #a9c7db; background: #102336de; color: #edf6ff; border-radius: 6px; }
+.duel-effect-options-popup, .duel-arena .arena-effect-option-prompt { position: absolute; z-index: 95; left: 50%; top: auto; bottom: 22%; transform: translateX(-50%); width: min(1000px, calc(100% - 24px)); max-height: 75%; overflow: auto; padding: 14px; border: 1px solid #c9bb8a; border-radius: 10px; background: #102438ee; color: #edf6ff; }
+.duel-effect-options-popup h2 { font-size: 17px; margin: 0 0 8px; }
+.duel-effect-options-popup > p { font-size: 12px; }
+.duel-effect-option-list { display: flex; gap: 12px; overflow-x: auto; padding: 8px 3px 12px; align-items: stretch; }
+.duel-arena .duel-effect-option-list > button { flex: 0 0 min(320px, 72vw); display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 14px; border: 1px solid #7fa6c1; border-radius: 8px; background: #16364c; color: #edf6ff; text-align: left; white-space: normal; }
+.duel-effect-option-list > button > strong { color: #ffe09b; font-size: 15px; }
+.duel-effect-option-list > button > small { color: #b3d7ef; }
+.duel-effect-option-list > button > p { margin: 0; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.duel-effect-option-list > button > span { margin-top: auto; padding-top: 8px; color: #b4f5d5; font-size: 11px; }
+.duel-effect-options-popup > button { padding: 9px 12px; border: 1px solid #8fa9bd; background: #132b40; color: #e6f1ff; border-radius: 6px; }
 .arena-card-choice-popup:has(.duel-effect-context) .duel-decisions > p { display: none; }
 .duel-arena .arena-card-choice-popup .duel-choice-list > button { background: #102d426b; }
 .duel-effect-context { padding: 6px 8px; border-left: 2px solid #eed292; background: #10243866; margin-bottom: 5px; }

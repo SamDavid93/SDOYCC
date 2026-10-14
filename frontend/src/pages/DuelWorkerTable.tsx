@@ -14,6 +14,7 @@ import './duel-premium.css'
 import './duel-card-choice.css'
 import cardBack from '../assets/card-back.jpg'
 import { CardOrigin, TunerBadge } from '../components/CardSymbols'
+import { DuelEffectOptions } from './DuelEffectOptions'
 
 export type EngineCard = { attribute?: number; type?: number; level?: number; code: number; name: string; description?: string; image_url?: string; fallback_image_url?: string; atk?: number; defense?: number }
 function imageFailed(event: SyntheticEvent<HTMLImageElement>, card: EngineCard) {
@@ -38,6 +39,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   const presentationReady = useRef(false)
   const playbackGame = useRef<number | null>(null)
   const [activation, setActivation] = useState<{ card: EngineCard; text?: string } | null>(null)
+  const [effectOptions, setEffectOptions] = useState<{ prompt: number; indices: number[] } | null>(null)
   const [visualLP, setVisualLP] = useState<number[] | null>(null)
   const lastDamage = useRef<number | null>(null)
   const onPlayback = useCallback((next: DuelPlayback) => {
@@ -161,6 +163,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     readySent.current = null
   }
   const board = result?.board, prompt = board?.prompt
+  useEffect(() => { setEffectOptions(null) }, [prompt?.id])
   const newestEvent = Math.max(0, ...(board?.events.map(event => event.id) || []))
   presentationReady.current = playbackGame.current === (result?.match?.game || 1) && playback.idle && playback.through >= newestEvent
   const resultVisible = Boolean(result && terminal(result) && (result.state !== 'finished' || !board || playback.idle && playback.through >= newestEvent))
@@ -192,7 +195,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   const activeEffect = resolution && resolution.id > (lastActivation?.id || 0)
     ? board?.events.filter(event => event.kind === 'chain' && event.number === resolution.number && event.id > chainEnd).at(-1) : lastActivation
   const effectCard = prompt?.effect_card || activeEffect?.card || activation?.card
-  const effectText = activeEffect?.effect || prompt?.hint || activation?.text || effectCard?.description || prompt?.title
+  const effectText = prompt?.effect_text || activeEffect?.effect || prompt?.hint || activation?.text || effectCard?.description || prompt?.title
   const resolvingEffect = Boolean(prompt && prompt.title !== 'Aktion wählen' && effectCard)
   useEffect(() => {
     if (!resolvingEffect || disabled || !effectCard) return
@@ -216,6 +219,8 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     const side = board!.boards[location.owner]
     const shown = location.zone === 2 ? side.hand[location.sequence] : location.zone === 64 ? side.extra?.[location.sequence] : location.zone === 16 ? side.grave[location.sequence] : location.zone === 32 ? side.removed?.[location.sequence] : side.field.find(entry => entry.zone === location.zone && entry.sequence === location.sequence)?.card
     if (shown) { setPreview(shown); setPreviewEffect(null); setPreviewOrigin(location) }
+    const activations = options.filter(({ choice }) => choice.action === 'activate' || chainReaction)
+    if (!prompt.select && activations.length > 1 && requestEffects(activations[0].index)) return
     if (prompt.select && options.length === 1) {
       setActiveLocation(location)
       const index = options[0].index
@@ -232,10 +237,24 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
       setActiveLocation(null); setPendingAttack(options[0].index)
     } else setActiveLocation(location)
   }
-  function chooseAction(index: number, target?: DuelLocation) {
+  function requestEffects(index: number) {
+    const choice = prompt?.choices[index]
+    if (!prompt || !choice?.card || prompt.select || !(choice.action === 'activate' || chainReaction)) return false
+    const indices = prompt.choices.map((candidate, index) => ({ candidate, index })).filter(({ candidate }) =>
+      candidate.card?.name === choice.card?.name && candidate.card?.code === choice.card?.code &&
+      (candidate.action === 'activate' || chainReaction) && candidate.location?.owner === choice.location?.owner &&
+      candidate.location?.zone === choice.location?.zone && candidate.location?.sequence === choice.location?.sequence).map(item => item.index)
+    if (indices.length < 2) return false
+    setEffectOptions({ prompt: prompt.id, indices }); setActiveLocation(null)
+    setPreview({ ...choice.card, code: choice.card.code ?? 0 }); setPreviewOrigin(choice.location || null); setPreviewEffect(null)
+    return true
+  }
+  function chooseAction(index: number, target?: DuelLocation, effectChosen = false) {
     if (!prompt || disabled || pendingCommand.current) return
+    if (!effectChosen && requestEffects(index)) return
+    setEffectOptions(null)
     const effectChoice = prompt.choices[index]
-    if (effectChoice?.action === 'activate' && effectChoice.card) setActivation({ card: { ...effectChoice.card, code: effectChoice.card.code ?? 0 }, text: prompt.hint })
+    if ((effectChoice?.action === 'activate' || chainReaction) && effectChoice?.card) setActivation({ card: { ...effectChoice.card, code: effectChoice.card.code ?? 0 }, text: effectChoice.effect_text || prompt.hint })
     if (prompt.choices[index]?.action === 'attack') { setActiveLocation(null); setPendingAttack(index); return }
     const choice=prompt.choices[index]
     if(choice?.card && ['summon','special_summon','set_monster','set_spell'].includes(choice.action || '')) {
@@ -304,10 +323,11 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
           {guidedAction && prompt && prompt.id!==guidedAction.prompt && prompt.title!=='Aktion wählen' && !chainReaction && !terminal(result) && <DuelActionGuide context={guidedAction} prompt={prompt} />}
           {pendingAttack !== null && prompt && <section className="arena-attack-confirm" role="dialog" aria-label="Angriff vorbereiten"><h2>⚔ Angriff starten?</h2><p>{prompt.choices[pendingAttack]?.card?.name || 'Dein Monster'} soll angreifen. Danach wählst du ein erlaubtes Ziel.</p><button disabled={disabled} onClick={()=>{ attackStartedAfter.current = Math.max(0,...board.events.map(event=>event.id)); setAttackFlow(true); send('answer',{prompt:prompt.id,selected:[pendingAttack]}); setPendingAttack(null) }}>Angriff starten</button><button onClick={()=>setPendingAttack(null)}>Abbrechen</button></section>}
           {!showDecision && pendingAttack === null && !disabled && <p className="arena-action-guide">{prompt ? 'Markierte Karte anklicken · Phasenwechsel über den Kreis' : 'Dein Gegner entscheidet …'}</p>}
-          {showDecision && result && !terminal(result) && <div className={chainReaction ? 'duel-chain-overlay arena-card-choice-popup' : 'arena-decision-overlay' + (handSelection ? ' arena-hand-choice-popup' : '') + (!selectOnField && prompt?.kind !== 'zones' && (prompt?.select || prompt?.selection_progress) && prompt?.choices.some(choice => choice.card) ? ' arena-card-choice-popup' : '') + (selectOnField || prompt?.kind === 'zones' ? ' arena-field-selection-guide' : '')} role={handSelection ? 'dialog' : chainReaction ? 'region' : undefined} aria-label={handSelection ? 'Handkarten für einen Effekt auswählen' : chainReaction ? 'Kettenreaktion' : undefined}>
+          {effectOptions && prompt && effectOptions.prompt === prompt.id && <section className="duel-effect-options-popup" role="dialog" aria-label="Effekt auswählen"><h2>{prompt.choices[effectOptions.indices[0]]?.card?.name}: Effekt auswählen</h2><p>Lies die Beschreibungen und wähle den gewünschten Effekt.</p><DuelEffectOptions options={effectOptions.indices.map(index => ({ index, choice: prompt.choices[index] }))} disabled={disabled} choose={index => chooseAction(index, undefined, true)} /><button disabled={disabled} onClick={() => setEffectOptions(null)}>Zurück · Noch keinen Effekt aktivieren</button></section>}
+          {showDecision && !effectOptions && result && !terminal(result) && <div className={chainReaction ? 'duel-chain-overlay arena-card-choice-popup' : 'arena-decision-overlay' + (prompt?.kind === 'effect_options' ? ' arena-effect-option-prompt' : '') + (handSelection ? ' arena-hand-choice-popup' : '') + (!selectOnField && prompt?.kind !== 'zones' && (prompt?.select || prompt?.selection_progress) && prompt?.choices.some(choice => choice.card) ? ' arena-card-choice-popup' : '') + (selectOnField || prompt?.kind === 'zones' ? ' arena-field-selection-guide' : '')} role={handSelection ? 'dialog' : chainReaction ? 'region' : undefined} aria-label={handSelection ? 'Handkarten für einen Effekt auswählen' : chainReaction ? 'Kettenreaktion' : undefined}>
             {chainReaction && <div className="duel-chain-notice"><span aria-hidden="true">∞</span><strong>Deine Kettenreaktion</strong>{prompt?.choices.some(choice => choice.label === 'Nicht anketten' && !choice.card && !choice.action && !choice.location) && <small>Rechtsklick: Nicht anketten</small>}</div>}
             {resolvingEffect && effectCard && <div className="duel-effect-context" role="status"><strong>Effekt auflösen: {effectCard.name}</strong><p title={effectText || effectCard.description}>{effectText || effectCard.description || 'Wähle die Karten für diesen Effekt.'}</p></div>}
-            <DuelDecisions seat={board.seat} onActivate={value => setActivation({ card: { ...value, code: value.code ?? 0 } })} onPreview={(value, location) => { setPreview({ ...value, code: value.code ?? 0 }); setPreviewEffect(null); setPreviewOrigin(location || null) }} showOrigins={handSelection} prompt={prompt} disabled={disabled} send={send} zoneSelection={zoneSelection} onZoneSelection={setZoneSelection} hideChoices={selectOnField || prompt?.kind === 'zones'} hideConfirmation={selectOnField && zoneSelection.length > 0} hideSurrender attackTarget={attackFlow && Boolean(prompt?.select)} choiceIndices={prompt?.title === 'Aktion wählen' ? pileChoices.length ? pileChoices : freeChoices : undefined} />
+            <DuelDecisions onRequestEffects={requestEffects} seat={board.seat} onActivate={(value, text) => setActivation({ card: { ...value, code: value.code ?? 0 }, text: text || undefined })} onPreview={(value, location) => { setPreview({ ...value, code: value.code ?? 0 }); setPreviewEffect(null); setPreviewOrigin(location || null) }} showOrigins={handSelection} prompt={prompt} disabled={disabled} send={send} zoneSelection={zoneSelection} onZoneSelection={setZoneSelection} hideChoices={selectOnField || prompt?.kind === 'zones'} hideConfirmation={selectOnField && zoneSelection.length > 0} hideSurrender attackTarget={attackFlow && Boolean(prompt?.select)} choiceIndices={prompt?.title === 'Aktion wählen' ? pileChoices.length ? pileChoices : freeChoices : undefined} />
           </div>}
         </DuelArena>
       </div>

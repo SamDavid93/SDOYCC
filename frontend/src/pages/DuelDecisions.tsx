@@ -5,17 +5,19 @@ import { includeChoice, selectionComplete } from './duelSelection'
 import { DuelSelectionProgress } from './DuelSelectionProgress'
 import type { EngineCard } from './DuelWorkerTable'
 import { CardOrigin } from '../components/CardSymbols'
+import { DuelEffectOptions } from './DuelEffectOptions'
 
 export type DuelLocation = { owner: number; zone: number; sequence: number }
 export type WorkerPrompt = { id: number; title: string; kind?: string; placement?: boolean; hint?: string; select?: boolean; ordered?: boolean; cancel?: boolean;
-  effect_location?: DuelLocation;
+  effect_location?: DuelLocation; effect_text?: string | null;
   selection_progress?: { minimum: number; maximum: number; selected: number; can_finish: boolean };
   effect_card?: { code: number; name: string; image_url?: string; description?: string };
   counter?: boolean; counter_limits?: number[]; counter_total?: number; minimum?: number; maximum?: number;
-  choices: { label: string; card: (Partial<EngineCard> & { name: string }) | null; action?: string; location?: DuelLocation }[] }
+  choices: { label: string; card: (Partial<EngineCard> & { name: string }) | null; action?: string; location?: DuelLocation; effect_text?: string | null }[] }
 
-export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZoneSelection, hideChoices = false, hideSurrender = false, attackTarget = false, choiceIndices, hideConfirmation = false, showOrigins=false, onPreview, onActivate, seat }: { prompt: WorkerPrompt | null | undefined; disabled: boolean; showOrigins?:boolean; seat?: number;
-  onActivate?: (card: Partial<EngineCard> & { name: string }) => void;
+export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZoneSelection, hideChoices = false, hideSurrender = false, attackTarget = false, choiceIndices, hideConfirmation = false, showOrigins=false, onPreview, onActivate, seat, onRequestEffects }: { prompt: WorkerPrompt | null | undefined; disabled: boolean; showOrigins?:boolean; seat?: number;
+  onRequestEffects?: (index: number) => boolean;
+  onActivate?: (card: Partial<EngineCard> & { name: string }, effect?: string | null) => void;
   onPreview?: (card: Partial<EngineCard> & { name: string }, location?: DuelLocation) => void;
   hideConfirmation?: boolean;
   choiceIndices?: number[];
@@ -65,12 +67,14 @@ export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZo
     {prompt?.ordered && <p>Klicke die Karten in der gewünschten Reihenfolge an.</p>}
     {prompt?.counter && <p>Verteile {prompt.counter_total} zu entfernende Zählmarken.</p>}
     {prompt && prompt.choices.length > 30 && <label>Karten / Optionen suchen<input value={filter} onChange={event => { setFilter(event.target.value); setLimit(60) }} /></label>}
-    {!hideChoices && <div ref={list} className="duel-choice-list">{prompt && cardChoices.slice(0, limit).map(({ choice, index }) => prompt.counter ?
+    {!hideChoices && prompt?.kind === 'effect_options' && <DuelEffectOptions options={cardChoices} disabled={disabled} choose={index => { const choice = prompt.choices[index]; if (choice.card) { onPreview?.(choice.card, choice.location); onActivate?.(choice.card, choice.effect_text) } send('answer', { prompt: prompt.id, selected: [index] }) }} />}
+    {!hideChoices && prompt?.kind !== 'effect_options' && <div ref={list} className="duel-choice-list">{prompt && cardChoices.slice(0, limit).map(({ choice, index }) => prompt.counter ?
       <label key={index}>{choice.label} · höchstens {prompt.counter_limits?.[index]}<input type="number" min={0} max={prompt.counter_limits?.[index]} value={selection[index] || 0} disabled={disabled} onChange={event => setSelection(old => old.map((value, i) => i === index ? Math.max(0, Math.min(prompt.counter_limits?.[index] || 0, Math.floor(Number(event.target.value)))) : value))} /></label> :
       <button key={index} title={choice.label} data-duel-action={choice.action} data-choice-zone={choice.location?.zone} data-choice-owner={choice.location?.owner} aria-description={choice.location ? `${seat !== undefined && choice.location.owner !== seat ? 'Gegner: ' : ''}${origin(choice.location.zone)}` : undefined} className={!disabled && (choice.action === 'activate' || (chain && choice.card) || (prompt.effect_location && choice.label === 'Ja')) ? 'effect-available' : undefined} disabled={disabled} aria-pressed={prompt.select ? selection.includes(index) : undefined} onClick={event => {
         if (disabled || event.detail > 1) return
+        if (!prompt.select && !prompt.selection_progress && onRequestEffects?.(index)) return
         if (choice.card) onPreview?.(choice.card, choice.location)
-        if (choice.card && !prompt.select && !prompt.selection_progress && (choice.action === 'activate' || chain)) onActivate?.(choice.card)
+        if (choice.card && !prompt.select && !prompt.selection_progress && (choice.action === 'activate' || chain)) onActivate?.(choice.card, choice.effect_text)
         if (prompt.selection_progress) {
           if (pendingClick.current) clearTimeout(pendingClick.current)
           pendingClick.current = setTimeout(() => { pendingClick.current = null; send('answer', { prompt: prompt.id, selected: [index] }) }, 300)
