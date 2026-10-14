@@ -11,12 +11,23 @@
 .duel-effect-options-popup h2 { font-size: 17px; margin: 0 0 8px; }
 .duel-effect-options-popup > p { font-size: 12px; }
 .duel-effect-option-list { display: flex; gap: 12px; overflow-x: auto; padding: 8px 3px 12px; align-items: stretch; }
-.duel-arena .duel-effect-option-list > button { flex: 0 0 min(320px, 72vw); display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 14px; border: 1px solid #7fa6c1; border-radius: 8px; background: #16364c; color: #edf6ff; text-align: left; white-space: normal; }
-.duel-effect-option-list > button > strong { color: #ffe09b; font-size: 15px; }
-.duel-effect-option-list > button > small { color: #b3d7ef; }
-.duel-effect-option-list > button > p { margin: 0; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
-.duel-effect-option-list > button > span { margin-top: auto; padding-top: 8px; color: #b4f5d5; font-size: 11px; }
+.duel-arena .duel-effect-option-list .duel-effect-option > button { flex: 1 1 auto; display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 14px; border: 1px solid #7fa6c1; border-radius: 8px; background: #16364c; color: #edf6ff; text-align: left; white-space: normal; }
+.duel-effect-option-list .duel-effect-option > button > strong { color: #ffe09b; font-size: 15px; }
+.duel-effect-option-list .duel-effect-option > button > small { color: #b3d7ef; }
+.duel-effect-option-list .duel-effect-option > button > p { margin: 0; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.duel-effect-option-list .duel-effect-option > button > span { margin-top: auto; padding-top: 8px; color: #b4f5d5; font-size: 11px; }
 .duel-effect-options-popup > button { padding: 9px 12px; border: 1px solid #8fa9bd; background: #132b40; color: #e6f1ff; border-radius: 6px; }
+.duel-worker-table .duel-arena :is(.arena-decision-overlay, .duel-chain-overlay, .duel-effect-options-popup) { background: linear-gradient(140deg, #122d426b, #07152280); backdrop-filter: none; }
+.duel-worker-table .duel-arena :is(.arena-decision-overlay, .duel-chain-overlay, .duel-effect-options-popup) .duel-decisions { background: transparent; }
+.duel-worker-table .duel-arena .duel-effect-option-list .duel-effect-option > button { background: #14344b99; }
+.duel-worker-table .duel-arena :is(.arena-decision-overlay, .duel-chain-overlay, .duel-effect-options-popup) :is(h2, p, strong, small, span) { text-shadow: 0 1px 3px #000, 0 0 5px #000; }
+.arena-placement-preview { position: absolute; z-index: 45; left: 50%; top: 46%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 16px; width: min(440px, 65%); pointer-events: none; filter: drop-shadow(0 6px 14px #000b); }
+.arena-placement-preview > img { width: auto; height: clamp(120px, 25dvh, 260px); max-width: 43%; object-fit: contain; }
+.arena-placement-preview > div { padding: 12px; background: #091e32a6; border-left: 2px solid #f4d484; border-radius: 6px; }
+.arena-placement-preview strong, .arena-placement-preview span { display: block; color: #ffe2a3; font-size: 15px; }
+.arena-placement-preview span { color: #fff; font-size: 20px; margin-top: 5px; }
+.arena-placement-preview p { color: #edf6ff; font-size: 12px; margin-bottom: 0; }
+@media (max-width: 760px) { .arena-placement-preview { gap: 7px; width: 72%; } .arena-placement-preview > div { padding: 7px; } .arena-placement-preview strong { font-size: 11px; } .arena-placement-preview span { font-size: 14px; } .arena-placement-preview p { font-size: 10px; } }
 .arena-card-choice-popup:has(.duel-effect-context) .duel-decisions > p { display: none; }
 .duel-arena .arena-card-choice-popup .duel-choice-list > button { background: #102d426b; }
 .duel-effect-context { padding: 6px 8px; border-left: 2px solid #eed292; background: #10243866; margin-bottom: 5px; }
@@ -42,3 +53,8 @@
   .arena-card-choice-popup .duel-selection-progress > small { display: none; }
   .duel-arena .arena-decision-overlay.arena-card-choice-popup { top: auto; bottom: 27%; padding: 6px 10px; }
 }
+
+.duel-effect-option { flex: 0 0 min(320px, 72vw); display: flex; flex-direction: column; min-width: 0; }
+.duel-arena .duel-effect-option > button { flex: 1 1 auto; width: 100%; }
+.duel-effect-option details { padding: 6px; color: #e4f0f7; font-size: 11px; background: #10243880; }
+.duel-effect-option details p { white-space: normal; }

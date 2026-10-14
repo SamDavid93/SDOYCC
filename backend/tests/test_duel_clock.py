@@ -44,6 +44,35 @@ class DuelClockTests(TestCase):
         self.assertEqual(live.clock_remaining, [120, 150])
         self.assertEqual(live.clock_owner, 1)
 
+    def test_standby_supplements_fast_opponent_credit_to_sixty_only_once(self):
+        live = self.live(); live.clock_owner = None
+        live.clock_remaining = [150, 200]; live.clock_recovered = [1, 0]
+        live.projection.events = [{'kind': 'phase', 'phase': 2, 'player': 0, 'number': 3}]
+        with patch('app.modules.duel_worker.time.monotonic', return_value=100):
+            live.tick_clock(); live.tick_clock()
+        self.assertEqual(live.clock_remaining, [209, 200])
+        self.assertEqual(live.clock_recovered, [60, 0])
+
+    def test_standby_keeps_higher_half_credit_and_caps_refill(self):
+        live = self.live(); live.clock_owner = None
+        live.clock_remaining = [200, 350]; live.clock_recovered = [80, 0]
+        live.projection.events = [{'kind': 'phase', 'phase': 2, 'player': 0, 'number': 3}, {'kind': 'phase', 'phase': 2, 'player': 1, 'number': 4}]
+        with patch('app.modules.duel_worker.time.monotonic', return_value=100): live.tick_clock()
+        self.assertEqual(live.clock_remaining, [200, 360])
+        self.assertEqual(live.clock_recovered, [80, 10])
+        live.clock_remaining[0] = 100
+        live.projection.events.append({'kind': 'phase', 'phase': 2, 'player': 0, 'number': 5})
+        with patch('app.modules.duel_worker.time.monotonic', return_value=100): live.tick_clock()
+        self.assertEqual(live.clock_remaining[0], 160)
+
+    def test_standby_refill_maps_match_seats_even_when_main_phase_already_arrived(self):
+        live = self.live(); live.clock_owner = None; live.engine_seats = [1, 0]
+        live.clock_remaining = [100, 200]
+        live.projection.phase = 4
+        live.projection.events = [{'kind': 'phase', 'phase': 2, 'player': 0, 'number': 2}]
+        with patch('app.modules.duel_worker.time.monotonic', return_value=100): live.tick_clock()
+        self.assertEqual(live.clock_remaining, [100, 260])
+
     def test_engine_processing_does_not_charge_or_restore_time(self):
         live = self.live()
         with patch('app.modules.duel_worker.time.monotonic', return_value=110): live.clear_decision()

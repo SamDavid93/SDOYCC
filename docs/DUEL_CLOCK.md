@@ -3,7 +3,28 @@
 Jeder Spieler hat weiterhin 360 Sekunden. Nur die vom Regelkern angeforderte
 Entscheidung verbraucht Zeit. Der andere Spieler erhält 50 Prozent dieser
 verbrauchten Entscheidungszeit zurück, höchstens bis 360 Sekunden. Ein Zugwechsel
-setzt das Budget nicht zurück. Die separate Side-Deck-Frist bleibt 180 Sekunden.
+setzt das Budget nicht zurück. In jeder eigenen Standby Phase wird die seit der
+vorherigen eigenen Standby Phase erhaltene Gutschrift auf mindestens 60 Sekunden
+ergänzt, weiterhin gedeckelt bei 360 Sekunden. Höhere 50-Prozent-Gutschriften
+bleiben erhalten. Die Ergänzung erfolgt genau einmal pro Zug, auch wenn die
+Engine bereits bis zur Hauptphase weitergelaufen ist. Die separate
+Side-Deck-Frist bleibt 180 Sekunden.
+
+Bei laufender eigener Entscheidungszeit ertönen Warnsignale bei 60 und 30
+Sekunden, danach bei jeder verbleibenden Sekunde bis 1. Pausen wiederholen
+keinen Ton. Die Duell-Lautstärke und Stummschaltung gelten auch für diese Signale.
+
+Bei der Platzwahl nennt `placement_card` die tatsächliche Zielkarte aus dem
+rohen Engine-Auswahlhinweis. Die große mittige Anzeige bleibt bis zur Auswahl
+sichtbar und fängt keine Mausklicks auf erlaubte Zonen ab. Die Effektkarte wird
+nicht als vermeintlich zu platzierende Karte verwendet.
+
+Deutsche Systemhinweise stammen aus der zur Engine passenden
+[Project-Ignis-Sprachdatei](https://github.com/ProjectIgnis/Distribution/blob/54a6e2395c532648ff762540e9615319fac4f51b/config/languages/Deutsch/strings.conf).
+Kurze Effektoptionen erhalten deutsche Beschreibungen. Fehlt deren Übersetzung,
+erscheint der verfügbare deutsche Kartentext ausdrücklich als Kontext und die
+Originalbeschreibung kann zusätzlich aufgeklappt werden. Die Reihenfolge der
+Kartentextsätze wird niemals als Zuordnung zu Engine-Effektkennungen geraten.
 
 Die menschliche Entscheidungszeit beginnt erst, wenn die authentifizierte
 Duellverbindung `decision_ready` für die aktuelle Prompt-ID und Board-Revision

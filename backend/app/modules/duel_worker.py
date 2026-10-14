@@ -45,6 +45,8 @@ class NativeAdapter:
         for line in strings.read_text(encoding='utf8').splitlines():
             parts = line.split(maxsplit=2)
             if len(parts) == 3 and parts[0] == '!system' and parts[1].isdigit(): self.strings[int(parts[1])] = parts[2]
+        german_strings = json.loads((ROOT / 'backend/data/duel-strings-de.json').read_text(encoding='utf8'))
+        self.strings.update({int(key): text for key, text in german_strings['strings'].items()})
         self.sources = {'package': json.loads((INTEGRATION / 'sources.lock.json').read_text(encoding='utf8')),
             'strings_sha256': strings_lock['sha256'],
             'cdb_sha256': hashlib.sha256((self.root / 'cards/cards.cdb').read_bytes()).hexdigest(),
@@ -92,6 +94,8 @@ class LiveRun:
     clock_owner: int | None = None
     clock_started: float = field(default_factory=time.monotonic)
     clock_turn: int = 0
+    clock_refill_turn: int = 0
+    clock_refill_checkpoint: list = field(default_factory=lambda: [0.0, 0.0])
     side_started: float | None = None
     practice: bool = False
     bot_task: object | None = None
@@ -130,6 +134,16 @@ class LiveRun:
     def tick_clock(self, now=None):
         now = time.monotonic() if now is None else now
         self.pause_clock(now)
+        for event in getattr(self.projection, 'events', []):
+            if event.get('kind') != 'phase' or event.get('phase') != 2 or event.get('number', 0) <= self.clock_refill_turn:
+                continue
+            self.clock_refill_turn = event['number']
+            seat = self.engine_seats[event['player']]
+            earned = max(0, self.clock_recovered[seat] - self.clock_refill_checkpoint[seat])
+            supplement = min(max(0, 360 - self.clock_remaining[seat]), max(0, 60 - earned))
+            self.clock_remaining[seat] += supplement
+            self.clock_recovered[seat] += supplement
+            self.clock_refill_checkpoint[seat] = self.clock_recovered[seat]
         if self.projection.turn_number != self.clock_turn:
             self.clock_turn = self.projection.turn_number
         prompt = self.projection.prompt
@@ -191,7 +205,8 @@ class LiveRun:
             'readiness_required': True,
             'waiting_for': self.clock_decision[0] if self.clock_decision and not self.clock_ready else None,
             'ready_timeout': round(self.delivery_remaining(), 1) if self.clock_waiting_since is not None else None,
-            'profile': '360s budget; 50% of opponent decision time recovered, capped at 360s',
+            'profile': '360s cap; 50% opponent decision time; minimum 60s recovery per own Standby Phase',
+            'minimum_turn_refill': 60,
             'limit': 360, 'refill_ratio': .5, 'recovered': [round(value, 1) for value in self.clock_recovered],
             'side_remaining': max(0, round(180 - (time.monotonic() - self.side_started), 1)) if self.side_started is not None else None}
 
@@ -224,6 +239,7 @@ class WorkerService:
             from app.db.models import Card
             from app.api import translated_text
             from app.modules.duel_rules import canonical
+            from app.modules.duel_localization import german_effect
             with self.sessions() as db:
                 for card in db.scalars(select(Card).options(joinedload(Card.details)).where(Card.external_provider.in_(['ygoprodeck', 'local-demo']))):
                     code = int(card.external_id) if card.external_id.isdecimal() else None
@@ -236,6 +252,10 @@ class WorkerService:
                         entry.setdefault('description_en', entry.get('description', ''))
                         entry['name'] = (translated_text(details.name_de) if details else None) or entry['name_en']
                         entry['description'] = (translated_text(details.description_de) if details else None) or entry['description_en']
+                        entry['description_de'] = translated_text(details.description_de) if details else None
+            for entry in self.adapter.catalog.values():
+                entry.setdefault('options_en', entry.get('options', []))
+                entry['options'] = [german_effect(text, entry.get('description_de'), index) for index, text in enumerate(entry['options_en'])]
 
     async def consume_packet(self, live, packet):
         # Only an optional chain with zero legal effects is deterministic.
@@ -559,6 +579,7 @@ class WorkerService:
                     progress['game'] += 1; progress['phase'] = 'playing'; progress['starter'] = starter
                     live.side_started = None
                     live.clock_remaining = [360.0, 360.0]; live.clock_recovered = [0.0, 0.0]; live.clock_turn = 0
+                    live.clock_refill_turn = 0; live.clock_refill_checkpoint = [0.0, 0.0]
                     packet = await live.engine.command({'op': 'start', 'decks': [progress['decks'][player] for player in live.engine_seats], 'flags': 0x30002e800})
                     await self.consume_packet(live, packet)
                     live.tick_clock()

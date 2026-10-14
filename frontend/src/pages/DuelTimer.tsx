@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Hourglass, Pause } from 'lucide-react'
 import './duel-timer.css'
 
@@ -10,6 +10,7 @@ export type DuelTimerState = {
   updatedAt: number
   limit?: number
   pausedReason?: string
+  onWarning?: (seconds: number) => void
 }
 
 const seconds = (value: number) => Number.isFinite(value) ? Math.max(0, value) : 0
@@ -18,7 +19,7 @@ const time = (value: number) => {
   return `${Math.floor(remaining / 60).toString().padStart(2, '0')}:${(remaining % 60).toString().padStart(2, '0')}`
 }
 
-export function DuelTimer({ ownRemaining, opponentRemaining, active, updatedAt, limit = 360, pausedReason }: DuelTimerState) {
+export function DuelTimer({ ownRemaining, opponentRemaining, active, updatedAt, limit = 360, pausedReason, onWarning }: DuelTimerState) {
   const [now, setNow] = useState(() => performance.now())
   useEffect(() => {
     setNow(performance.now())
@@ -32,6 +33,15 @@ export function DuelTimer({ ownRemaining, opponentRemaining, active, updatedAt, 
   const elapsed = active ? Math.max(0, (now - updatedAt) / 1000) : 0
   const own = seconds(ownRemaining - (active === 'own' ? elapsed : 0))
   const opponent = seconds(opponentRemaining - (active === 'opponent' ? elapsed : 0))
+  const previous = useRef<number | null>(null), warned = useRef<number | null>(null)
+  const ownSecond = Math.ceil(own)
+  useEffect(() => {
+    if (previous.current !== null && ownSecond > previous.current) warned.current = null
+    previous.current = ownSecond
+    if (active !== 'own' || ownSecond <= 0 || !(ownSecond === 60 || ownSecond <= 30) || warned.current === ownSecond) return
+    warned.current = ownSecond
+    onWarning?.(ownSecond)
+  }, [ownSecond, active, onWarning])
   const low = own <= 30
   const status = active === 'own' ? low ? 'Zeit wird knapp' : 'Du entscheidest' : active === 'opponent' ? 'Gegner entscheidet' : 'Pausiert'
   const detail = active ? status : pausedReason || 'Die Zeit pausiert, solange keine Spielentscheidung möglich ist.'

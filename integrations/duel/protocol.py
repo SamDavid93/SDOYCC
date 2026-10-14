@@ -37,6 +37,7 @@ class Projection:
         self.catalog = catalog
         self.strings = strings or {}
         self.selection_hints = {}
+        self.selection_hint_values = {}
         self.lp = [8000, 8000]
         self.hands = [[], []]
         self.field = [{}, {}]
@@ -102,7 +103,9 @@ class Projection:
             msg = r.read('B'); self.seen.add(msg)
             if msg == 2:
                 kind, recipient, value = r.read('BBQ')
-                if kind == 3: self.selection_hints[recipient] = self.description(value)
+                if kind == 3:
+                    self.selection_hints[recipient] = self.description(value)
+                    self.selection_hint_values[recipient] = value
                 elif kind in (1, 2, 4, 5, 6, 7, 8, 9, 10):
                     text = self.description(value) if kind in (1, 2, 4) else self.catalog.get(value, {}).get('name', str(value))
                     self.event('hint', text=text, _audience=[recipient])
@@ -122,7 +125,9 @@ class Projection:
                                                    struct.pack('<i', (index << 16) + group), code))
                         choices[-1].update(action=(['summon', 'special_summon', 'position', 'set_monster', 'set_spell', 'activate'] if msg == 11 else ['activate', 'attack'])[group],
                             location={'owner': controller, 'zone': zone, 'sequence': sequence})
-                        if effect is not None: choices[-1]['effect_text'] = self.effect_text(effect)
+                        if effect is not None:
+                            choices[-1]['effect_text'] = self.effect_text(effect)
+                            choices[-1]['effect_original'] = self.effect_original(effect)
                 phase_choices = [(6, 'Kampfphase'), (7, 'Zug beenden')] if msg == 11 else [(2, 'Hauptphase 2'), (3, 'Zug beenden')]
                 for number, text in phase_choices:
                     if r.read('B'): choices.append(self.choice(text, struct.pack('<i', number)))
@@ -130,6 +135,7 @@ class Projection:
                 self.new_prompt(owner, 'Aktion wählen', choices)
             elif msg in (18, 24):
                 owner, count, blocked = r.read('BBI')
+                placement_code = self.selection_hint_values.get(owner) if msg == 18 else None
                 if count > 32: raise ValueError('Invalid zone count')
                 choices = []
                 for bit in range(32):
@@ -141,6 +147,9 @@ class Projection:
                 self.new_prompt(owner, 'Zone wählen', choices)
                 self.prompt['kind'] = 'zones'
                 self.prompt['placement'] = msg == 18
+                if placement_code in self.catalog:
+                    self.prompt['placement_card'] = self.card(placement_code)
+                    self.prompt['hint'] = 'Wähle ein Zielfeld für ' + self.catalog[placement_code]['name'] + '.'
                 if count > 1:
                     self.prompt.update(select=True, minimum=count, maximum=count, _response_kind='zones')
             elif msg == 19:
@@ -173,6 +182,7 @@ class Projection:
                     choices.append(self.choice(label, struct.pack('<i', index)))
                     if msg == 14:
                         choices[-1]['effect_text'] = self.effect_text(value)
+                        choices[-1]['effect_original'] = self.effect_original(value)
                         if value >> 4 in self.catalog: choices[-1]['code'] = value >> 4
                 self.new_prompt(owner, 'Zahl ansagen' if msg == 143 else 'Effektoption wählen', choices)
                 if msg == 14: self.prompt['kind'] = 'effect_options'
@@ -264,6 +274,7 @@ class Projection:
                     choices.append(self.choice('Effekt: ' + self.catalog[code]['name'], struct.pack('<i', index), code))
                     choices[-1]['location'] = location
                     choices[-1]['effect_text'] = self.effect_text(description)
+                    choices[-1]['effect_original'] = self.effect_original(description)
                 if not forced: choices.append(self.choice('Nicht anketten', struct.pack('<i', -1)))
                 self.new_prompt(owner, 'Auf die Kette reagieren', choices)
                 if not forced and count == 0:
@@ -401,6 +412,13 @@ class Projection:
         options = self.catalog.get(code, {}).get('options', [])
         return options[number] if number < len(options) and options[number] else None
 
+    def effect_original(self, value):
+        entry = self.catalog.get(value >> 4, {})
+        options = entry.get('options_en', [])
+        localized = self.effect_text(value)
+        number = value & 15
+        return options[number] if number < len(options) and localized and localized.startswith('Effektoption ') else None
+
     def surrender(self, owner):
         if type(owner) is not int or owner not in (0, 1) or self.ended:
             raise ValueError('Keine gültige Aufgabe möglich')
@@ -415,6 +433,7 @@ class Projection:
         if owner not in (0, 1) or (not choices and not allow_empty): raise ValueError('Invalid engine prompt')
         self.prompt = {'owner': owner, 'title': title, 'choices': choices}
         if owner in self.selection_hints: self.prompt['hint'] = self.selection_hints.pop(owner)
+        self.selection_hint_values.pop(owner, None)
 
     def respond(self, owner, prompt_id, selected, cancel=False):
         p = self.prompt
@@ -467,7 +486,7 @@ class Projection:
 
     def public_choice(self, choice):
         return {'label': choice['label'], 'card': self.card(choice['code']) if choice['code'] else None,
-                **{key: choice[key] for key in ('action', 'location', 'effect_text') if key in choice}}
+                **{key: choice[key] for key in ('action', 'location', 'effect_text', 'effect_original') if key in choice}}
 
     def view(self, owner):
         if self.query_boards is not None:

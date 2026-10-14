@@ -19,7 +19,7 @@ const captions: Record<string, string> = { draw: 'Karte gezogen', move: 'Karte b
 const methods: Record<string, string> = { normal: 'Normal-/Tributbeschwörung', flip: 'Flippbeschwörung', special: 'Spezialbeschwörung', fusion: 'Fusion', synchro: 'Synchro', xyz: 'Xyz', link: 'Link', ritual: 'Ritual', pendulum: 'Pendel', covered: 'Verdeckte Beschwörung' }
 const chainSteps: Record<number, string> = { 71: 'Kette fortgesetzt', 72: 'Effekt wird aufgelöst', 73: 'Effekt aufgelöst', 74: 'Kette beendet', 75: 'Aktivierung negiert', 76: 'Effekt negiert' }
 
-export function DuelAnimations({ events, runId, onEffect, onPlayback, seat, disabled, surrender, phase, turn, turnNumber, decisionPending=false }: { events: DuelEvent[]; runId: string; phase?: number; turn?: number; turnNumber?: number; decisionPending?:boolean; onPlayback?: (playback: DuelPlayback) => void;
+export function DuelAnimations({ events, runId, onEffect, onPlayback, seat, disabled, surrender, phase, turn, turnNumber, decisionPending=false, timerWarning }: { events: DuelEvent[]; runId: string; phase?: number; turn?: number; turnNumber?: number; decisionPending?:boolean; timerWarning?: {seconds:number;serial:number} | null; onPlayback?: (playback: DuelPlayback) => void;
   onEffect?: (card: EngineCard, effect?: string | null) => void; seat?: number; disabled?: boolean; surrender?: () => void }) {
   const [mode, setMode] = useState<Mode>(() => {
     const stored = localStorage.getItem('duel-motion')
@@ -114,6 +114,7 @@ export function DuelAnimations({ events, runId, onEffect, onPlayback, seat, disa
     if (!sound) { audio.current ||= new DuelSoundPlayer(); await audio.current.unlock().catch(()=>{}) }
     setSound(!sound)
   }
+  useEffect(() => { if (sound && timerWarning) audio.current?.playTimerWarning(timerWarning.seconds) }, [timerWarning])
   const announcement = active && phaseAnnouncement(active,seat)
   const cutin=active && cutins && bossSummon(active,seat)
   return <aside className={`duel-animation-console motion-${mode}`} aria-label="Duellanimationen">

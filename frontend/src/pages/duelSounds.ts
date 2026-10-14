@@ -85,6 +85,21 @@ export class DuelSoundPlayer {
     source.start();source.stop(at+Math.min(buffer.duration,seconds))
   }
 
+  playTimerWarning(seconds: number) {
+    if (!this.context || this.context.state !== 'running' || !this.gain || this.volume === 0) return
+    const pitches = seconds === 60 ? [660, 880] : seconds === 30 ? [880, 880, 1047] : seconds <= 10 ? [1175] : [880]
+    pitches.forEach((frequency, index) => {
+      const context = this.context!, oscillator = context.createOscillator(), envelope = context.createGain()
+      const at = context.currentTime + index * .12
+      oscillator.type = 'sine'; oscillator.frequency.value = frequency
+      envelope.gain.setValueAtTime(0, at); envelope.gain.linearRampToValueAtTime(.35, at + .01)
+      envelope.gain.exponentialRampToValueAtTime(.001, at + .1)
+      oscillator.connect(envelope); envelope.connect(this.gain!)
+      this.sources.add(oscillator); oscillator.onended = () => { this.sources.delete(oscillator); oscillator.disconnect(); envelope.disconnect() }
+      oscillator.start(at); oscillator.stop(at + .11)
+    })
+  }
+
   stop() { for (const source of this.sources) { try { source.stop() } catch { /* Already finished. */ } }; this.sources.clear() }
   close() { this.stop(); if (this.context?.state !== 'closed') void this.context?.close() }
 }

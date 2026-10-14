@@ -14,6 +14,16 @@ CATALOG = {101: {'name': 'Testkarte', 'description': 'Privater Text', 'atk': 100
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_zone_selection_uses_exact_card_hint_and_is_private(self):
+        self.consume_message(bytes([2, 3, 0]) + struct.pack('<Q', 101))
+        self.consume_message(bytes([18, 0, 1]) + struct.pack('<I', 0xfffffffe))
+        prompt = self.p.view(0)['prompt']
+        self.assertEqual(prompt['placement_card']['code'], 101)
+        self.assertIn('Testkarte', prompt['hint'])
+        self.assertIsNone(self.p.view(1)['prompt'])
+        self.consume_message(bytes([18, 0, 1]) + struct.pack('<I', 0xfffffffe))
+        self.assertNotIn('placement_card', self.p.view(0)['prompt'])
+
     def test_activation_options_keep_descriptions_and_original_engine_indices(self):
         self.p.catalog = {101: {**CATALOG[101], 'options': ['Draw one card.', 'Destroy one card.']}}
         packet = bytes([11, 0]) + struct.pack('<6I', 0, 0, 0, 0, 0, 2)

@@ -10,10 +10,11 @@ import { DuelEffectOptions } from './DuelEffectOptions'
 export type DuelLocation = { owner: number; zone: number; sequence: number }
 export type WorkerPrompt = { id: number; title: string; kind?: string; placement?: boolean; hint?: string; select?: boolean; ordered?: boolean; cancel?: boolean;
   effect_location?: DuelLocation; effect_text?: string | null;
+  placement_card?: EngineCard;
   selection_progress?: { minimum: number; maximum: number; selected: number; can_finish: boolean };
   effect_card?: { code: number; name: string; image_url?: string; description?: string };
   counter?: boolean; counter_limits?: number[]; counter_total?: number; minimum?: number; maximum?: number;
-  choices: { label: string; card: (Partial<EngineCard> & { name: string }) | null; action?: string; location?: DuelLocation; effect_text?: string | null }[] }
+  choices: { label: string; card: (Partial<EngineCard> & { name: string }) | null; action?: string; location?: DuelLocation; effect_text?: string | null; effect_original?: string | null }[] }
 
 export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZoneSelection, hideChoices = false, hideSurrender = false, attackTarget = false, choiceIndices, hideConfirmation = false, showOrigins=false, onPreview, onActivate, seat, onRequestEffects }: { prompt: WorkerPrompt | null | undefined; disabled: boolean; showOrigins?:boolean; seat?: number;
   onRequestEffects?: (index: number) => boolean;

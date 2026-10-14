@@ -39,6 +39,9 @@ prompt:{id:7,title:'Auf die Kette reagieren',choices:[{label:'Effekt: Testkarte'
 window.__answers=[]
 window.__readyFrames=[]
 window.__bossSounds=[]
+window.__timerWarnings=[]
+const originalTimerWarning=DuelSoundPlayer.prototype.playTimerWarning
+DuelSoundPlayer.prototype.playTimerWarning=function(seconds){window.__timerWarnings.push(seconds);return originalTimerWarning.call(this,seconds)}
 const originalBossSound=DuelSoundPlayer.prototype.playBossSummon
 DuelSoundPlayer.prototype.playBossSummon=function(event,seconds){window.__bossSounds.push(bossSoundFor(event));return originalBossSound.call(this,event,seconds)}
 window.__bossEligible=(event,seat)=>bossSummon(event,seat)
@@ -65,12 +68,13 @@ frame.board.boards=[{...side,lp:8000,hand:Array(6).fill(visible),grave:[visible]
 if(event)frame.board.events.push({...event,id:Math.max(0,...frame.board.events.map(e=>e.id))+1});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__extra=(owners,seat,offer=false)=>{frame.board.seat=frame.seat=seat;frame.board.prompt=offer?{id:900+frame.board.revision,kind:'zones',minimum:1,maximum:1,choices:[{label:'Right',location:{owner:seat,zone:4,sequence:6}},{label:'Left',location:{owner:seat,zone:4,sequence:5}}]}:null;frame.board.boards.forEach(s=>s.field=s.field.filter(e=>e.zone!==4||e.sequence<5));owners.forEach((owner,i)=>{if(owner!==null)frame.board.boards[owner].field.push({zone:4,sequence:owner===seat?5+i:6-i,position:1,card})});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__pileFlow=()=>{window.__scene();const extra={...card,name:'Synchro-Test',type:0x2001};frame.board.boards[0].extra=[{...card,name:'Nicht beschwoerbar'},extra,{...card,name:'Fusion-Test'}];frame.board.prompt={id:1100+frame.board.revision,title:'Aktion wählen',choices:[{label:'Zug beenden',card:null},{label:'Spezialbeschwören: Synchro-Test',card:extra,action:'special_summon',location:{owner:0,zone:64,sequence:1}},{label:'Aktivieren: Synchro-Test',card:extra,action:'activate',location:{owner:0,zone:64,sequence:1}},{label:'Spezialbeschwören: Fusion-Test',card:{...card,name:'Fusion-Test'},action:'special_summon',location:{owner:0,zone:64,sequence:2}}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
-window.__pileStep=(stage)=>{frame.board.prompt={id:1200+frame.board.revision,title:stage==='materials'?'Materialien wählen':stage==='zones'?'Zone wählen':'Aktion wählen',...(stage==='materials'?{select:true,minimum:2,maximum:2}:stage==='zones'?{kind:'zones',placement:true}:{}),choices:stage==='materials'?[0,1].map(sequence=>({label:'Material '+sequence,card,location:{owner:0,zone:4,sequence}})):stage==='zones'?[6,2].map(sequence=>({label:'Zone '+sequence,card:null,location:{owner:0,zone:4,sequence}})):[{label:'Zug beenden',card:null}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__pileStep=(stage)=>{frame.board.prompt={id:1200+frame.board.revision,title:stage==='materials'?'Materialien wählen':stage==='zones'?'Zone wählen':'Aktion wählen',...(stage==='materials'?{select:true,minimum:2,maximum:2}:stage==='zones'?{kind:'zones',placement:true,placement_card:{...card,name:'Effekt-Zielmonster'}}:{}),choices:stage==='materials'?[0,1].map(sequence=>({label:'Material '+sequence,card,location:{owner:0,zone:4,sequence}})):stage==='zones'?[6,2].map(sequence=>({label:'Zone '+sequence,card:null,location:{owner:0,zone:4,sequence}})):[{label:'Zug beenden',card:null}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__clock=(active=null,seat=0)=>{frame.seat=seat;frame.clock={remaining:[180,300],active,side_remaining:null,readiness_required:true,waiting_for:null,ready_timeout:null};frame.board.prompt=null;frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__syncedEffect=()=>{const id=Math.max(0,...frame.board.events.map(e=>e.id));frame.board.events.push({id:id+1,kind:'turn_end',player:1},{id:id+2,kind:'phase',phase:2,player:0,number:2});frame.board.turn=0;frame.board.phase=2;frame.board.prompt={id:9000,title:'Karten auswählen',hint:'Ziehe 1 Karte.',effect_card:{...card,name:'Standby-Monster'},select:true,minimum:1,maximum:1,choices:[{label:'Effektziel',card,location:{owner:0,zone:1,sequence:0}}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__mixedOrigins=()=>{window.__pick(1,1,false,1,5);frame.board.prompt.choices.forEach((c,i)=>{c.location={owner:i===3?1:0,zone:[16,2,1,32,64][i],sequence:0}});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__wideChain=(forced=false)=>{const choices=Array.from({length:20},(_,i)=>({label:'Ketteneffekt '+(i+1)+': Sehr langer Karteneffekt mit mehreren lesbaren Worten',card,location:{owner:0,zone:[2,16,1,32][i%4],sequence:i}}));if(!forced)choices.splice(2,0,{label:'Nicht anketten',card:null});frame.board.prompt={id:9900+frame.board.revision,title:'Auf die Kette reagieren',kind:'chain',choices};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__multiEffects=()=>{window.__wideChain();frame.board.prompt.choices=frame.board.prompt.choices.slice(0,3);frame.board.prompt.choices[1].location={...frame.board.prompt.choices[0].location};frame.board.prompt.choices[0].effect_text='Draw one card.';frame.board.prompt.choices[1].effect_text='Destroy one card.';window.__clockTick()}
+window.__lowClock=(seconds,active=0)=>{frame.seat=frame.board.seat=0;frame.board.prompt=null;frame.clock={remaining:[seconds,200],active,readiness_required:true,waiting_for:null};frame.board.revision++;window.__clockTick()}
 window.__currentDecision=()=>({prompt:frame.board.prompt?.id,revision:frame.board.revision})
 window.__clockTick=()=>window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})
 window.__nextGame=()=>{frame.seat=0;frame.match={version:1,game:2,phase:'playing',score:[1,0],ready:[false,false],chooser:null,next_starter:null};frame.board.revision=1;frame.board.seat=0;frame.board.turn=0;frame.board.events=[{id:1,kind:'phase',phase:4,player:0,number:1}];frame.board.boards.forEach(s=>s.lp=8000);frame.clock={remaining:[360,360],active:null,side_remaining:null,readiness_required:true,waiting_for:0,ready_timeout:30};frame.board.prompt={id:1,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
@@ -90,7 +94,7 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                 with sync_playwright() as pw:
                     browser = pw.chromium.launch(channel='msedge', headless=True)
                     page = browser.new_page(viewport={'width':1440,'height':1000})
-                    page.add_init_script("""window.__soundStarts=0; const OriginalAudioContext=window.AudioContext; window.AudioContext=class extends OriginalAudioContext { createBufferSource(){const node=super.createBufferSource();const start=node.start.bind(node);node.start=(...args)=>{window.__soundStarts++;return start(...args)};return node} };""")
+                    page.add_init_script("""window.__soundStarts=0; window.__oscillatorStarts=0; const OriginalAudioContext=window.AudioContext; window.AudioContext=class extends OriginalAudioContext { createOscillator(){const node=super.createOscillator();const start=node.start.bind(node);node.start=(...args)=>{window.__oscillatorStarts++;return start(...args)};return node} createBufferSource(){const node=super.createBufferSource();const start=node.start.bind(node);node.start=(...args)=>{window.__soundStarts++;return start(...args)};return node} };""")
                     errors = []
                     key_warnings = []
                     page.on('console', lambda message: key_warnings.append(message.text) if 'same key' in message.text else None)
@@ -506,10 +510,12 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     expect(guide).to_contain_text('Synchro-Test')
                     expect(guide).to_contain_text('Materialien wählen')
                     page.evaluate('window.__pileStep("zones")')
-                    expect(guide).to_contain_text('Zielfeld wählen')
-                    guide_bounds=guide.bounding_box()
-                    selection_bounds=page.locator('.arena-field-selection-guide').bounding_box()
-                    assert guide_bounds['y']+guide_bounds['height']<=selection_bounds['y']
+                    placing=page.get_by_role('status',name='Karte platzieren')
+                    expect(placing).to_contain_text('Effekt-Zielmonster')
+                    expect(placing).to_contain_text('Zielfeld wählen')
+                    assert placing.locator('img').bounding_box()['height']>=120
+                    assert placing.evaluate('e=>getComputedStyle(e).pointerEvents')=='none'
+                    assert page.locator('.arena-field-selection-guide').evaluate('e=>getComputedStyle(e).backdropFilter')=='none'
                     page.screenshot(path=str(ROOT/'artifacts/duel-summon-guidance.png'))
                     page.locator('.arena-slot[data-duel-owner="0"][data-duel-zone="4"][data-duel-sequence="6"] .arena-zone-choice').click()
                     assert page.evaluate('window.__answers.at(-1).selected') == [0]
@@ -646,6 +652,34 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
                         page.screenshot(path=str(ROOT/f'artifacts/duel-timer-{width}.png'))
                     page.set_viewport_size({'width':1440,'height':1000})
+                    oscillator_before=page.evaluate('window.__oscillatorStarts')
+                    page.evaluate('window.__timerWarnings=[];window.__lowClock(61)')
+                    expect(timer.locator('.arena-timer-value')).to_have_text('01:00',timeout=2500)
+                    page.wait_for_function('window.__timerWarnings.includes(60)')
+                    page.evaluate('window.__lowClock(31)')
+                    expect(timer.locator('.arena-timer-value')).to_have_text('00:30',timeout=2500)
+                    page.wait_for_function('window.__timerWarnings.includes(30)')
+                    expect(timer.locator('.arena-timer-value')).to_have_text('00:29',timeout=2500)
+                    page.wait_for_function('window.__timerWarnings.includes(29)')
+                    page.evaluate('window.__lowClock(29,null)')
+                    count=page.evaluate('window.__timerWarnings.length')
+                    page.wait_for_timeout(1100)
+                    assert page.evaluate('window.__timerWarnings.length')==count
+                    page.evaluate('window.__lowClock(29)')
+                    page.wait_for_timeout(150)
+                    assert page.evaluate('window.__timerWarnings.length')==count
+                    expect(timer.locator('.arena-timer-value')).to_have_text('00:28',timeout=2500)
+                    page.wait_for_function('window.__timerWarnings.includes(28)')
+                    assert page.evaluate('window.__oscillatorStarts')>oscillator_before
+                    page.get_by_label('Duellmenü',exact=True).click()
+                    page.get_by_role('button',name='Ton an',exact=True).click()
+                    muted_count=page.evaluate('window.__timerWarnings.length')
+                    page.evaluate('window.__lowClock(10)')
+                    page.wait_for_timeout(200)
+                    assert page.evaluate('window.__timerWarnings.length')==muted_count
+                    page.get_by_role('button',name='Ton aus',exact=True).click()
+                    page.get_by_label('Duellmenü',exact=True).click()
+                    page.evaluate('window.__lowClock(120,null)')
                     page.evaluate('window.__actions()')
                     page.wait_for_timeout(150)
                     ready_count=page.evaluate('window.__readyFrames.length')
