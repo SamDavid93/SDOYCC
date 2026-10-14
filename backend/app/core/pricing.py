@@ -13,7 +13,9 @@ def product_type_for_name(name: str) -> str:
     return 'booster'
 
 
-def product_price(product_type: str) -> int:
+def product_price(product_type: str, override: int | None = None) -> int:
+    if override is not None:
+        return override
     return STRUCTURE_DECK_PRICE if product_type == 'structure_deck' else BOOSTER_PRICE
 
 

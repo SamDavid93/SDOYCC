@@ -54,18 +54,18 @@ class EconomyTests(HubTestCase):
         self.assertEqual(response.json()["pool_size"], 1)
         self.assertEqual(response.json()["pool"][0]["weight"], 1)
 
-    def test_purchase_and_open_charge_once_and_cap_small_pool(self):
+    def test_purchase_and_open_charge_once_with_nine_cards(self):
         self.assertEqual(self.buy().json()["diamonds_remaining"], 0)
         result = self.client.post("/api/boosters/1/open", headers={**self.headers, "Idempotency-Key": "opening-1"})
         self.assertEqual(result.status_code, 200, result.text)
-        self.assertEqual(len(result.json()["cards"]), 1)
+        self.assertEqual(len(result.json()["cards"]), 9)
         self.assertEqual(result.json()["diamonds_remaining"], 0)
         with self.sessions() as db:
-            self.assertEqual(db.scalar(select(InventoryItem)).quantity, 1)
+            self.assertEqual(db.scalar(select(InventoryItem)).quantity, 9)
             self.assertEqual(len(db.scalars(select(DiamondTransaction)).all()), 1)
         replayed = self.client.post("/api/boosters/1/open", headers={**self.headers, "Idempotency-Key": "opening-1"})
         self.assertEqual(replayed.json(), result.json())
-        self.assertEqual(self.client.get("/api/inventory/me", headers=self.headers).json()["total_quantity"], 1)
+        self.assertEqual(self.client.get("/api/inventory/me", headers=self.headers).json()["total_quantity"], 9)
 
     def test_retry_purchase_does_not_charge_twice(self):
         first = self.buy()

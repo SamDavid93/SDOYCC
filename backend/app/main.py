@@ -88,6 +88,8 @@ app.include_router(collection_router)
 
 from app.modules.admin import router as admin_router
 app.include_router(admin_router)
+from app.modules.admin_products import router as admin_products_router
+app.include_router(admin_products_router)
 
 from app.modules.admin_actions import router as admin_actions_router
 app.include_router(admin_actions_router)

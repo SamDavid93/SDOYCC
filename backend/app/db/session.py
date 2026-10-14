@@ -51,6 +51,10 @@ def migrate_local_schema() -> None:
         with engine.begin() as connection:
             connection.execute(text("ALTER TABLE booster_openings ADD COLUMN credits_spent INTEGER NOT NULL DEFAULT 0"))
     booster_columns = {column["name"] for column in inspector.get_columns("booster_packs")}
+    with engine.begin() as connection:
+        for column in ('price_override', 'draw_count_override'):
+            if column not in booster_columns:
+                connection.execute(text(f'ALTER TABLE booster_packs ADD COLUMN {column} INTEGER'))
     if "set_id" not in booster_columns:
         with engine.begin() as connection:
             connection.execute(text("ALTER TABLE booster_packs ADD COLUMN set_id INTEGER REFERENCES card_sets(id)"))

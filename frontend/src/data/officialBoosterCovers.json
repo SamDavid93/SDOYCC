@@ -1,33 +1,67 @@
 {
   "immortalphoenix": {
     "name": "Immortal Phoenix",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2026/09/IMPH_foil_550.png",
-    "source": "https://www.yugioh-card.com/en/products/imph/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/e584ca947b56193aa680.png",
-    "width": 613,
-    "height": 613,
-    "sha256": "e584ca947b56193aa680bee94f0fc78413936958d2f20336d45cf285c9543f00"
+    "source": "https://www.yugioh-card.com/eu/de/product/immortal-phoenix/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2026/09/IMPH-Foil-Single-US.webp",
+    "aliases": [
+      "Immortal Phoenix",
+      "Immortal Phoenix "
+    ],
+    "region": "eu",
+    "file": "booster-covers/3a97fcc56f2756a87378.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "3a97fcc56f2756a87378eb323587e1d77c2c5390e83eb7ed2789f3bd5d649ebf",
+    "image_language": "unspecified",
+    "focus": [
+      289,
+      56,
+      392,
+      668
+    ]
   },
   "gloriousvictors": {
     "name": "Glorious Victors",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2026/08/GLVI_550.png",
-    "source": "https://www.yugioh-card.com/en/products/glvi/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/8c1848a2193c64f5dabf.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "8c1848a2193c64f5dabfd9b71940aa6a588911c3dc25b2e8ca493a0ee150201c"
+    "source": "https://www.yugioh-card.com/eu/de/product/glorious-victors/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2026/08/GLVI-Foil-Single-US.webp",
+    "aliases": [
+      "Glorious Victors"
+    ],
+    "region": "eu",
+    "file": "booster-covers/78a4be35bde43e807722.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "78a4be35bde43e8077225fab7e21f47ee6e3dc10f14a1bbff8c36baa4fe6fd17",
+    "image_language": "unspecified",
+    "focus": [
+      289,
+      56,
+      392,
+      668
+    ]
   },
   "beyondthebrave": {
     "name": "Beyond the Brave",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2026/08/BETB_550.png",
-    "source": "https://www.yugioh-card.com/en/products/betb/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/83fb9f611f67318b83a7.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "83fb9f611f67318b83a7d66df336b2020a7d8df23e045f9787d5b45c1472cd75"
+    "source": "https://www.yugioh-card.com/eu/de/product/beyond-the-brave/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2026/06/BETB-Foil-Single-DE.webp",
+    "aliases": [
+      "Beyond the Brave"
+    ],
+    "region": "eu",
+    "file": "booster-covers/60b3b63a0acdd5a1b0a0.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "60b3b63a0acdd5a1b0a0f9921311e835f07fcf1b0d37fdc090c5153be3391e32",
+    "image_language": "de",
+    "focus": [
+      290,
+      56,
+      390,
+      657
+    ]
   },
   "yugiohtradingcardgamelimitedpackworldchampionship2026": {
     "name": "Yu-Gi-Oh! TRADING CARD GAME Limited Pack WORLD CHAMPIONSHIP 2026",
@@ -41,33 +75,66 @@
   },
   "chaosorigins": {
     "name": "Chaos Origins",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2026/03/CORI_550.png",
-    "source": "https://www.yugioh-card.com/en/products/cori/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/8f823ecdfc5581e5dd0a.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "8f823ecdfc5581e5dd0a5bec9d05d7fce1421a5f429afb1366a015cbe3efb42a"
+    "source": "https://www.yugioh-card.com/eu/de/product/chaos-origins/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2026/03/CORI-Foil-Single-US.webp",
+    "aliases": [
+      "Chaos Origins"
+    ],
+    "region": "eu",
+    "file": "booster-covers/afe6bcde686cd51462c2.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "afe6bcde686cd51462c29ab454c2c4d7c2ab84119aa7d97b3980e27d717e0922",
+    "image_language": "unspecified",
+    "focus": [
+      289,
+      56,
+      392,
+      668
+    ]
   },
   "battlesoflegendgloriousgallery": {
     "name": "Battles of Legend: Glorious Gallery",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2026/02/BLGG_Foil_550-1.png",
-    "source": "https://www.yugioh-card.com/en/products/blgg/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/f4f72ea6abef91ff0d5a.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "f4f72ea6abef91ff0d5ab3eb45819d4acd2a3d40ed01c368916d83b2e30eb53b"
+    "source": "https://www.yugioh-card.com/eu/de/product/battles-of-legend-glorious-gallery/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2026/02/BLGG-Display-01-DE.webp",
+    "aliases": [
+      "Battles of Legend: Glorious Gallery"
+    ],
+    "region": "eu",
+    "file": "booster-covers/55116be41721577f7ae3.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "55116be41721577f7ae3c60929994d32ea0294a7a87a7bcc8183f6655bc0ea24",
+    "image_language": "de",
+    "focus": [
+      205,
+      110,
+      599,
+      565
+    ]
   },
   "blazingdominion": {
     "name": "Blazing Dominion",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2025/12/blzd_foil_550x550.png",
-    "source": "https://www.yugioh-card.com/en/products/blzd/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/ac9361e49a6e5d4ff9cb.png",
-    "width": 545,
-    "height": 545,
-    "sha256": "ac9361e49a6e5d4ff9cb513b4aa1bf0b24e412552f3a1e3c5d53f787dd54c17c"
+    "source": "https://www.yugioh-card.com/eu/de/product/blazing-dominion/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/12/BLZD-Foil-Single-DE.webp",
+    "aliases": [
+      "Blazing Dominion"
+    ],
+    "region": "eu",
+    "file": "booster-covers/05c7d28d9891f1709e13.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "05c7d28d9891f1709e13ad952c8ae10982eda2460c414b6c966182f48f74ab19",
+    "image_language": "de",
+    "focus": [
+      290,
+      57,
+      390,
+      656
+    ]
   },
   "raritycollectionv": {
     "name": "Rarity Collection V",
@@ -81,63 +148,129 @@
   },
   "mazeofmuertos": {
     "name": "Maze of Muertos",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2025/10/mzmu_3_foils_550x550.png",
-    "source": "https://www.yugioh-card.com/en/products/mzmu/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/35408d417d339ecc95c7.png",
-    "width": 545,
-    "height": 545,
-    "sha256": "35408d417d339ecc95c73f44020556c80f6817d29bf91a7f06380a55a0e16530"
+    "source": "https://www.yugioh-card.com/eu/de/product/maze-of-muertos/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/10/MZMU-Display-01-DE.webp",
+    "aliases": [
+      "Maze of Muertos"
+    ],
+    "region": "eu",
+    "file": "booster-covers/eec954bf85a4ae296b57.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "eec954bf85a4ae296b57cb2b76afe68d3c6c90ad88a138fcaa6356770646dab1",
+    "image_language": "de",
+    "focus": [
+      204,
+      78,
+      602,
+      597
+    ]
   },
   "burstprotocol": {
     "name": "Burst Protocol",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2025/09/BPRO-Foil-Single-550x550-1.png",
-    "source": "https://www.yugioh-card.com/en/products/bpro/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/0b0e4b96bc5ce75ac525.png",
-    "width": 545,
-    "height": 545,
-    "sha256": "0b0e4b96bc5ce75ac52504d4ee6fc52ef5b3cd5bee32030eeba8d24accfaec68"
+    "source": "https://www.yugioh-card.com/eu/de/product/burst-protocol/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/09/BPRO-Foil-Single-US.webp",
+    "aliases": [
+      "Burst Protocol"
+    ],
+    "region": "eu",
+    "file": "booster-covers/ad39df86ed90a6e888de.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "ad39df86ed90a6e888de629c04f865b767cc29098df206585e06a21996faa1cf",
+    "image_language": "unspecified",
+    "focus": [
+      289,
+      56,
+      392,
+      668
+    ]
   },
   "phantomrevenge": {
     "name": "Phantom Revenge",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2025/08/PHRE-Foil-550x550-1.png",
-    "source": "https://www.yugioh-card.com/en/products/phre/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/2ffa1d51eb9b1c125d18.png",
-    "width": 545,
-    "height": 545,
-    "sha256": "2ffa1d51eb9b1c125d18a2e6d31e0fcdd8ba9cd3ece6a063a865c4fb19ada98e"
+    "source": "https://www.yugioh-card.com/eu/de/product/phantom-revenge/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/08/PHRE-Foil-Single-US.webp",
+    "aliases": [
+      "Phantom Revenge"
+    ],
+    "region": "eu",
+    "file": "booster-covers/6f4bcede92aed31741d7.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "6f4bcede92aed31741d724bce69596c37ea743ace2f37ba73ee3cd62309d017a",
+    "image_language": "unspecified",
+    "focus": [
+      289,
+      56,
+      392,
+      668
+    ]
   },
   "doomofdimensions": {
     "name": "Doom of Dimensions",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2025/05/DOOD_Foil_550x500.png",
-    "source": "https://www.yugioh-card.com/en/products/dood/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/75f3ee5e267a4f86ef41.png",
-    "width": 545,
-    "height": 545,
-    "sha256": "75f3ee5e267a4f86ef4103bda064ae52b471452897a9ca82ee554d8c8391fc8b"
+    "source": "https://www.yugioh-card.com/eu/de/product/doom-of-dimensions/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/05/DOOD-Foil-Single-DE.webp",
+    "aliases": [
+      "Doom of Dimensions"
+    ],
+    "region": "eu",
+    "file": "booster-covers/d31ccad8929f566b8d6f.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "d31ccad8929f566b8d6fb27148364891f1cdb5f4849aa2bc9fadd52709729b9a",
+    "image_language": "de",
+    "focus": [
+      290,
+      57,
+      390,
+      656
+    ]
   },
   "retropack2": {
     "name": "Retro Pack 2",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2025/05/4_pack_tuck_550x550.png",
-    "source": "https://www.yugioh-card.com/en/products/rp02_2025/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/06ae1bd7a8e93f4f4523.png",
-    "width": 545,
-    "height": 545,
-    "sha256": "06ae1bd7a8e93f4f45239cd2fa128701e3a4af145b0eb4c1b2ba473f74139d1d"
+    "source": "https://www.yugioh-card.com/eu/de/product/retro-pack-2/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/07/RP02-Foil-Single-DE.webp",
+    "aliases": [
+      "Retro Pack 2"
+    ],
+    "region": "eu",
+    "file": "booster-covers/f73f5b9ffb36b74f5a9f.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "f73f5b9ffb36b74f5a9f80c02c37cbae0c0fd2558bdb0a7f01d641b9d1a2d0e8",
+    "image_language": "de",
+    "focus": [
+      290,
+      57,
+      390,
+      656
+    ]
   },
   "limitedpackworldchampionship2025": {
     "name": "Limited Pack World Championship 2025",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2025/05/WCS_Exodia_2card_V2_500x550.png",
-    "source": "https://www.yugioh-card.com/en/products/wcs2025booster/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/0e8edc54b8b3c21ee4df.png",
-    "width": 545,
-    "height": 545,
-    "sha256": "0e8edc54b8b3c21ee4dfa329410ddbd8219ad3733fbfe0130cdb4f4a4dd02e0c"
+    "source": "https://www.yugioh-card.com/eu/de/product/wcs-2025-limited-pack/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/05/LP25-Foil-Single-EN.png",
+    "aliases": [
+      "Limited Pack World Championship 2025"
+    ],
+    "region": "eu",
+    "file": "booster-covers/fe1f22fdf49add619d3d.png",
+    "width": 970,
+    "height": 790,
+    "sha256": "fe1f22fdf49add619d3d21a484e598a94296bb7fd0ff3534f14ee14f473f71c1",
+    "image_language": "unspecified",
+    "focus": [
+      290,
+      56,
+      391,
+      657
+    ]
   },
   "justicehunters": {
     "name": "Justice Hunters",
@@ -151,93 +284,192 @@
   },
   "duelistsadvance": {
     "name": "Duelist’s Advance",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2025/03/DUAD_550.png",
-    "source": "https://www.yugioh-card.com/en/products/duad/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/ae07dee4aeef292e6e91.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "ae07dee4aeef292e6e91b90054da6bdcfde04707f27cab6cd206af137f686217"
+    "source": "https://www.yugioh-card.com/eu/de/product/duelists-advance/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/02/DUAD-Foil-Single-DE.webp",
+    "aliases": [
+      "Duelist’s Advance"
+    ],
+    "region": "eu",
+    "file": "booster-covers/22309eda9b7cbdd911ce.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "22309eda9b7cbdd911cec3517238fd0b0c338379a7e0066df6c6998794281b37",
+    "image_language": "de",
+    "focus": [
+      290,
+      57,
+      390,
+      656
+    ]
   },
   "battlesoflegendmonstermayhem": {
     "name": "Battles of Legend: Monster Mayhem",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2025/03/BLMM-foil_550.png",
-    "source": "https://www.yugioh-card.com/en/products/blmm/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/7089a87cc03fe21b8155.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "7089a87cc03fe21b8155bc4ec649545d0f636582587c6285d4c1d1bd64f344ab"
+    "source": "https://www.yugioh-card.com/eu/de/product/battles-of-legend-monster-mayhem/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/03/BLMM-Foil-02-Single-US.webp",
+    "aliases": [
+      "Battles of Legend: Monster Mayhem"
+    ],
+    "region": "eu",
+    "file": "booster-covers/fe257fff6d2ed82e3324.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "fe257fff6d2ed82e33249e03e09ba016f9c6e954a83e0622d0cfe2070ee1ad5a",
+    "image_language": "unspecified",
+    "focus": [
+      289,
+      56,
+      392,
+      668
+    ]
   },
   "allianceinsight": {
     "name": "Alliance Insight",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2024/12/ALIN_550.png",
-    "source": "https://www.yugioh-card.com/en/products/alin/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/843d208e10d0e58e8669.png",
-    "width": 550,
-    "height": 549,
-    "sha256": "843d208e10d0e58e86693dd98ccc06e28924d2b5cf9e03fdbceccd8449cd8f64"
+    "source": "https://www.yugioh-card.com/eu/de/product/alliance-insight/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/12/ALIN-Foil-Single-US.webp",
+    "aliases": [
+      "Alliance Insight"
+    ],
+    "region": "eu",
+    "file": "booster-covers/ce946937b72fac640a20.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "ce946937b72fac640a20995dd13008f6030363d4c54c122a17470ec306611f16",
+    "image_language": "unspecified",
+    "focus": [
+      288,
+      47,
+      393,
+      670
+    ]
   },
   "quartercenturystampede": {
     "name": "Quarter Century Stampede",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2024/11/RA04_Foil_550x550.png",
-    "source": "https://www.yugioh-card.com/en/products/qcs/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/cf20fada91169ffeaf97.png",
-    "width": 540,
-    "height": 540,
-    "sha256": "cf20fada91169ffeaf97b23ebda7b83c163703fc92c7d0fc436110edbf8717d8"
+    "source": "https://www.yugioh-card.com/eu/de/product/quarter-century-stampede/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/01/RA04-Foil-Single-DE.webp",
+    "aliases": [
+      "Quarter Century Stampede"
+    ],
+    "region": "eu",
+    "file": "booster-covers/b72cb4d33651f9c9d6a3.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "b72cb4d33651f9c9d6a39e7a37b5d2feba287e6b576544c5ce373aa05b55aa8b",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
   },
   "mazeofthemaster": {
     "name": "Maze of the Master",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2024/11/mztm_foil_fan_550x500.png",
-    "source": "https://www.yugioh-card.com/en/products/mztm/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/7503388da45a01cfbf5d.png",
-    "width": 540,
-    "height": 540,
-    "sha256": "7503388da45a01cfbf5d8c81ad6b943f3cdc612a79a870d2e30cd7a14cc98aa2"
+    "source": "https://www.yugioh-card.com/eu/de/product/maze-of-the-master/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/11/MZTM-Display-01-DE.webp",
+    "aliases": [
+      "Maze of the Master"
+    ],
+    "region": "eu",
+    "file": "booster-covers/332b1af4d7f77987ad5b.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "332b1af4d7f77987ad5bffdd41609dcaae6fc9d0ca0cade4927ad0a945ad10d6",
+    "image_language": "de",
+    "focus": [
+      210,
+      85,
+      603,
+      595
+    ]
   },
   "supremedarkness": {
     "name": "Supreme Darkness",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2024/09/SUDA_550.png",
-    "source": "https://www.yugioh-card.com/en/products/suda/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/e593d92cd5305ec9a736.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "e593d92cd5305ec9a73654f0a99349569ffb55ccc3734a696b918b436b8c71f8"
+    "source": "https://www.yugioh-card.com/eu/de/product/supreme-darkness/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/09/SUDA-Foil-Single-US.webp",
+    "aliases": [
+      "Supreme Darkness"
+    ],
+    "region": "eu",
+    "file": "booster-covers/eea66ec06f6173372941.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "eea66ec06f6173372941628672e8900fccd7c8af49b29293e2f2dd0132e312bb",
+    "image_language": "unspecified",
+    "focus": [
+      289,
+      47,
+      392,
+      670
+    ]
   },
   "crossoverbreakers": {
     "name": "Crossover Breakers",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2024/07/CRBR_550.png",
-    "source": "https://www.yugioh-card.com/en/products/crbr/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/e41dfea02c5c89ddce9a.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "e41dfea02c5c89ddce9a71d6fec80346e1e05f711ca8a55b32a2a6663a6e8108"
+    "source": "https://www.yugioh-card.com/eu/de/product/crossover-breakers/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/07/CRBR-Foil-Single-DE.webp",
+    "aliases": [
+      "Crossover Breakers"
+    ],
+    "region": "eu",
+    "file": "booster-covers/20b7042bf3d25e3fd454.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "20b7042bf3d25e3fd4547ef81fa3c3d3019a03ab834573d31ea434b89bbdd28b",
+    "image_language": "de",
+    "focus": [
+      288,
+      52,
+      393,
+      660
+    ]
   },
   "quartercenturybonanza": {
     "name": "Quarter Century Bonanza",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2024/07/RA03_550.png",
-    "source": "https://www.yugioh-card.com/en/products/qcb/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/0a80e5906f9c47050a01.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "0a80e5906f9c47050a01dce0c6edf52231dd2a4997af23e77ff1797e2009f5a0"
+    "source": "https://www.yugioh-card.com/eu/de/product/quarter-century-bonanza/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/07/RA03-Foil-Single-EN.webp",
+    "aliases": [
+      "Quarter Century Bonanza"
+    ],
+    "region": "eu",
+    "file": "booster-covers/bff24ff804c058cdc785.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "bff24ff804c058cdc785dfa631b7cc572f06b38467e7dd52b094c5364c1ac0c4",
+    "image_language": "unspecified",
+    "focus": [
+      289,
+      47,
+      392,
+      670
+    ]
   },
   "rageoftheabyss": {
     "name": "Rage of the Abyss",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2024/06/ROTA_550.png",
-    "source": "https://www.yugioh-card.com/en/products/rota/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/47b5a4939c9b9f14365f.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "47b5a4939c9b9f14365f0937538bdc0b10443f5deb74d6677437b0449b3cd41f"
+    "source": "https://www.yugioh-card.com/eu/de/product/rage-of-the-abyss/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/06/ROTA-Foil-Single-DE.webp",
+    "aliases": [
+      "Rage of the Abyss"
+    ],
+    "region": "eu",
+    "file": "booster-covers/aeacc76183e69d878964.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "aeacc76183e69d878964e7dec1fc469a2690f3c22b73b394b7982425272cec59",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
   },
   "retropack": {
     "name": "Retro Pack",
@@ -251,243 +483,508 @@
   },
   "theinfiniteforbidden": {
     "name": "The Infinite Forbidden",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2024/03/INFO_FOIL_550x550.png",
-    "source": "https://www.yugioh-card.com/en/products/info/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/ddc29ec031fd156eeb99.png",
-    "width": 545,
-    "height": 545,
-    "sha256": "ddc29ec031fd156eeb993e989d06fffc9b9e29855c128358260dda77c6511dc3"
+    "source": "https://www.yugioh-card.com/eu/de/product/the-infinite-forbidden/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/03/INFO-Foil-Single-DE.webp",
+    "aliases": [
+      "The Infinite Forbidden"
+    ],
+    "region": "eu",
+    "file": "booster-covers/ef80ba85ad7ad30da38b.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "ef80ba85ad7ad30da38b1f0ab337ca9adcb98c24afe44417f197e429ca50a9f3",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
   },
   "battlesoflegendterminalrevenge": {
     "name": "Battles of Legend: Terminal Revenge",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2024/02/BLTR_Foil_550x550.png",
-    "source": "https://www.yugioh-card.com/en/products/bltr/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/57751e5b3592032df4a9.png",
-    "width": 535,
-    "height": 535,
-    "sha256": "57751e5b3592032df4a90b3f23c4e330d03bdc378999c930b30e959b1c75b7b8"
+    "source": "https://www.yugioh-card.com/eu/de/product/battles-of-legend-terminal-revenge/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/02/BLTR-Foil-Single-DE.webp",
+    "aliases": [
+      "Battles of Legend: Terminal Revenge"
+    ],
+    "region": "eu",
+    "file": "booster-covers/b01cfc1e2db30016a174.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "b01cfc1e2db30016a174195a3aec0e8f7c034823e1eb938e03fa3c8927d8a7d4",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
   },
   "25thanniversaryraritycollectionii": {
     "name": "25th Anniversary Rarity Collection II",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2024/01/RA02-Foil-550x550-v2.png",
-    "source": "https://www.yugioh-card.com/en/products/ra02/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/f7eb4aa44114741a98ab.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "f7eb4aa44114741a98ab199e38105508b8388f8084fa360943f4007b3b7d6e0a"
+    "source": "https://www.yugioh-card.com/eu/de/product/25th-anniversary-rarity-collection-ii/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/01/RA02-Foil-Single-DE.webp",
+    "aliases": [
+      "25th Anniversary Rarity Collection II"
+    ],
+    "region": "eu",
+    "file": "booster-covers/3b264a6bdc3d6aacc765.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "3b264a6bdc3d6aacc765f4c7fe041da2670cfda904d752ac51cf00807ad5bee4",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
   },
   "legacyofdestruction": {
     "name": "Legacy of Destruction",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2023/12/LEDE-Foil-550x550-1.png",
-    "source": "https://www.yugioh-card.com/en/products/lede/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/7648f2aff83c4091bfe5.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "7648f2aff83c4091bfe5676bed225e804d88190b8a8e9a5d8ec6202921e04666"
+    "source": "https://www.yugioh-card.com/eu/de/product/legacy-of-destruction/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/12/LEDE-Foil-Single-DE.webp",
+    "aliases": [
+      "Legacy of Destruction"
+    ],
+    "region": "eu",
+    "file": "booster-covers/b3c8c785170313340044.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "b3c8c78517031334004418dd5eebf977669b55cb53735c09e4d7ed215686d247",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
   },
   "phantomnightmare": {
     "name": "Phantom Nightmare",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2023/09/PHNI_550.png",
-    "source": "https://www.yugioh-card.com/en/products/phni/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/0ca9f418eef04307bccd.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "0ca9f418eef04307bccd8fb4e3fe383c091af555db3765bc73f682d71e737d83"
+    "source": "https://www.yugioh-card.com/eu/de/product/phantom-nightmare/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/10/PHNI-Foil-Single-DE.webp",
+    "aliases": [
+      "Phantom Nightmare"
+    ],
+    "region": "eu",
+    "file": "booster-covers/320e75439e36de260826.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "320e75439e36de260826ed50542c50667027cf72bfe568c608ab884cb55f6b6a",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
   },
   "mazeofmillennia": {
     "name": "Maze of Millennia",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2023/09/MZMI_Foil_550.png",
-    "source": "https://www.yugioh-card.com/en/products/mzmi/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/7c60ba15bf3f08d65f67.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "7c60ba15bf3f08d65f674197f38e48c33754af5f1b58f40ffb6e13a5e310741f"
+    "source": "https://www.yugioh-card.com/eu/de/product/maze-of-millennia/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/09/MZMI-Foil-Single-DE.webp",
+    "aliases": [
+      "Maze of Millennia"
+    ],
+    "region": "eu",
+    "file": "booster-covers/99532497744e46628054.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "99532497744e466280547306de5626d1f2b4de05ac012c1b9e8117bffc5d01e1",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
   },
   "valiantsmashers": {
     "name": "Valiant Smashers",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2023/08/VASM_550.png",
-    "source": "https://www.yugioh-card.com/en/products/vasm/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/6341a227fa765cf086a5.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "6341a227fa765cf086a54ff42cc4c1d7bd781663c4bfd53147a6d650aff670e5"
+    "source": "https://www.yugioh-card.com/eu/de/product/valiant-smashers/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/08/VASM-Foil-Single-DE.webp",
+    "aliases": [
+      "Valiant Smashers"
+    ],
+    "region": "eu",
+    "file": "booster-covers/f81118a4c19b204f11d1.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "f81118a4c19b204f11d1217acfc4b10393cc1eba325b6075985a5d0bd59f1b90",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
   },
   "25thanniversaryraritycollection": {
     "name": "25th Anniversary Rarity Collection",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2023/06/RA01_550.png",
-    "source": "https://www.yugioh-card.com/en/products/ra01/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/f7d4513a7fea169a1797.png",
-    "width": 550,
-    "height": 549,
-    "sha256": "f7d4513a7fea169a1797d4d1d959b312651ad3a652a54b06a6df86b374aab45e"
+    "source": "https://www.yugioh-card.com/eu/de/product/25th-anniversary-rarity-collection/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/06/RA01-Foil-Single-DE.webp",
+    "aliases": [
+      "25th Anniversary Rarity Collection"
+    ],
+    "region": "eu",
+    "file": "booster-covers/db59497d6b9f93d36c1e.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "db59497d6b9f93d36c1eccccd1b55fd3b23087b480d07dbe645633d2f110940a",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
   },
   "ageofoverlord": {
     "name": "Age of Overlord",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2023/06/AGOV_550.png",
-    "source": "https://www.yugioh-card.com/en/products/agov/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/ca1d5608de59f2b93dea.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "ca1d5608de59f2b93dea7f3ed880cd1829683b0b1fa459f7545522b632420bbd"
+    "source": "https://www.yugioh-card.com/eu/de/product/age-of-overlord/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/06/AGOV-Foil-Single-DE.webp",
+    "aliases": [
+      "Age of Overlord"
+    ],
+    "region": "eu",
+    "file": "booster-covers/7f07d72c849f99bb8bb4.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "7f07d72c849f99bb8bb4139645c4fd9e722853895868a0892486a414ae98eb15",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
   },
   "legendaryduelistssoulburningvolcano": {
     "name": "Legendary Duelists: Soulburning Volcano",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2023/04/LD10_550.png",
-    "source": "https://www.yugioh-card.com/en/products/ld10/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/7676d039ca5d38195cd0.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "7676d039ca5d38195cd0153e07715bd18bbb54f09904993ff7b3c2721ccf2ec1"
+    "source": "https://www.yugioh-card.com/eu/de/product/legendary-duelists-soulburning-volcano/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/04/LD10-Foil-EN.webp",
+    "aliases": [
+      "Legendary Duelists: Soulburning Volcano"
+    ],
+    "region": "eu",
+    "file": "booster-covers/cd10f22e1be2ec6fe78c.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "cd10f22e1be2ec6fe78c3e0714f21b13237232f8dcd92eab08cb77e6eea9839b",
+    "image_language": "unspecified",
+    "focus": [
+      216,
+      50,
+      544,
+      678
+    ]
   },
   "duelistnexus": {
     "name": "Duelist Nexus",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2023/03/DUNE_550.png",
-    "source": "https://www.yugioh-card.com/en/products/dune/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/029e35d3d57b6ae7ceae.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "029e35d3d57b6ae7ceaeca0b733a19e8e262a21a79cacb5629b1f7701372adc6"
+    "source": "https://www.yugioh-card.com/eu/de/product/duelist-nexus/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/03/Dune-Foil-DE.webp",
+    "aliases": [
+      "Duelist Nexus"
+    ],
+    "region": "eu",
+    "file": "booster-covers/50ffd1f126b61d5d891a.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "50ffd1f126b61d5d891adc70e1f4ef98feb91f1f42652cba6d6f93176611a7c3",
+    "image_language": "de",
+    "focus": [
+      216,
+      50,
+      544,
+      678
+    ]
   },
   "battlesoflegendmonstrousrevenge": {
     "name": "Battles of Legend: Monstrous Revenge",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2023/03/BLMR_Display_550.png",
-    "source": "https://www.yugioh-card.com/en/products/blmr/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/32ea61d1d6f348fc8c2d.png",
-    "width": 550,
-    "height": 549,
-    "sha256": "32ea61d1d6f348fc8c2de795cdec216498c44b5754d8e42ff439a81292cd2a44"
+    "source": "https://www.yugioh-card.com/eu/de/product/battles-of-legend-monstrous-revenge/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/02/BLMR-Foil-01-DE.webp",
+    "aliases": [
+      "Battles of Legend: Monstrous Revenge"
+    ],
+    "region": "eu",
+    "file": "booster-covers/d484c75a172af3efc633.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "d484c75a172af3efc633188cd17c69dee19f66a4b7687913c985e82462f77fb9",
+    "image_language": "de",
+    "focus": [
+      216,
+      50,
+      544,
+      678
+    ]
   },
   "wildsurvivors": {
     "name": "Wild Survivors",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2023/02/WISU_550.png",
-    "source": "https://www.yugioh-card.com/en/products/wisu/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/f19b272b74d898b7d3ce.png",
-    "width": 550,
-    "height": 551,
-    "sha256": "f19b272b74d898b7d3ceaf123f1c6729ab010731cb2eaf9dacc866e6386f9d30"
+    "source": "https://www.yugioh-card.com/eu/de/product/wild-survivors/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/02/WISU-Foil-EN.webp",
+    "aliases": [
+      "Wild Survivors"
+    ],
+    "region": "eu",
+    "file": "booster-covers/19f44e6fa9e757496eb7.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "19f44e6fa9e757496eb710eee40db281337a102c62f68bbb83acff79ceb00fcd",
+    "image_language": "unspecified",
+    "focus": [
+      216,
+      50,
+      544,
+      678
+    ]
   },
   "cyberstormaccess": {
     "name": "Cyberstorm Access",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2022/12/CYAC_550.png",
-    "source": "https://www.yugioh-card.com/en/products/cyac/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/96659f3ed052a8c54a1a.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "96659f3ed052a8c54a1abe37596a3a95475c8ba051af441f79b06a0122939b80"
+    "source": "https://www.yugioh-card.com/eu/de/product/cyberstorm-access/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/02/CYAC-Foil-DE.webp",
+    "aliases": [
+      "Cyberstorm Access"
+    ],
+    "region": "eu",
+    "file": "booster-covers/8a4ef5435b064c962272.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "8a4ef5435b064c96227283870e7c7c2bbe43a5e3d582bbeb6afc798a7b5cbedf",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
   },
   "invasionofchaos": {
     "name": "Invasion of Chaos",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2022/12/IOC_25th_550.png",
-    "source": "https://www.yugioh-card.com/en/products/ioc/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/d179a8d2a0e14e4aaa9a.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "d179a8d2a0e14e4aaa9afa82c7d8971ced199335a4cdfa60b6cfbf9ba1729b55"
+    "source": "https://www.yugioh-card.com/eu/de/product/invasion-of-chaos/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/02/IOC-Foil-DE.webp",
+    "aliases": [
+      "Invasion of Chaos"
+    ],
+    "region": "eu",
+    "file": "booster-covers/c2d43459a0405fca8465.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "c2d43459a0405fca8465e8765bab61a22bf7de362efe09d824463417ccfdc0aa",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
   },
   "pharaohsservant": {
     "name": "Pharaoh’s Servant",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2022/12/PSV_25th_550.png",
-    "source": "https://www.yugioh-card.com/en/products/psv/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/1d26f1ebcc0dcda02f20.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "1d26f1ebcc0dcda02f20e6898f01f90794f496bd2b4ad625339c24dd70e0460b"
+    "source": "https://www.yugioh-card.com/eu/de/product/pharaohs-servant/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/02/PSV-Foil-DE.webp",
+    "aliases": [
+      "Pharaoh’s Servant"
+    ],
+    "region": "eu",
+    "file": "booster-covers/32ef94b85adf5fefcd59.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "32ef94b85adf5fefcd596848c2f490d0fd73f88e5e395dee97f3b97079ca4bba",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
   },
   "spellruler": {
     "name": "Spell Ruler",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2022/12/SRL__25th_550.png",
-    "source": "https://www.yugioh-card.com/en/products/srl/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/b759e38100f09aebc7c6.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "b759e38100f09aebc7c6ceb35ae16e30179f973948214cad295445d799914e34"
+    "source": "https://www.yugioh-card.com/eu/de/product/spell-ruler/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/02/SRL-Foil-DE-2.webp",
+    "aliases": [
+      "Spell Ruler"
+    ],
+    "region": "eu",
+    "file": "booster-covers/8e805634438101e1b406.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "8e805634438101e1b406cea5b2077a33eae126c5a17ed8804f8ca916cb756661",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
   },
   "metalraiders": {
     "name": "Metal Raiders",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2022/12/MRD_25th_550.png",
-    "source": "https://www.yugioh-card.com/en/products/mrd/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/484fa8773ddaf752a8c1.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "484fa8773ddaf752a8c12e06e1ee69f2ecafc8d7b745309cd043ccdb9aa607ce"
+    "source": "https://www.yugioh-card.com/eu/de/product/metal-raiders/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/02/MRD-Foil-DE-2.webp",
+    "aliases": [
+      "Metal Raiders"
+    ],
+    "region": "eu",
+    "file": "booster-covers/4ab1b6f7a81a4b12784c.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "4ab1b6f7a81a4b12784ca11367d4ff1803df7f85bb9caeb5638326e411dfdb17",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
   },
   "legendofblueeyeswhitedragon": {
     "name": "Legend of Blue Eyes White Dragon",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2022/12/LOB_25th_550.png",
-    "source": "https://www.yugioh-card.com/en/products/lob/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/0c7906cb4c3be5bb1eaf.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "0c7906cb4c3be5bb1eaff5cd8c774aa2f01f6e0af5764d9d8e853e56466f9c41"
+    "source": "https://www.yugioh-card.com/eu/de/product/legend-of-blue-eyes-white-dragon/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/02/LOB-Foil-DE-2.webp",
+    "aliases": [
+      "Legend of Blue Eyes White Dragon"
+    ],
+    "region": "eu",
+    "file": "booster-covers/deed8f057d469c08be52.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "deed8f057d469c08be52e5eef0cd5c208dc8e25959fc2782a7abe9f9df2094d7",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
   },
   "mazeofmemories": {
     "name": "Maze of Memories",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2022/11/MAZE_550.png",
-    "source": "https://www.yugioh-card.com/en/products/mame/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/dbd7975d115c8ef071a6.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "dbd7975d115c8ef071a66431e73d3c26c47000394b3bdff34c60fcafe5bc8303"
+    "source": "https://www.yugioh-card.com/eu/de/product/maze-of-memories/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/01/MAZE-Foil-DE-1.webp",
+    "aliases": [
+      "Maze of Memories"
+    ],
+    "region": "eu",
+    "file": "booster-covers/a1d4b7d93bd7e2c7cc9f.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "a1d4b7d93bd7e2c7cc9f1ccf33e6e4f66094784effea0cb82b540e50c83a2f02",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
   },
   "photonhypernova": {
     "name": "Photon Hypernova",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2022/09/PHHY_550.png",
-    "source": "https://www.yugioh-card.com/en/products/phhy/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/f1965b025fb38a37628a.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "f1965b025fb38a37628a9d3657d372116c635e33d098cf9ba68acd184b72b4c2"
+    "source": "https://www.yugioh-card.com/eu/de/product/photon-hypernova/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2022/12/PHHY-Foil-DE.webp",
+    "aliases": [
+      "Photon Hypernova",
+      "Yu‑Gi‑Oh! TRADING CARD GAME Photon Hypernova"
+    ],
+    "region": "eu",
+    "file": "booster-covers/8c183d851d46c7dc4239.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "8c183d851d46c7dc4239d80f238425c461f76b930018e2e2caf4659d7e009829",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
   },
   "amazingdefenders": {
     "name": "Amazing Defenders",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2022/08/AMDE_550.png",
-    "source": "https://www.yugioh-card.com/en/products/amde/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/49201174011cbc151def.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "49201174011cbc151defbc29949d1661f34b8a81af4370ecdc51573afed2619b"
+    "source": "https://www.yugioh-card.com/eu/de/product/amazing-defenders/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2022/12/AMDE-Foil-DE.webp",
+    "aliases": [
+      "Amazing Defenders"
+    ],
+    "region": "eu",
+    "file": "booster-covers/6936cd60e14084ffedc0.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "6936cd60e14084ffedc047be419c87e0604d031e951dd1bfdf8bb6ee77eadb59",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
   },
   "battlesoflegendcrystalrevenge": {
     "name": "Battles of Legend: Crystal Revenge",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2022/05/BLCR_Display_550.png",
-    "source": "https://www.yugioh-card.com/en/products/blcr/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/aa97d7a3f68d96f53393.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "aa97d7a3f68d96f533934ef6ba4b5038cdb2a9155db54a3855162fb1a1fb818c"
+    "source": "https://www.yugioh-card.com/eu/de/product/battles-of-legend-crystal-revenge/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/03/BLCR-Foil-1-DE.webp",
+    "aliases": [
+      "Battles of Legend: Crystal Revenge"
+    ],
+    "region": "eu",
+    "file": "booster-covers/4d0731020542f5ad11d0.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "4d0731020542f5ad11d073c801beeb881413a2e401e84d22d1cd10a35cb4fa3e",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
   },
   "darkwingblast": {
     "name": "Darkwing Blast",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2022/05/DABL_550.png",
-    "source": "https://www.yugioh-card.com/en/products/dabl/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/dc6b5752702db9e7cebe.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "dc6b5752702db9e7cebeb52e070004ff8a682d5d13d1e4d38efcb32bac01903d"
+    "source": "https://www.yugioh-card.com/eu/de/product/darkwing-blast/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/03/DABL-Foil-DE-1.webp",
+    "aliases": [
+      "Darkwing Blast"
+    ],
+    "region": "eu",
+    "file": "booster-covers/0fa786cadbb16a11af9e.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "0fa786cadbb16a11af9e132fd9097a03da99e0ffb442fde035ac633808b9347a",
+    "image_language": "de",
+    "focus": [
+      215,
+      46,
+      545,
+      683
+    ]
   },
   "poweroftheelements": {
     "name": "Power of the Elements",
@@ -501,133 +998,277 @@
   },
   "tacticalmasters": {
     "name": "Tactical Masters",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2022/02/TAMA_550.png",
-    "source": "https://www.yugioh-card.com/en/products/tama/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/32b7b4acf86099ab9f39.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "32b7b4acf86099ab9f39e97ac53d0debc72f40277581605cea18f661e7c8c9ec"
+    "source": "https://www.yugioh-card.com/eu/de/product/tactical-masters/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2022/01/TAMA-Foil-DE.webp",
+    "aliases": [
+      "Tactical Masters"
+    ],
+    "region": "eu",
+    "file": "booster-covers/86892059ea33c11deedd.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "86892059ea33c11deeddf27f2d1232087ae622e0b98abfa2520ae1ddb1380aa2",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
   },
   "legendaryduelistsduelsfromthedeep": {
     "name": "Legendary Duelists: Duels From the Deep",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2021/12/LED9_550.png",
-    "source": "https://www.yugioh-card.com/en/products/led9/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/db1880b6083685c81924.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "db1880b6083685c81924ea2d72dbfe139d5534d790ba636ed452dd4b87add30e"
+    "source": "https://www.yugioh-card.com/eu/de/product/legendary-duelists-duels-from-the-deep/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/12/LED9-Foil-DE.webp",
+    "aliases": [
+      "Legendary Duelists: Duels From the Deep"
+    ],
+    "region": "eu",
+    "file": "booster-covers/8b110ed66b40ac509c8b.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "8b110ed66b40ac509c8b2f565b705762ece7d7f3375bf3a97866b5fefaaec91d",
+    "image_language": "de",
+    "focus": [
+      221,
+      49,
+      535,
+      677
+    ]
   },
   "dimensionforce": {
     "name": "Dimension Force",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2021/12/DIFO_550.png",
-    "source": "https://www.yugioh-card.com/en/products/difo/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/828daae0bd2c74d23b98.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "828daae0bd2c74d23b98c1f87c1e25e4c82eb1bbaf14d0373a1c0f9e04b28ea2"
+    "source": "https://www.yugioh-card.com/eu/de/product/dimension-force/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/12/DIFO-Foil-DE.webp",
+    "aliases": [
+      "Dimension Force"
+    ],
+    "region": "eu",
+    "file": "booster-covers/423c69e1260b7bc20411.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "423c69e1260b7bc20411ee5df9807d2c4a827617e80cd1940ce97d44a34c787b",
+    "image_language": "de",
+    "focus": [
+      221,
+      57,
+      536,
+      669
+    ]
   },
   "battleofchaos": {
     "name": "Battle of Chaos",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2021/10/BACH_550-1.png",
-    "source": "https://www.yugioh-card.com/en/products/bach/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/40d0f1963a6d7a9e55a1.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "40d0f1963a6d7a9e55a12583015fbc4ae92ecbec833511c169b5080beb740ad6"
+    "source": "https://www.yugioh-card.com/eu/de/product/battle-of-chaos/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/09/BACH-Foil-DE.webp",
+    "aliases": [
+      "Battle of Chaos"
+    ],
+    "region": "eu",
+    "file": "booster-covers/1d0ab689d9ed751da8b6.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "1d0ab689d9ed751da8b6878ad3ab14b647d8365573d319a722a82a08c6f86e0f",
+    "image_language": "de",
+    "focus": [
+      214,
+      53,
+      530,
+      664
+    ]
   },
   "thegrandcreators": {
     "name": "The Grand Creators",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2021/07/GRCR_550.png",
-    "source": "https://www.yugioh-card.com/en/products/grcr/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/898973da6ea98146a703.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "898973da6ea98146a703452d8a43c84be2ae45cbf9fc71c14b537f128213afa8"
+    "source": "https://www.yugioh-card.com/eu/de/product/the-grand-creators/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/07/GRCR-Foil-DE.webp",
+    "aliases": [
+      "The Grand Creators"
+    ],
+    "region": "eu",
+    "file": "booster-covers/079fbf4dbeb3e3dd5f90.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "079fbf4dbeb3e3dd5f902358040568792f8d046dc9c24c161982ab912c644222",
+    "image_language": "de",
+    "focus": [
+      211,
+      54,
+      533,
+      664
+    ]
   },
   "brothersoflegend": {
     "name": "Brothers of Legend",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2021/07/BROL_550.png",
-    "source": "https://www.yugioh-card.com/en/products/brol/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/607e46d7e512c2cab04b.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "607e46d7e512c2cab04bc120cdb39bc3730a6c77f4ac9fb2b8d830fb9d56be99"
+    "source": "https://www.yugioh-card.com/eu/de/product/brothers-of-legend/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/06/BROL-Foil-DE.webp",
+    "aliases": [
+      "Brothers of Legend"
+    ],
+    "region": "eu",
+    "file": "booster-covers/8a733262c2b81b2ff065.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "8a733262c2b81b2ff065a5642341d93b5d3bc262f452acbb5f27fe9e5a963e61",
+    "image_language": "de",
+    "focus": [
+      217,
+      64,
+      517,
+      645
+    ]
   },
   "burstofdestiny": {
     "name": "Burst of Destiny",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2021/07/BODE_550.png",
-    "source": "https://www.yugioh-card.com/en/products/bode/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/11f58c2437d73d6287db.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "11f58c2437d73d6287dbd0f858014ebe30815c312d0389c6e5b609688063078c"
+    "source": "https://www.yugioh-card.com/eu/de/product/burst-of-destiny/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/06/BODE-Foil-DE.webp",
+    "aliases": [
+      "Burst of Destiny"
+    ],
+    "region": "eu",
+    "file": "booster-covers/e084cf9939d27d9c2eee.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "e084cf9939d27d9c2eee8e613ff8b15a6a578954b7639d9ae353c06c44b19494",
+    "image_language": "de",
+    "focus": [
+      212,
+      55,
+      532,
+      661
+    ]
   },
   "legendaryduelistssynchrostorm": {
     "name": "Legendary Duelists: Synchro Storm",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2021/05/LED8_550.png",
-    "source": "https://www.yugioh-card.com/en/products/led8/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/a5135618513dc963c567.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "a5135618513dc963c567837a30ad41950a2e1a4ab2b659503a87767306191a5e"
+    "source": "https://www.yugioh-card.com/eu/de/product/legendary-duelists-synchro-storm/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/03/LED8-Foil-DE.webp",
+    "aliases": [
+      "Legendary Duelists: Synchro Storm"
+    ],
+    "region": "eu",
+    "file": "booster-covers/73afcba58457e47eb94a.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "73afcba58457e47eb94a85b6d33769d045363df0d2abc2280c80a67fbd2c973c",
+    "image_language": "de",
+    "focus": [
+      212,
+      55,
+      532,
+      663
+    ]
   },
   "dawnofmajesty": {
     "name": "Dawn of Majesty",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2021/05/DAMA_550.png",
-    "source": "https://www.yugioh-card.com/en/products/dama/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/0f3a3444befafbaa6b8d.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "0f3a3444befafbaa6b8d1e9a891980ec8afd17cdf859a4602bbc47e4e8fb83a9"
+    "source": "https://www.yugioh-card.com/eu/de/product/dawn-of-majesty/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/03/DAMA-Foil-EN-1.webp",
+    "aliases": [
+      "Dawn of Majesty"
+    ],
+    "region": "eu",
+    "file": "booster-covers/2a0aacd667fe46336737.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "2a0aacd667fe463367372bbe8e7fa2456bec8cc4e2e2504bae20a145864cef52",
+    "image_language": "unspecified",
+    "focus": [
+      214,
+      60,
+      530,
+      656
+    ]
   },
   "kingscourt": {
-    "name": "King’s Court",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2021/05/KICO_3Foil_550.png",
-    "source": "https://www.yugioh-card.com/en/products/kico/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/93962c4121a0554747e2.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "93962c4121a0554747e2056d52904663f3c4bb6faea780d57c2c8b175ef14fdc"
+    "name": "King‘s Court",
+    "source": "https://www.yugioh-card.com/eu/de/product/kings-court/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/02/KICO-Foil01-DE.webp",
+    "aliases": [
+      "King‘s Court",
+      "King’s Court"
+    ],
+    "region": "eu",
+    "file": "booster-covers/7811ef2d56be2cfcc6b5.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "7811ef2d56be2cfcc6b54e2656bfb48bea1c346faf4341dd420d02ad1c0032e4",
+    "image_language": "de",
+    "focus": [
+      213,
+      54,
+      531,
+      662
+    ]
   },
   "lightningoverdrive": {
     "name": "Lightning Overdrive",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2021/05/LIOV_550.png",
-    "source": "https://www.yugioh-card.com/en/products/liov/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/d1e45fda63f2a7e3ed97.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "d1e45fda63f2a7e3ed974917009b3446e43c7d401fa9abebb5d97773b8672db9"
+    "source": "https://www.yugioh-card.com/eu/de/product/lightning-overdrive/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/01/LIOV-Foil-DE.webp",
+    "aliases": [
+      "Lightning Overdrive"
+    ],
+    "region": "eu",
+    "file": "booster-covers/36ea4e6b6ebb7cd54e03.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "36ea4e6b6ebb7cd54e03f30007459c0e57fc47ff38ccc57f6ee35bf47b7a1dc0",
+    "image_language": "de",
+    "focus": [
+      211,
+      54,
+      533,
+      662
+    ]
   },
   "ancientguardians": {
     "name": "Ancient Guardians",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2021/05/ANGU_550-1.png",
-    "source": "https://www.yugioh-card.com/en/products/angu/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/a22eefdc8753efc6ddf9.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "a22eefdc8753efc6ddf944c7a78193b11113de54ffb25f16e39f31575d5b86b0"
+    "source": "https://www.yugioh-card.com/eu/de/product/ancient-guardians/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/4/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2020/12/ANGU-Foil01-DE.webp",
+    "aliases": [
+      "Ancient Guardians"
+    ],
+    "region": "eu",
+    "file": "booster-covers/1bdfef716dea2d48be63.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "1bdfef716dea2d48be6356af5644f2c55e616a239a67a40b17a84e65fb5a9fee",
+    "image_language": "de",
+    "focus": [
+      212,
+      55,
+      532,
+      661
+    ]
   },
   "blazingvortex": {
     "name": "Blazing Vortex",
-    "image_source": "https://www.yugioh-card.com/en/wp-content/uploads/2020/10/BLVO_550.png",
-    "source": "https://www.yugioh-card.com/en/products/blvo/",
-    "index": "https://www.yugioh-card.com/en/products/booster-pack/",
-    "file": "booster-covers/f36bfdd624fd0711c70d.png",
-    "width": 550,
-    "height": 550,
-    "sha256": "f36bfdd624fd0711c70deda9fb77190ac1a4a6969e3ff5e9f8eedaca23303e1e"
+    "source": "https://www.yugioh-card.com/eu/de/product/blazing-vortex/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/5/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2020/10/BLVO-01-2.webp",
+    "aliases": [
+      "Blazing Vortex"
+    ],
+    "region": "eu",
+    "file": "booster-covers/08dfa063802784b45b9c.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "08dfa063802784b45b9cebc1816b775ad0907fe72f23c9f4aaa883f1c4901acd",
+    "image_language": "unspecified",
+    "focus": [
+      215,
+      82,
+      612,
+      605
+    ]
   },
   "genesisimpact": {
     "name": "Genesis Impact",
@@ -948,5 +1589,1520 @@
     "width": 552,
     "height": 552,
     "sha256": "3972ce0d7f2b08048eed39cc661b19f216aa0610333f957e0689973892f07b5b"
+  },
+  "limitedpackworldchampionship2026": {
+    "name": "Limited Pack World Championship 2026",
+    "source": "https://www.yugioh-card.com/eu/de/product/limited-pack-world-championship-2026-booster-set/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2026/05/LP26-Foil-Single-US.webp",
+    "aliases": [
+      "Limited Pack World Championship 2026"
+    ],
+    "region": "eu",
+    "file": "booster-covers/16231b80157d22998fe9.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "16231b80157d22998fe93e2075eea7f025fcf25965347331a8c7b5d23ea855ef",
+    "image_language": "unspecified",
+    "focus": [
+      289,
+      56,
+      392,
+      668
+    ]
+  },
+  "raritycollection5": {
+    "name": "Rarity Collection 5",
+    "source": "https://www.yugioh-card.com/eu/de/product/rarity-collection-5/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/12/RA05-Foil-Single-DE.webp",
+    "aliases": [
+      "Rarity Collection 5"
+    ],
+    "region": "eu",
+    "file": "booster-covers/58b53b33ee1c9715fff1.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "58b53b33ee1c9715fff1b43dd89032bc8a134ba78bb3a395d33ffbb79e1aa838",
+    "image_language": "de",
+    "focus": [
+      290,
+      56,
+      390,
+      657
+    ]
+  },
+  "lightofdestruction": {
+    "name": "Light of Destruction",
+    "source": "https://www.yugioh-card.com/eu/de/product/light-of-destruction/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/04/LODT-Foil-Single-DE.webp",
+    "aliases": [
+      "Light of Destruction"
+    ],
+    "region": "eu",
+    "file": "booster-covers/2a0069d532719d87d747.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "2a0069d532719d87d74740e88a790fb005172c361656408ee91a1a932ffb9de1",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
+  },
+  "yugiohtradingcardgamephotonhypernova": {
+    "name": "Photon Hypernova",
+    "source": "https://www.yugioh-card.com/eu/de/product/photon-hypernova/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/booster-packs-de/page/3/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2022/12/PHHY-Foil-DE.webp",
+    "aliases": [
+      "Photon Hypernova",
+      "Yu‑Gi‑Oh! TRADING CARD GAME Photon Hypernova"
+    ],
+    "region": "eu",
+    "file": "booster-covers/8c183d851d46c7dc4239.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "8c183d851d46c7dc4239d80f238425c461f76b930018e2e2caf4659d7e009829",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
+  },
+  "structuredecksetokaiba": {
+    "name": "Structure Deck: Seto Kaiba",
+    "source": "https://www.yugioh-card.com/eu/de/product/structure-deck-seto-kaiba/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/structure-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2026/09/SDKS-Tuck-01-DE.webp",
+    "aliases": [
+      "Structure Deck: Seto Kaiba"
+    ],
+    "region": "eu",
+    "file": "booster-covers/bba07a34c22f7e4ab14e.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "bba07a34c22f7e4ab14e3fb25db8c1c5802c9dfbe5a788f0a466f8f5ca55c719",
+    "image_language": "de",
+    "focus": [
+      295,
+      71,
+      385,
+      636
+    ]
+  },
+  "structuredeckyugimuto": {
+    "name": "Structure Deck: Yugi Muto",
+    "source": "https://www.yugioh-card.com/eu/de/product/structure-deck-yugi-muto/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/structure-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2026/09/SDMY-Tuck-01-DE.webp",
+    "aliases": [
+      "Structure Deck: Yugi Muto"
+    ],
+    "region": "eu",
+    "file": "booster-covers/4197a35f71afee7f55c6.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "4197a35f71afee7f55c6e5fe7d8a93a3cf5e1ff38a6e522bff0531f49a075c8c",
+    "image_language": "de",
+    "focus": [
+      295,
+      71,
+      385,
+      636
+    ]
+  },
+  "thechroniclesdeckspiritcharmersallfoiledition": {
+    "name": "THE CHRONICLES DECK: Spirit Charmers (All-Foil Edition)",
+    "source": "https://www.yugioh-card.com/eu/de/product/the-chronicles-deck-spirit-charmers-all-foil-edition/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/structure-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/09/CH02-Tuck-01-DE-1.webp",
+    "aliases": [
+      "THE CHRONICLES DECK: Spirit Charmers (All-Foil Edition)"
+    ],
+    "region": "eu",
+    "file": "booster-covers/e5d68a1fdd8fefb82145.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "e5d68a1fdd8fefb82145dad8f0a78510e69eebc48598e23f3d8f53eae4f6e727",
+    "image_language": "de",
+    "focus": [
+      294,
+      71,
+      386,
+      636
+    ]
+  },
+  "thechroniclesdeckthefallenthevirtuousallfoiledition": {
+    "name": "THE CHRONICLES DECK: The Fallen & The Virtuous (All-Foil Edition)",
+    "source": "https://www.yugioh-card.com/eu/de/product/the-chronicles-deck-the-fallen-the-virtuous-all-foil-edition/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/structure-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/07/CH01-Tuck-01-DE.webp",
+    "aliases": [
+      "THE CHRONICLES DECK: The Fallen & The Virtuous (All-Foil Edition)"
+    ],
+    "region": "eu",
+    "file": "booster-covers/5db0f221288da0eafce7.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "5db0f221288da0eafce78ae2b64efb988ca6c274219133ec1f4716c0fcef038f",
+    "image_language": "de",
+    "focus": [
+      295,
+      71,
+      386,
+      636
+    ]
+  },
+  "structuredeckblueeyeswhitedestiny": {
+    "name": "Structure Deck: Blue-Eyes White Destiny",
+    "source": "https://www.yugioh-card.com/eu/de/product/structure-deck-blue-eyes-white-destiny/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/structure-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/10/SDWD-Tuckbox-01-EN.webp",
+    "aliases": [
+      "Structure Deck: Blue-Eyes White Destiny"
+    ],
+    "region": "eu",
+    "file": "booster-covers/7a0ee447c16e53985293.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "7a0ee447c16e53985293ee0f0543fc106265c8b294ca368e1b3f0e6bcbf1cc5a",
+    "image_language": "unspecified",
+    "focus": [
+      289,
+      80,
+      400,
+      643
+    ]
+  },
+  "structuredeckrealmoflight": {
+    "name": "Structure Deck: Realm of Light",
+    "source": "https://www.yugioh-card.com/eu/de/product/structure-deck-realm-of-light/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/structure-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/03/SDLI-Gamemat-01-EN.webp",
+    "aliases": [
+      "Structure Deck: Realm of Light"
+    ],
+    "region": "eu",
+    "file": "booster-covers/049fdd3b4a45dd1262ea.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "049fdd3b4a45dd1262eac2bbc9a1ae3a1983c63068a2a398cf935110bf727c25",
+    "image_language": "unspecified",
+    "focus": [
+      48,
+      88,
+      886,
+      572
+    ]
+  },
+  "structuredeckfirekings": {
+    "name": "Structure Deck: Fire Kings",
+    "source": "https://www.yugioh-card.com/eu/de/product/fire-kings-structure-deck/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/structure-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/08/SR14-Tuck-01-DE.webp",
+    "aliases": [
+      "Structure Deck: Fire Kings"
+    ],
+    "region": "eu",
+    "file": "booster-covers/57445f00173e71768e8b.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "57445f00173e71768e8bad5579eba94979df84edbd8c870d7f3c54d92155d027",
+    "image_language": "de",
+    "focus": [
+      302,
+      80,
+      361,
+      623
+    ]
+  },
+  "structuredeckthecrimsonking": {
+    "name": "Structure Deck: The Crimson King",
+    "source": "https://www.yugioh-card.com/eu/de/product/structure-deck-featuring-jack-atlas/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/structure-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/05/SD_46_SDCK_Tuck_EN_Mock_715x1080_05-10-2023.webp",
+    "aliases": [
+      "Structure Deck: The Crimson King"
+    ],
+    "region": "eu",
+    "file": "booster-covers/640bee7220c2b1ef14fd.webp",
+    "width": 715,
+    "height": 1080,
+    "sha256": "640bee7220c2b1ef14fdaae1ab2b920ef765d6fb9386e1e6613a158138c9587f",
+    "image_language": "unspecified",
+    "focus": [
+      0,
+      0,
+      715,
+      1080
+    ]
+  },
+  "structuredeckbewareoftraptrix": {
+    "name": "Structure Deck: Beware of Traptrix",
+    "source": "https://www.yugioh-card.com/eu/de/product/structure-deck-beware-of-traptrix/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/structure-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/01/SDBT-Tuck-01-DE-2.webp",
+    "aliases": [
+      "Structure Deck: Beware of Traptrix"
+    ],
+    "region": "eu",
+    "file": "booster-covers/32957bb5d155f9727912.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "32957bb5d155f9727912401897ff286a1dd00c7e6eb7c5676a462bbabae2a89d",
+    "image_language": "de",
+    "focus": [
+      300,
+      80,
+      364,
+      624
+    ]
+  },
+  "structuredeckdarkworld": {
+    "name": "Structure Deck: Dark World",
+    "source": "https://www.yugioh-card.com/eu/de/product/structure-deck-dark-world/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/structure-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/01/SR13-Tuck-01-DE-1.webp",
+    "aliases": [
+      "Structure Deck: Dark World"
+    ],
+    "region": "eu",
+    "file": "booster-covers/a4925c283984136a2915.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "a4925c283984136a29156977e012683c83be9e5a85c30d32dd662bd9c4772b07",
+    "image_language": "de",
+    "focus": [
+      306,
+      78,
+      357,
+      626
+    ]
+  },
+  "structuredecklegendofthecrystalbeasts": {
+    "name": "Structure Deck: Legend of the Crystal Beasts",
+    "source": "https://www.yugioh-card.com/eu/de/product/structure-deck-legend-of-the-crystal-beasts/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/structure-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/01/SDCB-Gamemat-01-DE.webp",
+    "aliases": [
+      "Structure Deck: Legend of the Crystal Beasts"
+    ],
+    "region": "eu",
+    "file": "booster-covers/131e3b8f467acd859c7a.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "131e3b8f467acd859c7a8c8c579fd9e63d22f440467edd96306465ecdfefd1a5",
+    "image_language": "de",
+    "focus": [
+      50,
+      194,
+      870,
+      376
+    ]
+  },
+  "structuredeckalbazstrike": {
+    "name": "Structure Deck: Albaz Strike",
+    "source": "https://www.yugioh-card.com/eu/de/product/structure-deck-albaz-strike/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/structure-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/10/SDAZ-Gamemat-DE.webp",
+    "aliases": [
+      "Structure Deck: Albaz Strike"
+    ],
+    "region": "eu",
+    "file": "booster-covers/fd51a2448a3d0256719c.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "fd51a2448a3d0256719c348f7a100fd941003e318cf4817b0f71e3b7c590355b",
+    "image_language": "de",
+    "focus": [
+      48,
+      88,
+      885,
+      572
+    ]
+  },
+  "structuredeckcyberstrike": {
+    "name": "Structure Deck: Cyber Strike",
+    "source": "https://www.yugioh-card.com/eu/de/product/structure-deck-cyber-strike/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/structure-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/03/SDCS-Tuck01-DE.webp",
+    "aliases": [
+      "Structure Deck: Cyber Strike"
+    ],
+    "region": "eu",
+    "file": "booster-covers/830d5afeb573b492e816.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "830d5afeb573b492e81687a9e50ea4486e54c84255754d73a35fc9db41ed12c3",
+    "image_language": "de",
+    "focus": [
+      278,
+      82,
+      372,
+      621
+    ]
+  },
+  "structuredeckfreezingchains": {
+    "name": "Structure Deck: Freezing Chains",
+    "source": "https://www.yugioh-card.com/eu/de/product/structure-deck-freezing-chains/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/structure-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2020/10/SDFC-01-1.webp",
+    "aliases": [
+      "Structure Deck: Freezing Chains"
+    ],
+    "region": "eu",
+    "file": "booster-covers/c5d906cd6c0e019bcccc.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "c5d906cd6c0e019bcccca7e2872def59929a209f59f162fedb74e21e333f3aaf",
+    "image_language": "unspecified",
+    "focus": [
+      223,
+      27,
+      545,
+      736
+    ]
+  },
+  "yugiohtcg2playerstarterset": {
+    "name": "Yu‑Gi‑Oh! TCG 2-Player Starter Set",
+    "source": "https://www.yugioh-card.com/eu/de/product/yu-gi-oh-tcg-2-player-starter-set/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/starter-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/06/STAX-Box-01-DE.webp",
+    "aliases": [
+      "Yu‑Gi‑Oh! TCG 2-Player Starter Set"
+    ],
+    "region": "eu",
+    "file": "booster-covers/a8f8cbd41049a9851ea1.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "a8f8cbd41049a9851ea148978ecc4297e2dc7506219adc461d1b41583dfc75bc",
+    "image_language": "de",
+    "focus": [
+      274,
+      24,
+      426,
+      732
+    ]
+  },
+  "egyptiangoddeckslifertheskydragonegyptiangoddeckobeliskthetormentor": {
+    "name": "Egyptian God Deck: Slifer the Sky Dragon & Egyptian God Deck: Obelisk the Tormentor",
+    "source": "https://www.yugioh-card.com/eu/de/product/egyptian-god-deck-slifer-the-sky-dragon-egyptian-god-deck-obelisk-the-tormentor/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/starter-decks-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/02/EGO1-Tuck01-DE.webp",
+    "aliases": [
+      "Egyptian God Deck: Slifer the Sky Dragon & Egyptian God Deck: Obelisk the Tormentor"
+    ],
+    "region": "eu",
+    "file": "booster-covers/ea6fa10a2d5da23fb8ce.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "ea6fa10a2d5da23fb8ceccbb23afd91e7514b4f26b0f678e4a0b3d87d03267e4",
+    "image_language": "de",
+    "focus": [
+      277,
+      82,
+      373,
+      621
+    ]
+  },
+  "2025megapacktin": {
+    "name": "2025 Mega-Pack Tin",
+    "source": "https://www.yugioh-card.com/eu/de/product/2025-mega-pack-tin/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/tins-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/04/2025-Tin-Foil-Single-US.webp",
+    "aliases": [
+      "2025 Mega-Pack Tin"
+    ],
+    "region": "eu",
+    "file": "booster-covers/8c0e368390dc494a6d3a.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "8c0e368390dc494a6d3aef9f6a4cd97269ed06b2461ad9dc0bf254f9e45cb03f",
+    "image_language": "unspecified",
+    "focus": [
+      289,
+      56,
+      392,
+      668
+    ]
+  },
+  "25thanniversarytinduelingmirrors": {
+    "name": "25th Anniversary Tin: Dueling Mirrors",
+    "source": "https://www.yugioh-card.com/eu/de/product/25th-anniversary-tin-dueling-mirrors/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/tins-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/03/TIN-2024-01.webp",
+    "aliases": [
+      "25th Anniversary Tin: Dueling Mirrors"
+    ],
+    "region": "eu",
+    "file": "booster-covers/8071bdaa2aee089faccf.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "8071bdaa2aee089faccfd4c619f021e44e9560245d4dfb87323a0a1fcc25cc7d",
+    "image_language": "unspecified",
+    "focus": [
+      60,
+      122,
+      850,
+      482
+    ]
+  },
+  "25thanniversarytinduelingheroes": {
+    "name": "25th Anniversary Tin: Dueling Heroes",
+    "source": "https://www.yugioh-card.com/eu/de/product/25th-anniversary-tin-dueling-heroes/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/tins-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/04/TIN-2023-01.webp",
+    "aliases": [
+      "25th Anniversary Tin: Dueling Heroes"
+    ],
+    "region": "eu",
+    "file": "booster-covers/3082d34d3e56b6ae75d9.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "3082d34d3e56b6ae75d9d35fdeeabf90060424b517a8379800350341283f61ce",
+    "image_language": "unspecified",
+    "focus": [
+      107,
+      144,
+      742,
+      517
+    ]
+  },
+  "2022tinofthepharaohsgods": {
+    "name": "2022 Tin of the Pharaoh’s Gods",
+    "source": "https://www.yugioh-card.com/eu/de/product/2022-tin-of-the-pharaohs-gods/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/tins-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2022/02/TIN-2022-01-EN-DE-2.webp",
+    "aliases": [
+      "2022 Tin of the Pharaoh’s Gods"
+    ],
+    "region": "eu",
+    "file": "booster-covers/27d6ee2f7c4a92cc272c.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "27d6ee2f7c4a92cc272c37ab0cc2f20b4479148a5f45581152e00007f2e4c75b",
+    "image_language": "de",
+    "focus": [
+      118,
+      161,
+      715,
+      481
+    ]
+  },
+  "2021tinofancientbattles": {
+    "name": "2021 Tin of Ancient Battles",
+    "source": "https://www.yugioh-card.com/eu/de/product/2021-tin-of-ancient-battles/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/tins-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/03/Tin-01-EN-DE.webp",
+    "aliases": [
+      "2021 Tin of Ancient Battles"
+    ],
+    "region": "eu",
+    "file": "booster-covers/9250ace1fa6c48a4b01c.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "9250ace1fa6c48a4b01cb9e8c5231545c47881da2ee5e6ffb22a7ab19f061384",
+    "image_language": "de",
+    "focus": [
+      144,
+      171,
+      642,
+      434
+    ]
+  },
+  "2020tinoflostmemories": {
+    "name": "2020 Tin of Lost Memories",
+    "source": "https://www.yugioh-card.com/eu/de/product/2020-tin-of-lost-memories/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/tins-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2022/12/2020-Tin-of-Lost-Memories.webp",
+    "aliases": [
+      "2020 Tin of Lost Memories"
+    ],
+    "region": "eu",
+    "file": "booster-covers/57dd47c8391049c86541.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "57dd47c8391049c8654167ad3775942f62015c013664189d3071e7bb2151f870",
+    "image_language": "unspecified",
+    "focus": [
+      96,
+      105,
+      777,
+      585
+    ]
+  },
+  "ultimatetournamentpack02": {
+    "name": "Ultimate Tournament Pack 02",
+    "source": "https://www.yugioh-card.com/eu/de/product/ultimate-tournament-pack-02/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2026/07/UP02-Foil-Stack-US.webp",
+    "aliases": [
+      "Ultimate Tournament Pack 02"
+    ],
+    "region": "eu",
+    "file": "booster-covers/8423ad7a8de72294ec0c.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "8423ad7a8de72294ec0c9567a3d454ab9cdf83894a6fb04502c6675eed3e8363",
+    "image_language": "unspecified",
+    "focus": [
+      212,
+      66,
+      562,
+      663
+    ]
+  },
+  "ultimatetournamentpack01": {
+    "name": "Ultimate Tournament Pack 01",
+    "source": "https://www.yugioh-card.com/eu/de/product/ultimate-tournament-pack-01/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2026/03/UP01-Foil-Single-DE.webp",
+    "aliases": [
+      "Ultimate Tournament Pack 01"
+    ],
+    "region": "eu",
+    "file": "booster-covers/60322fab12ab293bac12.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "60322fab12ab293bac12ad92f6e7125c91b0e981ab905ad56971f7efda8ee2f6",
+    "image_language": "de",
+    "focus": [
+      290,
+      56,
+      390,
+      657
+    ]
+  },
+  "otstournamentpack30": {
+    "name": "OTS Tournament Pack 30",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-30/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/10/OTS30-Foil-Single-EN.webp",
+    "aliases": [
+      "OTS Tournament Pack 30"
+    ],
+    "region": "eu",
+    "file": "booster-covers/e056c0cc3febf6713f3e.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "e056c0cc3febf6713f3e960d9cc44949f4f78a06e22a983593deddcf70d5785b",
+    "image_language": "unspecified",
+    "focus": [
+      290,
+      56,
+      391,
+      657
+    ]
+  },
+  "otstournamentpack29": {
+    "name": "OTS Tournament Pack 29",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-29/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/07/OTS29-Foil-Single-US.webp",
+    "aliases": [
+      "OTS Tournament Pack 29"
+    ],
+    "region": "eu",
+    "file": "booster-covers/49606c9a5e1c075140c4.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "49606c9a5e1c075140c43517842bb1209d92f85617986a19a9bb658981c3ffb4",
+    "image_language": "unspecified",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
+  },
+  "otstournamentpack28": {
+    "name": "OTS Tournament Pack 28",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-28/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/02/OTS28-Foil-Single-DE.webp",
+    "aliases": [
+      "OTS Tournament Pack 28"
+    ],
+    "region": "eu",
+    "file": "booster-covers/af07b38dd8b9e336c5d6.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "af07b38dd8b9e336c5d6de2c304a0ddb9412b15114904570da870f945621dc5b",
+    "image_language": "de",
+    "focus": [
+      290,
+      54,
+      394,
+      656
+    ]
+  },
+  "otstournamentpack27": {
+    "name": "OTS Tournament Pack 27",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-27/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/10/OTS27-Foil-Stack-EN.webp",
+    "aliases": [
+      "OTS Tournament Pack 27"
+    ],
+    "region": "eu",
+    "file": "booster-covers/74e0b8111b53280a13f9.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "74e0b8111b53280a13f97a993080c3edadf719fa462a58aacfc21b0e95c5d783",
+    "image_language": "unspecified",
+    "focus": [
+      217,
+      63,
+      553,
+      664
+    ]
+  },
+  "otstournamentpack26": {
+    "name": "OTS Tournament Pack 26",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-26/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/06/OTS26-Foil-Single-DE.webp",
+    "aliases": [
+      "OTS Tournament Pack 26"
+    ],
+    "region": "eu",
+    "file": "booster-covers/f6836978080afff7634f.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "f6836978080afff7634f80150eb9baa1f128c665f36d9617677e5156cb9e1b59",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
+  },
+  "otstournamentpack25": {
+    "name": "OTS Tournament Pack 25",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-25/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/03/OTS25-Foil-Single-DE-1.webp",
+    "aliases": [
+      "OTS Tournament Pack 25"
+    ],
+    "region": "eu",
+    "file": "booster-covers/88a45da669dcc3baea57.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "88a45da669dcc3baea57d62d2ce8faac214062d432da7ae11b963d68448e0c35",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
+  },
+  "otstournamentpack24": {
+    "name": "OTS Tournament Pack 24",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-24/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/10/OTS24-Foil-Stack-EN.webp",
+    "aliases": [
+      "OTS Tournament Pack 24"
+    ],
+    "region": "eu",
+    "file": "booster-covers/4a5e7116e654f69d615c.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "4a5e7116e654f69d615c3543c36bd45fb0ae526878bc0478a726b263c95fe66d",
+    "image_language": "unspecified",
+    "focus": [
+      216,
+      44,
+      545,
+      684
+    ]
+  },
+  "otstournamentpack23": {
+    "name": "OTS Tournament Pack 23",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-23/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/08/OTS23-Foil-Single-EN.webp",
+    "aliases": [
+      "OTS Tournament Pack 23"
+    ],
+    "region": "eu",
+    "file": "booster-covers/b751975be5222901c243.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "b751975be5222901c24323b83ba5e53cd9aefd6535c77537681ac8f7dd33db24",
+    "image_language": "unspecified",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
+  },
+  "otstournamentpack22": {
+    "name": "OTS Tournament Pack 22",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-22/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/04/OTS22-Foil-DE-1.webp",
+    "aliases": [
+      "OTS Tournament Pack 22"
+    ],
+    "region": "eu",
+    "file": "booster-covers/ee9e45c935f7cef5371a.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "ee9e45c935f7cef5371a68d291fea88823e32e63f7bb0bdb83fcf02261e1b0af",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
+  },
+  "otstournamentpack21": {
+    "name": "OTS Tournament Pack 21",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-21/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/01/OTS21-Foil-DE-1.webp",
+    "aliases": [
+      "OTS Tournament Pack 21"
+    ],
+    "region": "eu",
+    "file": "booster-covers/4a6da1ff0c140bae998f.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "4a6da1ff0c140bae998f52563963007137dc69759b9e79cc8f0461374374305c",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
+  },
+  "otstournamentpack20": {
+    "name": "OTS Tournament Pack 20",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-20/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/01/OTS20-Foil-DE-1.webp",
+    "aliases": [
+      "OTS Tournament Pack 20"
+    ],
+    "region": "eu",
+    "file": "booster-covers/ee328794a79ae82e8d1a.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "ee328794a79ae82e8d1a057fae2e436f5bd341ce5322718a804a45a10ad8a245",
+    "image_language": "de",
+    "focus": [
+      215,
+      44,
+      546,
+      684
+    ]
+  },
+  "otstournamentpack19": {
+    "name": "OTS Tournament Pack 19",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-19/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2022/03/OP19-Foil-EN.webp",
+    "aliases": [
+      "OTS Tournament Pack 19"
+    ],
+    "region": "eu",
+    "file": "booster-covers/da113edc5c2e2d458bdf.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "da113edc5c2e2d458bdfc5405fdf52f16c90837c43c60316397dec46afa54ad9",
+    "image_language": "unspecified",
+    "focus": [
+      216,
+      50,
+      544,
+      678
+    ]
+  },
+  "otstournamentpack18": {
+    "name": "OTS Tournament Pack 18",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-18/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/11/OP18-Foil-DE.webp",
+    "aliases": [
+      "OTS Tournament Pack 18"
+    ],
+    "region": "eu",
+    "file": "booster-covers/8896a401f5676c52060f.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "8896a401f5676c52060f5b51ae554f4f48c761d902047cfc46fc9b9b3b30563a",
+    "image_language": "de",
+    "focus": [
+      216,
+      50,
+      544,
+      678
+    ]
+  },
+  "otstournamentpack17": {
+    "name": "OTS Tournament Pack 17",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-17/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/07/OP17-Foil-DE.webp",
+    "aliases": [
+      "OTS Tournament Pack 17"
+    ],
+    "region": "eu",
+    "file": "booster-covers/b0d4d8e2cac651b61f03.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "b0d4d8e2cac651b61f0325cfafd3bb6c5840c67908e756af6d724c7897d3aa09",
+    "image_language": "de",
+    "focus": [
+      216,
+      50,
+      544,
+      678
+    ]
+  },
+  "otstournamentpack16": {
+    "name": "OTS Tournament Pack 16",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-16/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/03/OP16-Foil-DE.webp",
+    "aliases": [
+      "OTS Tournament Pack 16"
+    ],
+    "region": "eu",
+    "file": "booster-covers/6ae0be41dd9607fec9eb.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "6ae0be41dd9607fec9eb1152240580dcdef38873f97af18f30b8f8726b1591bc",
+    "image_language": "de",
+    "focus": [
+      216,
+      50,
+      544,
+      678
+    ]
+  },
+  "otstournamentpack15": {
+    "name": "OTS Tournament Pack 15",
+    "source": "https://www.yugioh-card.com/eu/de/product/ots-tournament-pack-15/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/ots-tournament-packs-de/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/01/OP15-Foil-DE.webp",
+    "aliases": [
+      "OTS Tournament Pack 15"
+    ],
+    "region": "eu",
+    "file": "booster-covers/a30f8b6d731baec423df.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "a30f8b6d731baec423dfd1c9eff3283930a69558f179f9e6601bdf3d57586d3d",
+    "image_language": "de",
+    "focus": [
+      216,
+      50,
+      544,
+      678
+    ]
+  },
+  "speeddueltournamentpack6": {
+    "name": "Speed Duel Tournament Pack 6",
+    "source": "https://www.yugioh-card.com/eu/de/product/speed-duel-tournament-pack-6/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/speed-duel-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/06/STP6-Foil-Single-EN.webp",
+    "aliases": [
+      "Speed Duel Tournament Pack 6"
+    ],
+    "region": "eu",
+    "file": "booster-covers/151026019d03eb33438a.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "151026019d03eb33438aeb91f46659ac0b068bd7d648de0a4c873aa2a773c552",
+    "image_language": "unspecified",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
+  },
+  "speedduelstreetsofbattlecity": {
+    "name": "Speed Duel: Streets of Battle City",
+    "source": "https://www.yugioh-card.com/eu/de/product/speed-duel-streets-of-battle-city/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/speed-duel-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/03/SBC1-Box-01-DE.webp",
+    "aliases": [
+      "Speed Duel: Streets of Battle City"
+    ],
+    "region": "eu",
+    "file": "booster-covers/e2be4d598375e2bc9de8.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "e2be4d598375e2bc9de8d57c506779bdeccf10b166ee1c9e6e9e6e33c64ad0b6",
+    "image_language": "de",
+    "focus": [
+      167,
+      51,
+      637,
+      660
+    ]
+  },
+  "speedduelgxduelistsofshadows": {
+    "name": "Speed Duel GX: Duelists of Shadows",
+    "source": "https://www.yugioh-card.com/eu/de/product/speed-duel-gx-duelists-of-shadows/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/speed-duel-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2022/12/SGX3-Box-01-DE.webp",
+    "aliases": [
+      "Speed Duel GX: Duelists of Shadows"
+    ],
+    "region": "eu",
+    "file": "booster-covers/11d7d19f865666f5adc3.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "11d7d19f865666f5adc3da918b66e9e974ce212b506149c4ba7b6eb11fd7935d",
+    "image_language": "de",
+    "focus": [
+      185,
+      71,
+      612,
+      624
+    ]
+  },
+  "speeddueltournamentpack5": {
+    "name": "Speed Duel Tournament Pack 5",
+    "source": "https://www.yugioh-card.com/eu/de/product/speed-duel-tournament-pack-5/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/speed-duel-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/01/STP5-Foil-DE-1.webp",
+    "aliases": [
+      "Speed Duel Tournament Pack 5"
+    ],
+    "region": "eu",
+    "file": "booster-covers/2075e15c14d7d4f569a2.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "2075e15c14d7d4f569a219717a1c10c018d262e682ccef1f907b24d2ceece399",
+    "image_language": "de",
+    "focus": [
+      216,
+      50,
+      544,
+      678
+    ]
+  },
+  "speedduelgxmidtermparadox": {
+    "name": "Speed Duel GX: Midterm Paradox",
+    "source": "https://www.yugioh-card.com/eu/de/product/speed-duel-gx-midterm-paradox/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/speed-duel-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2022/09/SGX2-Box-01-EN.webp",
+    "aliases": [
+      "Speed Duel GX: Midterm Paradox"
+    ],
+    "region": "eu",
+    "file": "booster-covers/ce09dca274e683cd6292.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "ce09dca274e683cd6292a93476a5e3108bf24b7cdec10845eeda691d23f244fb",
+    "image_language": "unspecified",
+    "focus": [
+      165,
+      67,
+      643,
+      616
+    ]
+  },
+  "speeddueltournamentpack4": {
+    "name": "Speed Duel Tournament Pack 4",
+    "source": "https://www.yugioh-card.com/eu/de/product/speed-duel-tournament-pack-4/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/speed-duel-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/01/STP4-Foil-DE-1.webp",
+    "aliases": [
+      "Speed Duel Tournament Pack 4"
+    ],
+    "region": "eu",
+    "file": "booster-covers/a1a59f030fd759610e89.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "a1a59f030fd759610e89d826758f9faac19bed9292c9942de013490e882e0e9e",
+    "image_language": "de",
+    "focus": [
+      215,
+      50,
+      545,
+      678
+    ]
+  },
+  "speedduelgxduelacademybox": {
+    "name": "Speed Duel GX: Duel Academy Box",
+    "source": "https://www.yugioh-card.com/eu/de/product/speed-duel-gx-duel-academy-box/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/speed-duel-de/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/08/SGX1-Box01-DE.webp",
+    "aliases": [
+      "Speed Duel GX: Duel Academy Box"
+    ],
+    "region": "eu",
+    "file": "booster-covers/1bebf529a6b850d2f2ea.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "1bebf529a6b850d2f2ea179088a3d3080de1b6196c0e21beb320ad0618cd6e4c",
+    "image_language": "de",
+    "focus": [
+      142,
+      135,
+      657,
+      463
+    ]
+  },
+  "magnificentmaestros": {
+    "name": "Magnificent Maestros",
+    "source": "https://www.yugioh-card.com/eu/de/product/magnificent-maestros/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2026/07/MAMS-Tuckbox-01-DE.webp",
+    "aliases": [
+      "Magnificent Maestros"
+    ],
+    "region": "eu",
+    "file": "booster-covers/ad81c423ae99c0e13421.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "ad81c423ae99c0e1342171c490766606b9c8b596d3c8fc60e594b4bad1e825cb",
+    "image_language": "de",
+    "focus": [
+      292,
+      55,
+      376,
+      679
+    ]
+  },
+  "magnificentmonsters": {
+    "name": "Magnificent Monsters",
+    "source": "https://www.yugioh-card.com/eu/de/product/magnificent-monsters/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2026/06/MAMO-Tuckbox-02-DE.webp",
+    "aliases": [
+      "Magnificent Monsters"
+    ],
+    "region": "eu",
+    "file": "booster-covers/cfaec81dea0e0725fc1b.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "cfaec81dea0e0725fc1b5747bf741d769c432e36bb464ee8639f72c6d3659e24",
+    "image_language": "de",
+    "focus": [
+      327,
+      54,
+      388,
+      678
+    ]
+  },
+  "legendaryarcvdecks": {
+    "name": "Legendary Arc-V Decks",
+    "source": "https://www.yugioh-card.com/eu/de/product/legendary-arc-v-decks/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2026/04/LAVD-Tuck-01-DE.png",
+    "aliases": [
+      "Legendary Arc-V Decks"
+    ],
+    "region": "eu",
+    "file": "booster-covers/cbf19b6224a815420211.png",
+    "width": 970,
+    "height": 790,
+    "sha256": "cbf19b6224a8154202114ee90c0b0f29e8de2b23973544951f339ce69d7033be",
+    "image_language": "de",
+    "focus": [
+      323,
+      46,
+      322,
+      703
+    ]
+  },
+  "legendarymoderndecks2026": {
+    "name": "Legendary Modern Decks 2026",
+    "source": "https://www.yugioh-card.com/eu/de/product/sky-strikers-x-sabers-mitsurugi/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/11/L26D-Tuck-01-DE-1.webp",
+    "aliases": [
+      "Legendary Modern Decks 2026"
+    ],
+    "region": "eu",
+    "file": "booster-covers/07b9008479bbfbf0cbac.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "07b9008479bbfbf0cbac85dda9c6b3d90afbff96daf1aae4ebd825818d375b84",
+    "image_language": "de",
+    "focus": [
+      323,
+      46,
+      322,
+      703
+    ]
+  },
+  "dassetlegendary5dsdecks": {
+    "name": "Das Set Legendary 5D’s Decks",
+    "source": "https://www.yugioh-card.com/eu/de/product/legendary-5ds-decks/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/07/L5DD-Tuck-01-DE-1.webp",
+    "aliases": [
+      "Das Set Legendary 5D’s Decks",
+      "Legendary 5D’s Decks"
+    ],
+    "region": "eu",
+    "file": "booster-covers/cd2b09d796500dd6f677.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "cd2b09d796500dd6f677dcf1394d6257be76d2ba9bca43ec4a7677d6620200f5",
+    "image_language": "de",
+    "focus": [
+      323,
+      47,
+      322,
+      702
+    ]
+  },
+  "legendary5dsdecks": {
+    "name": "Das Set Legendary 5D’s Decks",
+    "source": "https://www.yugioh-card.com/eu/de/product/legendary-5ds-decks/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2025/07/L5DD-Tuck-01-DE-1.webp",
+    "aliases": [
+      "Das Set Legendary 5D’s Decks",
+      "Legendary 5D’s Decks"
+    ],
+    "region": "eu",
+    "file": "booster-covers/cd2b09d796500dd6f677.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "cd2b09d796500dd6f677dcf1394d6257be76d2ba9bca43ec4a7677d6620200f5",
+    "image_language": "de",
+    "focus": [
+      323,
+      47,
+      322,
+      702
+    ]
+  },
+  "legendarydragondecks": {
+    "name": "Legendary Dragon Decks",
+    "source": "https://www.yugioh-card.com/eu/de/product/legendary-dragon-decks/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/06/LEDD-Box-01-DE-2.webp",
+    "aliases": [
+      "Legendary Dragon Decks"
+    ],
+    "region": "eu",
+    "file": "booster-covers/598bdbc816957183e283.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "598bdbc816957183e283c5f234e8855fe26f94f1a5598ed3d6d6c0304d2aaea7",
+    "image_language": "de",
+    "focus": [
+      121,
+      93,
+      738,
+      580
+    ]
+  },
+  "yugiohtcgstainlesssteelcarddarkmagiciangirl": {
+    "name": "Yu‑Gi‑Oh! TCG Stainless Steel Card: Dark Magician Girl",
+    "source": "https://www.yugioh-card.com/eu/de/product/yu-gi-oh-tcg-stainless-steel-card-dark-magician-girl/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/07/DMG-01-1.webp",
+    "aliases": [
+      "Yu‑Gi‑Oh! TCG Stainless Steel Card: Dark Magician Girl"
+    ],
+    "region": "eu",
+    "file": "booster-covers/606cca2e949195f220a1.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "606cca2e949195f220a1b55b72b21fe1af176ef005c21c5e2a97720d05d03033",
+    "image_language": "unspecified",
+    "focus": [
+      252,
+      63,
+      505,
+      660
+    ]
+  },
+  "legendarydecksii": {
+    "name": "Legendary Decks II",
+    "source": "https://www.yugioh-card.com/eu/de/product/legendary-decks-ii/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2024/03/LDK2-Box-01-EN-DE-1.webp",
+    "aliases": [
+      "Legendary Decks II"
+    ],
+    "region": "eu",
+    "file": "booster-covers/f19b9ede42cdd2fcbc68.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "f19b9ede42cdd2fcbc68976f98c12992a46b0c52d1f8b7af7907fcbe7e898f76",
+    "image_language": "de",
+    "focus": [
+      0,
+      92,
+      881,
+      585
+    ]
+  },
+  "battlesoflegendchapter1": {
+    "name": "Battles of Legend: Chapter 1",
+    "source": "https://www.yugioh-card.com/eu/de/product/battles-of-legend-chapter-1/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/07/BLC1-Foil-Single-DE.webp",
+    "aliases": [
+      "Battles of Legend: Chapter 1"
+    ],
+    "region": "eu",
+    "file": "booster-covers/d6e9a6db90db7689952c.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "d6e9a6db90db7689952c033c467af8427eca0a403baa11050572c96618569e08",
+    "image_language": "de",
+    "focus": [
+      289,
+      52,
+      392,
+      660
+    ]
+  },
+  "thepotcollection": {
+    "name": "The Pot Collection",
+    "source": "https://www.yugioh-card.com/eu/de/product/the-pot-collection/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/02/01_‹­—‚Esa.webp",
+    "aliases": [
+      "The Pot Collection"
+    ],
+    "region": "eu",
+    "file": "booster-covers/de755647fb87d4fc45ad.webp",
+    "width": 1000,
+    "height": 1000,
+    "sha256": "de755647fb87d4fc45ad21d9f227aa6499bc876f0ff882b2c018ffc987bc94c9",
+    "image_language": "unspecified",
+    "focus": [
+      0,
+      0,
+      1000,
+      1000
+    ]
+  },
+  "platinumdarkmagician": {
+    "name": "Platinum Dark Magician",
+    "source": "https://www.yugioh-card.com/eu/de/product/platinum-dark-magician/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/08/2022MPS-DM-Box-and-Plaque-mockup.webp",
+    "aliases": [
+      "Platinum Dark Magician"
+    ],
+    "region": "eu",
+    "file": "booster-covers/d3fb28ff41e27cb29047.webp",
+    "width": 2179,
+    "height": 2179,
+    "sha256": "d3fb28ff41e27cb2904758f9cd3d4ceac1463390f8c99eaa5736e41bd52368e3",
+    "image_language": "unspecified",
+    "focus": [
+      47,
+      48,
+      2096,
+      1800
+    ]
+  },
+  "legendarycollection25thanniversaryedition": {
+    "name": "Legendary Collection: 25th Anniversary Edition",
+    "source": "https://www.yugioh-card.com/eu/de/product/legendary-collection-25th-anniversary-edition/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/02/LCO1-Box-01-DE-2.webp",
+    "aliases": [
+      "Legendary Collection: 25th Anniversary Edition"
+    ],
+    "region": "eu",
+    "file": "booster-covers/5f81230638f34ef87bed.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "5f81230638f34ef87bedb9d6c3626539ba3a16be7dfd7241c5cbf980538f60b8",
+    "image_language": "de",
+    "focus": [
+      110,
+      71,
+      689,
+      617
+    ]
+  },
+  "darkmagiciangirlcardsleeves": {
+    "name": "Dark Magician Girl Card Sleeves",
+    "source": "https://www.yugioh-card.com/eu/de/product/ip-masquerena-card-case/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2022/10/DMG-Accessories-01.webp",
+    "aliases": [
+      "Dark Magician Girl Card Sleeves"
+    ],
+    "region": "eu",
+    "file": "booster-covers/3c8ab6f0022048ad8300.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "3c8ab6f0022048ad830070b2b7a60344cdcb938bf2bfe2c7f8dbbab36d8452dc",
+    "image_language": "unspecified",
+    "focus": [
+      44,
+      19,
+      900,
+      752
+    ]
+  },
+  "magnificentmavens": {
+    "name": "Magnificent Mavens",
+    "source": "https://www.yugioh-card.com/eu/de/product/magnificent-mavens/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2023/01/MAMA-Foil-DE.webp",
+    "aliases": [
+      "Magnificent Mavens"
+    ],
+    "region": "eu",
+    "file": "booster-covers/2f149d6826a22712c636.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "2f149d6826a22712c6362d98cd66d11b8feb967316be86dc0b8bf3aa4946c4e7",
+    "image_language": "de",
+    "focus": [
+      215,
+      46,
+      545,
+      683
+    ]
+  },
+  "legendaryduelistsseason3": {
+    "name": "Legendary Duelists: Season 3",
+    "source": "https://www.yugioh-card.com/eu/de/product/legendary-duelists-season-3/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/12/LDS3-Foil-DE.webp",
+    "aliases": [
+      "Legendary Duelists: Season 3"
+    ],
+    "region": "eu",
+    "file": "booster-covers/a34318aa414a0bdf814e.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "a34318aa414a0bdf814e8c78d5ae74acb8664e0f4fadd3b33ec69e1ea5addd81",
+    "image_language": "de",
+    "focus": [
+      223,
+      50,
+      533,
+      675
+    ]
+  },
+  "ghostsfromthepastthe2ndhaunting": {
+    "name": "Ghosts From the Past: The 2nd Haunting",
+    "source": "https://www.yugioh-card.com/eu/de/product/ghosts-from-the-past-the-2nd-haunting/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/11/GFP2-FoilA-DE.webp",
+    "aliases": [
+      "Ghosts From the Past: The 2nd Haunting"
+    ],
+    "region": "eu",
+    "file": "booster-covers/e9f5f8a42423ca6c3e67.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "e9f5f8a42423ca6c3e67ef95ec814dbb220272629648dc701d297b683da42a12",
+    "image_language": "de",
+    "focus": [
+      225,
+      44,
+      534,
+      684
+    ]
+  },
+  "hiddenarsenalchapter1": {
+    "name": "Hidden Arsenal: Chapter 1",
+    "source": "https://www.yugioh-card.com/eu/de/product/hidden-arsenal-chapter-1/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/06/HAC1-Foil-DE.webp",
+    "aliases": [
+      "Hidden Arsenal: Chapter 1"
+    ],
+    "region": "eu",
+    "file": "booster-covers/884b12e4846b129c0b2e.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "884b12e4846b129c0b2ebb188808be7992e0c1a0bc1ebc6f00176fffe10ac05a",
+    "image_language": "de",
+    "focus": [
+      214,
+      54,
+      496,
+      654
+    ]
+  },
+  "maximumgoldeldorado": {
+    "name": "Maximum Gold: El Dorado",
+    "source": "https://www.yugioh-card.com/eu/de/product/maximum-gold-el-dorado/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2021/06/MGED-Box01-DE.webp",
+    "aliases": [
+      "Maximum Gold: El Dorado"
+    ],
+    "region": "eu",
+    "file": "booster-covers/99b88d2cf6e92a3114cf.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "99b88d2cf6e92a3114cfc0d311f0551c2327a1c7250de1aac2104935e37550bd",
+    "image_language": "de",
+    "focus": [
+      124,
+      43,
+      700,
+      696
+    ]
+  },
+  "ghostsfromthepast": {
+    "name": "Ghosts From the Past",
+    "source": "https://www.yugioh-card.com/eu/de/product/ghosts-from-the-past/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2020/10/GFTP-01-1.webp",
+    "aliases": [
+      "Ghosts From the Past"
+    ],
+    "region": "eu",
+    "file": "booster-covers/9d28eedd70bd837cd991.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "9d28eedd70bd837cd991dada83f23eb2240aeabcc30df4e392dbb6c96a1907ce",
+    "image_language": "unspecified",
+    "focus": [
+      209,
+      58,
+      565,
+      692
+    ]
+  },
+  "legendaryduelistsseason2": {
+    "name": "Legendary Duelists: Season 2",
+    "source": "https://www.yugioh-card.com/eu/de/product/legendary-duelists-season-2/",
+    "index": "https://www.yugioh-card.com/eu/de/product-category/andere/page/2/",
+    "image_source": "https://www.yugioh-card.com/eu/wp-content/uploads/2020/09/BEWD-Die-1.webp",
+    "aliases": [
+      "Legendary Duelists: Season 2"
+    ],
+    "region": "eu",
+    "file": "booster-covers/72e394752b05bff6857d.webp",
+    "width": 970,
+    "height": 790,
+    "sha256": "72e394752b05bff6857d1f8a868ac17a5c5660cd03fb44a47dd4ce6072ae4864",
+    "image_language": "unspecified",
+    "focus": [
+      198,
+      203,
+      725,
+      373
+    ]
   }
 }

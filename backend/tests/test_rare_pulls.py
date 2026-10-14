@@ -54,7 +54,7 @@ class RarePullTests(HubTestCase):
         self.assertEqual(self.reveal(result, [0], other).status_code, 404)
         self.assertEqual(self.reveal(result, [999]).status_code, 422)
         self.assertIsNone(self.claim().json()['announcement'])
-        self.assertEqual(self.reveal(result, [0]).status_code, 200)
+        self.assertEqual(self.reveal(result, list(range(9))).status_code, 200)
         with self.sessions() as db:
             first = db.scalar(select(RarePullAnnouncement)).revealed_at
         self.assertEqual(self.reveal(result, [0]).status_code, 200)
@@ -135,7 +135,7 @@ class RarePullTests(HubTestCase):
         self.assertEqual(item['card']['name'], 'Test')
         self.assertEqual(item['card']['image_url'], '/api/cards/1/art/original')
         self.assertEqual(item['username'], 'jaden-demo')
-        self.assertEqual(item['quantity'], 1)
+        self.assertEqual(item['quantity'], 9)
         self.assertEqual(item['rarity'], 'Ultraselten')
         self.assertEqual(local.post(f'/api/stream-overlay/{item["id"]}/ack',
             json={**self.channel, 'claim_token': item['claim_token']}).status_code, 200)
@@ -173,15 +173,15 @@ class RarePullTests(HubTestCase):
             db.commit()
         self.assertEqual(self.buy().status_code, 200)
         with patch('app.api.random.SystemRandom') as random:
-            random.return_value.choices.side_effect = lambda entries, **kwargs: [next(e for e in entries if e.card_id == 1)] * 2
+            random.return_value.choices.side_effect = lambda entries, **kwargs: [next(e for e in entries if e.card_id == 1)] * kwargs["k"]
             result = self.client.post('/api/boosters/1/open', headers=self.headers)
             self.assertEqual(result.status_code, 200)
         self.assertIsNone(self.claim().json()['announcement'])
         self.assertEqual(self.reveal(result.json(), [0]).status_code, 200)
         self.assertIsNone(self.claim().json()['announcement'])
-        self.assertEqual(self.reveal(result.json(), [0, 1]).status_code, 200)
+        self.assertEqual(self.reveal(result.json(), list(range(9))).status_code, 200)
         item = self.claim().json()['announcement']
-        self.assertIn('2 ×', item['message'])
+        self.assertIn('9 ×', item['message'])
         self.assertNotIn('\n', item['message'])
         self.assertLessEqual(len(item['message'].encode('utf-8')), 450)
         self.assertIsNone(self.claim().json()['announcement'])

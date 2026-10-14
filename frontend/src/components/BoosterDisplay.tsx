@@ -8,11 +8,12 @@ import officialCovers from '../data/officialBoosterCovers.json'
 const coverIdentity = (name: string) => name.replace(/\s+Booster$/i, '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '')
 
 export function BoosterCover({ name, code }: { name: string; code?: string | null }) {
-  const cover = (officialCovers as Record<string, { file: string; width: number; height: number }>)[coverIdentity(name)]
+  const cover = (officialCovers as Record<string, { file: string; width: number; height: number; focus?: number[] }>)[coverIdentity(name)]
   const url = cover ? import.meta.env.BASE_URL + cover.file : null
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
   return <div className="booster-cover">{cover && url && failedUrl !== url
-    ? <img src={url} width={cover.width} height={cover.height} alt={`Offizielles Cover: ${name}`} loading="lazy" decoding="async" onError={() => setFailedUrl(url)} />
+    ? cover.focus ? <svg className="official-product-cover" viewBox={cover.focus.join(' ')} width="100%" height="100%" role="img" aria-label={`Offizielles Cover: ${name}`} style={{ minWidth: 0, minHeight: 0, overflow: 'hidden' }}><image href={url} width={cover.width} height={cover.height} onError={() => setFailedUrl(url)} /></svg>
+      : <img src={url} width={cover.width} height={cover.height} alt={`Offizielles Cover: ${name}`} loading="lazy" decoding="async" onError={() => setFailedUrl(url)} />
     : <BoosterArtwork name={name} code={code} />}</div>
 }
 
@@ -23,8 +24,8 @@ export function DiscoveryNav() {
 }
 
 export function ProductLimit({ booster }: { booster: BoosterSummary }) {
-  if (booster.product_type !== 'structure_deck') return null
-  return <p className="product-limit" role="status">{!booster.cards_per_pack ? 'Deckliste wird geprüft · Noch nicht kaufbar' : booster.purchases_remaining === 0 ? 'Kauflimit erreicht · 3 von 3 gekauft' : `Noch ${booster.purchases_remaining} von 3 Käufen verfügbar`}<small>600 Sammelpunkte · {booster.bonus_cards ? `${booster.fixed_cards} feste Karten + ${booster.bonus_cards} Bonuskarte.` : 'Vollständige Deckliste mit Mehrfachexemplaren.'} Das Limit gilt dauerhaft pro Konto.</small></p>
+  if (booster.product_type !== 'structure_deck') return booster.rare_guaranteed ? <p className="product-limit" role="status">{booster.cards_per_pack ? `${booster.cards_per_pack} Karten · Mindestens 1 Rare oder höher garantiert` : 'Kartenpool wird geprüft · Rare-Garantie derzeit nicht erfüllbar'}</p> : null
+  return <p className="product-limit" role="status">{!booster.cards_per_pack ? 'Deckliste wird geprüft · Noch nicht kaufbar' : booster.purchases_remaining === 0 ? 'Kauflimit erreicht · 3 von 3 gekauft' : `Noch ${booster.purchases_remaining} von 3 Käufen verfügbar`}<small>{booster.cost} Sammelpunkte · {booster.bonus_cards ? `${booster.fixed_cards} feste Karten + ${booster.bonus_cards} Bonuskarte.` : 'Vollständige Deckliste mit Mehrfachexemplaren.'} Das Limit gilt dauerhaft pro Konto.</small></p>
 }
 
 export function buyLabel(booster: BoosterSummary) {

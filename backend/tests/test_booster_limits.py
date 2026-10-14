@@ -7,6 +7,23 @@ from test_economy import HubTestCase
 
 
 class BoosterLimitTests(HubTestCase):
+    def test_missing_rare_blocks_before_money_or_stock_is_consumed(self):
+        self.configure(1)
+        with self.sessions() as db:
+            db.scalar(select(BoosterPoolEntry)).rarity = 'common'
+            db.commit()
+        detail = self.client.get('/api/boosters/1', headers=self.headers).json()
+        listing = self.client.get('/api/boosters', headers=self.headers).json()[0]
+        self.assertTrue(detail['rare_guaranteed'])
+        self.assertEqual(detail['cards_per_pack'], 0)
+        self.assertEqual(listing['cards_per_pack'], 0)
+        self.assertEqual(self.buy().status_code, 409)
+        self.assertEqual(self.client.post('/api/boosters/1/open', headers=self.headers).status_code, 409)
+        with self.sessions() as db:
+            self.assertEqual(db.get(User, 1).credits, 100)
+            self.assertEqual(db.scalar(select(UserBooster)).quantity, 1)
+            self.assertIsNone(db.scalar(select(DiamondTransaction)))
+
     def configure(self, count, configured=5):
         with self.sessions() as db:
             db.execute(delete(BoosterPoolEntry))
@@ -24,7 +41,7 @@ class BoosterLimitTests(HubTestCase):
             db.commit()
 
     def test_display_and_opening_agree_for_small_and_large_pools(self):
-        for available, expected in [(0, 0), (1, 1), (3, 3), (5, 5), (6, 5)]:
+        for available, expected in [(0, 0), (1, 9), (3, 9), (5, 9), (6, 9)]:
             with self.subTest(available=available):
                 self.configure(available)
                 detail = self.client.get('/api/boosters/1', headers=self.headers).json()
@@ -47,10 +64,10 @@ class BoosterLimitTests(HubTestCase):
             db.add(BoosterPoolEntry(booster_id=1, card_id=1, rarity='ultra_rare', weight=1))
             db.commit()
         detail = self.client.get('/api/boosters/1', headers=self.headers).json()
-        self.assertEqual(detail['cards_per_pack'], 1)
+        self.assertEqual(detail['cards_per_pack'], 9)
         self.assertEqual(detail['pool_size'], 1)
         self.assertEqual(len(detail['pool']), 2)
-        self.assertEqual(self.client.get('/api/boosters', headers=self.headers).json()[0]['cards_per_pack'], 1)
+        self.assertEqual(self.client.get('/api/boosters', headers=self.headers).json()[0]['cards_per_pack'], 9)
 
     def test_invalid_pools_cannot_be_bought_or_opened(self):
         for weight in [-1, 0, math.inf]:
@@ -78,4 +95,4 @@ class BoosterLimitTests(HubTestCase):
             db.commit()
         self.assertEqual(self.client.post('/api/boosters/1/open', headers=self.headers).status_code, 200)
         with self.sessions() as db:
-            self.assertEqual(db.scalar(select(InventoryItem)).quantity, 3)
+            self.assertEqual(db.scalar(select(InventoryItem)).quantity, 11)

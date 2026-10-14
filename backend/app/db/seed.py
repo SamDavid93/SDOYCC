@@ -44,7 +44,7 @@ def seed_database(database: Session) -> None:
     booster = database.scalar(select(BoosterPack).where(BoosterPack.key == "standard-booster"))
     linked_set = database.scalar(select(CardSet).where(CardSet.name == "Legend of Blue Eyes White Dragon"))
     if booster is None:
-        booster = BoosterPack(key="standard-booster", set_id=linked_set.id if linked_set else None, image_url=linked_set.cover_image_url if linked_set else None, name="SDOYCC Origins", cards_per_pack=5, cost=BOOSTER_PRICE)
+        booster = BoosterPack(key="standard-booster", set_id=linked_set.id if linked_set else None, image_url=linked_set.cover_image_url if linked_set else None, name="SDOYCC Origins", cards_per_pack=9, cost=BOOSTER_PRICE)
         database.add(booster)
         database.flush()
         for card in cards:
@@ -69,7 +69,7 @@ def seed_database(database: Session) -> None:
         if not set_cards:
             continue
         kind = product_type_for_name(card_set.name)
-        set_booster = BoosterPack(key=f"set-booster-{card_set.id}", set_id=card_set.id, image_url=card_set.cover_image_url, name=card_set.name if kind == 'structure_deck' else f"{card_set.name} Booster", product_type=kind, cards_per_pack=5, cost=product_price(kind))
+        set_booster = BoosterPack(key=f"set-booster-{card_set.id}", set_id=card_set.id, image_url=card_set.cover_image_url, name=card_set.name if kind == 'structure_deck' else f"{card_set.name} Booster", product_type=kind, cards_per_pack=9, cost=product_price(kind))
         database.add(set_booster)
         database.flush()
         for card in set_cards:

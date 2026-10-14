@@ -11,7 +11,7 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from app.api import translated_text
 from app.core.auth import get_current_user
-from app.core.booster_rules import drawable_entries, effective_pack_size, pool_size
+from app.core.booster_rules import drawable_entries, effective_pack_size, pool_size, booster_size
 from app.core.config import settings
 from app.core.passwords import verify_password
 from app.core.permissions import admin_reader
@@ -91,7 +91,7 @@ def valid_pack(database, booster_id):
     if not pack or not pack.active:
         raise HTTPException(400, "Das gewählte Produkt ist nicht aktiv.")
     entries = deck_candidates(pack) if pack.product_type == "structure_deck" else drawable_entries(pack.entries)
-    count = deck_size(pack) if pack.product_type == "structure_deck" else effective_pack_size(pack.cards_per_pack, pool_size(entries))
+    count = deck_size(pack) if pack.product_type == "structure_deck" else booster_size(pack.cards_per_pack, entries, pack.draw_count_override)
     if not count:
         raise HTTPException(400, "Das gewählte Produkt hat keinen gültigen Karteninhalt.")
     return pack, entries

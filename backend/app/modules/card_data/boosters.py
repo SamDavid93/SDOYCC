@@ -28,7 +28,7 @@ def sync_set_boosters(database: Session) -> None:
         if pack is None:
             if card_set.id in linked_sets:
                 continue  # Preserve deliberately configured custom products.
-            pack = BoosterPack(key=key, set_id=card_set.id, name=f"{card_set.name} Booster", cost=BOOSTER_PRICE, cards_per_pack=5)
+            pack = BoosterPack(key=key, set_id=card_set.id, name=f"{card_set.name} Booster", cost=BOOSTER_PRICE, cards_per_pack=9)
             database.add(pack)
             database.flush()
         pack.product_type = product_type_for_name(card_set.name)

@@ -18,7 +18,7 @@ from app.modules.inventory import migrate_user, variant, change_stock
 from app.core.config import settings
 from app.core.pricing import product_price, purchase_limit
 from app.core.structure_decks import deck_entries, product_rules, deck_size, deck_candidates, draw_deck
-from app.core.booster_rules import drawable_entries, effective_pack_size, pool_size, MAX_WEIGHT
+from app.core.booster_rules import drawable_entries, effective_pack_size, pool_size, MAX_WEIGHT, booster_size, draw_booster, RARE_RARITIES, available_pack_size
 
 router = APIRouter(prefix="/api")
 Database = Annotated[Session, Depends(get_db)]
@@ -215,6 +215,10 @@ def boosters(database: Database, user: User = Depends(current_user), set_id: int
         .group_by(BoosterPoolEntry.booster_id)).all()
     pool_sizes = {pack_id: count if invalid == 0 else 0 for pack_id, count, invalid, collected in sizes}
     collected_counts = {pack_id: collected if invalid == 0 else 0 for pack_id, count, invalid, collected in sizes}
+    rare_packs = set(database.scalars(select(BoosterPoolEntry.booster_id).where(
+        BoosterPoolEntry.weight > 0, BoosterPoolEntry.weight <= MAX_WEIGHT,
+        func.replace(func.lower(func.trim(BoosterPoolEntry.rarity)), " ", "_").in_(RARE_RARITIES)
+    ).distinct()))
     purchased = dict(database.execute(select(ProductPurchaseCounter.booster_id, ProductPurchaseCounter.quantity).where(ProductPurchaseCounter.user_id == user.id)).all())
     sets = {item.id: item for item in database.scalars(select(CardSet))}
     deck_sizes = {pack.id: deck_size(pack) for pack in packs if pack.product_type == "structure_deck"}
@@ -227,8 +231,8 @@ def boosters(database: Database, user: User = Depends(current_user), set_id: int
     return [{"id": pack.id, "key": pack.key, "name": pack.name, "set_id": pack.set_id,
              "set_name": sets[pack.set_id].name if pack.set_id in sets else None,
              "set_code": sets[pack.set_id].code if pack.set_id in sets else None,
-             "image_url": pack.image_url, "cards_per_pack": deck_sizes[pack.id] if pack.id in deck_sizes else effective_pack_size(pack.cards_per_pack, pool_sizes.get(pack.id, 0)), "cost": product_price(pack.product_type),
-             **product_rules(pack, purchased.get(pack.id, 0)),
+             "image_url": pack.image_url, "cards_per_pack": deck_sizes[pack.id] if pack.id in deck_sizes else available_pack_size(pack.cards_per_pack, pool_sizes.get(pack.id, 0), pack.id in rare_packs, pack.draw_count_override), "cost": product_price(pack.product_type, pack.price_override),
+             **product_rules(pack, purchased.get(pack.id, 0)), "rare_guaranteed": pack.product_type == "booster" and (pack.cards_per_pack in (5, 9) or pack.draw_count_override is not None),
              "owned": stock.get(pack.id, 0), "pool_size": pool_sizes.get(pack.id, 0),
              "collection_progress": collection_progress(collected_counts.get(pack.id, 0), pool_sizes.get(pack.id, 0))} for pack in packs]
 
@@ -243,7 +247,7 @@ def booster_payload(pack: BoosterPack, owned: int = 0, purchased: int = 0) -> di
     size = pool_size(deck_candidates(pack) if pack.product_type == "structure_deck" else entries)
     for entry in entries:
         rarity_counts[entry.rarity] = rarity_counts.get(entry.rarity, 0) + (entry.quantity if pack.product_type == "structure_deck" else 1)
-    return {"id": pack.id, "key": pack.key, "name": pack.name, "set_id": pack.set_id, "image_url": pack.image_url, "cards_per_pack": deck_size(pack) if pack.product_type == "structure_deck" else effective_pack_size(pack.cards_per_pack, size), "cost": product_price(pack.product_type), **product_rules(pack, purchased), "owned": owned, "pool_size": size, "rarities": [{"rarity": rarity, "cards": count} for rarity, count in sorted(rarity_counts.items())]}
+    return {"id": pack.id, "key": pack.key, "name": pack.name, "set_id": pack.set_id, "image_url": pack.image_url, "cards_per_pack": deck_size(pack) if pack.product_type == "structure_deck" else booster_size(pack.cards_per_pack, entries, pack.draw_count_override), "cost": product_price(pack.product_type, pack.price_override), **product_rules(pack, purchased), "rare_guaranteed": pack.product_type == "booster" and (pack.cards_per_pack in (5, 9) or pack.draw_count_override is not None), "owned": owned, "pool_size": size, "rarities": [{"rarity": rarity, "cards": count} for rarity, count in sorted(rarity_counts.items())]}
 
 
 @router.get("/boosters/{booster_id:int}")
@@ -306,12 +310,12 @@ def purchase_booster(booster_id: int, payload: BoosterPurchase, database: Databa
     booster = database.get(BoosterPack, booster_id)
     if booster is None or not booster.active:
         raise HTTPException(status_code=404, detail="Booster nicht gefunden")
-    total_cost = product_price(booster.product_type) * payload.quantity
+    total_cost = product_price(booster.product_type, booster.price_override) * payload.quantity
     is_deck = booster.product_type == "structure_deck"
     if is_deck and not deck_entries(booster):
         raise HTTPException(409, "Die vollständige Deckliste wird noch geprüft; Kauf derzeit nicht verfügbar")
-    if not is_deck and not effective_pack_size(booster.cards_per_pack, pool_size(drawable_entries(booster.entries))):
-        raise HTTPException(409, "Dieser Booster hat keinen gültigen Kartenpool")
+    if not is_deck and not booster_size(booster.cards_per_pack, booster.entries, booster.draw_count_override):
+        raise HTTPException(409, "Dieser Booster hat keinen gültigen Kartenpool für seine Ziehungsregeln (mindestens Rare bei normalen Boostern)")
     counter = database.scalar(select(ProductPurchaseCounter).where(ProductPurchaseCounter.user_id == user.id, ProductPurchaseCounter.booster_id == booster_id).with_for_update())
     purchased = counter.quantity if counter else 0
     limit = purchase_limit(booster.product_type)
@@ -327,7 +331,7 @@ def purchase_booster(booster_id: int, payload: BoosterPurchase, database: Databa
         stock = UserBooster(user_id=user.id, booster_id=booster_id, quantity=0)
         database.add(stock)
     stock.quantity += payload.quantity
-    return finish(database, user, idempotency_key, action, {"booster_id": booster_id, "purchased": payload.quantity, "owned": stock.quantity, "credits_remaining": user.credits, "diamonds_remaining": user.credits, "image_url": booster.image_url, "cost": product_price(booster.product_type), "total_cost": total_cost, **product_rules(booster, counter.quantity)})
+    return finish(database, user, idempotency_key, action, {"booster_id": booster_id, "purchased": payload.quantity, "owned": stock.quantity, "credits_remaining": user.credits, "diamonds_remaining": user.credits, "image_url": booster.image_url, "cost": product_price(booster.product_type, booster.price_override), "total_cost": total_cost, **product_rules(booster, counter.quantity)})
 
 
 @router.get("/boosters/me/history")
@@ -349,9 +353,9 @@ def open_booster(booster_id: int, database: Database, user: User = Depends(curre
         raise HTTPException(status_code=400, detail="Kein ungeöffneter Booster verfügbar")
     is_deck = booster.product_type == "structure_deck"
     entries = deck_entries(booster) if is_deck else drawable_entries(booster.entries)
-    count = deck_size(booster) if is_deck else effective_pack_size(booster.cards_per_pack, pool_size(entries))
+    count = deck_size(booster) if is_deck else booster_size(booster.cards_per_pack, entries, booster.draw_count_override)
     if not count:
-        raise HTTPException(status_code=409, detail="Dieser Booster hat keinen gültigen Kartenpool")
+        raise HTTPException(status_code=409, detail="Dieser Booster hat keinen gültigen Kartenpool für seine Ziehungsregeln (mindestens Rare bei normalen Boostern)")
     stock.quantity -= 1
     migrate_user(database, user.id)
     results: list[dict] = []
@@ -362,9 +366,7 @@ def open_booster(booster_id: int, database: Database, user: User = Depends(curre
     if is_deck:
         drawn = draw_deck(booster)
     else:
-        max_weight = max(entry.weight for entry in entries)
-        weights = [entry.weight / max_weight for entry in entries]
-        drawn = random.SystemRandom().choices(entries, weights=weights, k=count)
+        drawn = draw_booster(booster.cards_per_pack, entries, booster.draw_count_override)
     for draw_index, entry in enumerate(drawn):
         item = database.scalar(select(InventoryItem).where(InventoryItem.user_id == user.id, InventoryItem.card_id == entry.card_id))
         is_new = item is None or item.quantity == 0

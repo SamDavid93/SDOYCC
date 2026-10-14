@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 import httpx
-from PIL import Image
+from PIL import Image, ImageChops
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = 'https://www.yugioh-card.com'
@@ -44,7 +44,7 @@ def download(item):
         url = item['image_source']
         for _ in range(4):
             parsed = urlparse(url)
-            if parsed.scheme != 'https' or parsed.netloc not in ('www.yugioh-card.com', 'img.yugioh-card.com') or not parsed.path.startswith('/en/wp-content/uploads/'):
+            if parsed.scheme != 'https' or parsed.netloc not in ('www.yugioh-card.com', 'img.yugioh-card.com') or not parsed.path.startswith(('/en/wp-content/uploads/', '/eu/wp-content/uploads/')):
                 raise ValueError('untrusted image redirect')
             response = httpx.get(url, timeout=30, follow_redirects=False)
             if not response.is_redirect:
@@ -53,18 +53,33 @@ def download(item):
         response.raise_for_status()
         if len(response.content) > 6 * 1024 * 1024:
             raise ValueError('image too large')
+        focus = None
         with Image.open(BytesIO(response.content)) as image:
             width, height = image.size
             extension = {'PNG': 'png', 'JPEG': 'jpg', 'WEBP': 'webp'}.get(image.format)
             if not extension or width < 240 or height < 400 or not .8 <= height / width <= 2.4:
                 raise ValueError(f'unsuitable pack image: {width}x{height}')
             image.verify()
+        if item.get('region') == 'eu':
+            # Measure the product against the white studio canvas. Only the
+            # viewport changes; the downloaded original remains untouched.
+            with Image.open(BytesIO(response.content)) as image:
+                rgb = image.convert('RGB')
+                difference = ImageChops.difference(rgb, Image.new('RGB', rgb.size, 'white')).convert('L')
+                bounds = difference.point(lambda value: 255 if value > 65 else 0).getbbox()
+                if bounds:
+                    padding = round(min(width, height) * .035)
+                    left, top, right, bottom = bounds
+                    left, top = max(0, left-padding), max(0, top-padding)
+                    right, bottom = min(width, right+padding), min(height, bottom+padding)
+                    focus = [left, top, right-left, bottom-top]
         digest = hashlib.sha256(response.content).hexdigest()
         filename = digest[:20] + '.' + extension
         folder = ROOT / 'frontend/public/booster-covers'
         folder.mkdir(parents=True, exist_ok=True)
         (folder / filename).write_bytes(response.content)
-        return {**item, 'file': 'booster-covers/' + filename, 'width': width, 'height': height, 'sha256': digest}
+        return {**item, 'file': 'booster-covers/' + filename, 'width': width, 'height': height, 'sha256': digest,
+                **({'focus': focus} if focus else {})}
     except (httpx.HTTPError, OSError, ValueError) as error:
         return {**item, 'rejected': str(error)}
 
@@ -84,7 +99,10 @@ def main():
     accepted = {identity(item['name']): item for item in results if 'file' in item}
     target = ROOT / 'frontend/src/data/officialBoosterCovers.json'
     previous = json.loads(target.read_text(encoding='utf-8')) if target.exists() else {}
-    accepted = {**previous, **accepted}  # A transient source failure never removes a working local cover.
+    # Keep verified European gallery images preferred when the US archive is refreshed.
+    european = {key: item for key, item in previous.items()
+                if item.get('region') == 'eu' and (ROOT / 'frontend/public' / item['file']).is_file()}
+    accepted = {**previous, **accepted, **european}  # Source outages never remove working covers.
     if not accepted:
         raise ValueError('No suitable official covers; keeping existing manifest.')
     temporary = target.with_suffix('.tmp')

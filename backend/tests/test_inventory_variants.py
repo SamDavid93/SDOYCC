@@ -54,16 +54,16 @@ class VariantTests(HubTestCase):
         self.assertEqual(result.status_code, 200, result.text)
         self.assertEqual(self.client.post('/api/boosters/1/open', headers=headers).json(), result.json())
         with self.sessions() as db:
-            self.assertEqual(db.scalar(select(InventoryItem.quantity)), 4)
-            self.assertEqual(db.scalar(select(func.sum(VariantInventory.quantity))), 4)
-            self.assertEqual(db.scalar(select(func.count(InventoryTransaction.id))), 2)
+            self.assertEqual(db.scalar(select(InventoryItem.quantity)), 12)
+            self.assertEqual(db.scalar(select(func.sum(VariantInventory.quantity))), 12)
+            self.assertEqual(db.scalar(select(func.count(InventoryTransaction.id))), 10)
         collection = self.client.get('/api/collection', headers=self.headers).json()['items'][0]['card']
         self.assertEqual(set(collection['collected_rarities']), {'unknown', 'rare'})
-        self.assertEqual(sorted(item['quantity'] for item in collection['owned_variants']), [1, 3])
+        self.assertEqual(sorted(item['quantity'] for item in collection['owned_variants']), [3, 9])
         journal = self.client.get('/api/inventory/me/journal?page_size=1', headers=self.headers).json()
-        self.assertEqual(journal['total'], 2)
+        self.assertEqual(journal['total'], 10)
         self.assertEqual(journal['items'][0]['reason'], 'booster_opening')
-        self.assertEqual(journal['items'][0]['balance_after'], 1)
+        self.assertEqual(journal['items'][0]['balance_after'], 9)
         self.assertEqual(self.client.get('/api/inventory/me/journal').status_code, 401)
         self.assertEqual(self.client.get('/api/admin/users/1/inventory-journal', headers=self.headers).status_code, 403)
 
