@@ -69,6 +69,7 @@ window.__pileStep=(stage)=>{frame.board.prompt={id:1200+frame.board.revision,tit
 window.__clock=(active=null,seat=0)=>{frame.seat=seat;frame.clock={remaining:[180,300],active,side_remaining:null,readiness_required:true,waiting_for:null,ready_timeout:null};frame.board.prompt=null;frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__syncedEffect=()=>{const id=Math.max(0,...frame.board.events.map(e=>e.id));frame.board.events.push({id:id+1,kind:'turn_end',player:1},{id:id+2,kind:'phase',phase:2,player:0,number:2});frame.board.turn=0;frame.board.phase=2;frame.board.prompt={id:9000,title:'Karten auswählen',hint:'Ziehe 1 Karte.',effect_card:{...card,name:'Standby-Monster'},select:true,minimum:1,maximum:1,choices:[{label:'Effektziel',card,location:{owner:0,zone:1,sequence:0}}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__mixedOrigins=()=>{window.__pick(1,1,false,1,5);frame.board.prompt.choices.forEach((c,i)=>{c.location={owner:i===3?1:0,zone:[16,2,1,32,64][i],sequence:0}});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__wideChain=(forced=false)=>{const choices=Array.from({length:20},(_,i)=>({label:'Ketteneffekt '+(i+1)+': Sehr langer Karteneffekt mit mehreren lesbaren Worten',card,location:{owner:0,zone:[2,16,1,32][i%4],sequence:i}}));if(!forced)choices.splice(2,0,{label:'Nicht anketten',card:null});frame.board.prompt={id:9900+frame.board.revision,title:'Auf die Kette reagieren',kind:'chain',choices};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__currentDecision=()=>({prompt:frame.board.prompt?.id,revision:frame.board.revision})
 window.__clockTick=()=>window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})
 window.__nextGame=()=>{frame.seat=0;frame.match={version:1,game:2,phase:'playing',score:[1,0],ready:[false,false],chooser:null,next_starter:null};frame.board.revision=1;frame.board.seat=0;frame.board.turn=0;frame.board.events=[{id:1,kind:'phase',phase:4,player:0,number:1}];frame.board.boards.forEach(s=>s.lp=8000);frame.clock={remaining:[360,360],active:null,side_remaining:null,readiness_required:true,waiting_for:0,ready_timeout:30};frame.board.prompt={id:1,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
@@ -432,6 +433,26 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     page.screenshot(path=str(ROOT/'artifacts/duel-same-card-distinct-origins.png'),full_page=True)
                     origins.get_by_role('button',name='Auswahl best\u00e4tigen',exact=True).click()
                     assert page.evaluate('window.__answers.at(-1).selected')==[2]
+                    # Chain choices use a horizontal card strip and a separate original-index pass action.
+                    for viewport in ({'width':1440,'height':1000}, {'width':390,'height':844}):
+                        page.set_viewport_size(viewport)
+                        page.evaluate('window.__wideChain()')
+                        chain=page.locator('.duel-chain-overlay')
+                        expect(chain).to_be_visible()
+                        strip=chain.locator('.duel-choice-list')
+                        assert strip.evaluate('(e)=>getComputedStyle(e).display==="flex" && e.scrollWidth>e.clientWidth && e.scrollHeight<=e.clientHeight+1')
+                        expect(strip.get_by_role('button',name='Nicht anketten',exact=True)).to_have_count(0)
+                        assert strip.locator('button').first.bounding_box()['width']>=100
+                        page.screenshot(path=str(ROOT/f'artifacts/duel-horizontal-chain-{viewport["width"]}.png'),full_page=True)
+                        chain.get_by_role('button',name='Nicht anketten',exact=True).click()
+                        assert page.evaluate('window.__answers.at(-1).selected')==[2]
+                        page.evaluate('window.__wideChain(true)')
+                        expect(chain.get_by_role('button',name='Nicht anketten',exact=True)).to_have_count(0)
+                        answers_before=page.evaluate('window.__answers.length')
+                        chain.dispatch_event('contextmenu',{'button':2})
+                        assert page.evaluate('window.__answers.length')==answers_before
+                        chain.locator('.duel-choice-list button').first.click()
+                        assert page.evaluate('window.__answers.at(-1).selected')==[0]
                     # Physical shared zones keep their DOM identity when controllers change.
                     page.evaluate('window.__physicalExtraNodes=Array.from(document.querySelectorAll(".arena-extra-row > .arena-slot"))')
                     for viewport in ({'width':1440,'height':1000}, {'width':390,'height':844}):

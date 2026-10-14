@@ -52,6 +52,8 @@ export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZo
   useEffect(() => { click.current = null; setSelection(prompt?.counter ? prompt.choices.map(() => 0) : []) }, [prompt?.id])
   useEffect(() => { setFilter(''); setLimit(60) }, [prompt?.id])
   const choices = prompt?.choices.map((choice, index) => ({ choice, index })).filter(({ choice, index }) => (!choiceIndices || choiceIndices.includes(index)) && choice.label.toLocaleLowerCase('de').includes(filter.toLocaleLowerCase('de'))).sort((a, b) => setActionsLast(a.choice, b.choice)) || []
+  const pass = chain ? prompt?.choices.map((choice, index) => ({ choice, index })).find(({ choice }) => choice.label === 'Nicht anketten' && !choice.card && !choice.action && !choice.location) : undefined
+  const cardChoices = choices.filter(({ index }) => index !== pass?.index)
   const validCount = prompt?.counter ? selection.reduce((sum, value) => sum + value, 0) === prompt.counter_total :
     selection.length >= (prompt?.minimum || 0) && selection.length <= (prompt?.maximum || 0)
   const origin=(zone?:number)=>({1:'Deck',2:'Hand',4:'Spielfeld',8:'Spielfeld',16:'Friedhof',32:'Verbannt',64:'Extra-Deck'} as Record<number,string>)[zone || 0] || 'Karte'
@@ -63,9 +65,9 @@ export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZo
     {prompt?.ordered && <p>Klicke die Karten in der gewünschten Reihenfolge an.</p>}
     {prompt?.counter && <p>Verteile {prompt.counter_total} zu entfernende Zählmarken.</p>}
     {prompt && prompt.choices.length > 30 && <label>Karten / Optionen suchen<input value={filter} onChange={event => { setFilter(event.target.value); setLimit(60) }} /></label>}
-    {!hideChoices && <div ref={list} className="duel-choice-list">{prompt && choices.slice(0, limit).map(({ choice, index }) => prompt.counter ?
+    {!hideChoices && <div ref={list} className="duel-choice-list">{prompt && cardChoices.slice(0, limit).map(({ choice, index }) => prompt.counter ?
       <label key={index}>{choice.label} · höchstens {prompt.counter_limits?.[index]}<input type="number" min={0} max={prompt.counter_limits?.[index]} value={selection[index] || 0} disabled={disabled} onChange={event => setSelection(old => old.map((value, i) => i === index ? Math.max(0, Math.min(prompt.counter_limits?.[index] || 0, Math.floor(Number(event.target.value)))) : value))} /></label> :
-      <button key={index} data-duel-action={choice.action} data-choice-zone={choice.location?.zone} data-choice-owner={choice.location?.owner} aria-description={choice.location ? `${seat !== undefined && choice.location.owner !== seat ? 'Gegner: ' : ''}${origin(choice.location.zone)}` : undefined} className={!disabled && (choice.action === 'activate' || (chain && choice.card) || (prompt.effect_location && choice.label === 'Ja')) ? 'effect-available' : undefined} disabled={disabled} aria-pressed={prompt.select ? selection.includes(index) : undefined} onClick={event => {
+      <button key={index} title={choice.label} data-duel-action={choice.action} data-choice-zone={choice.location?.zone} data-choice-owner={choice.location?.owner} aria-description={choice.location ? `${seat !== undefined && choice.location.owner !== seat ? 'Gegner: ' : ''}${origin(choice.location.zone)}` : undefined} className={!disabled && (choice.action === 'activate' || (chain && choice.card) || (prompt.effect_location && choice.label === 'Ja')) ? 'effect-available' : undefined} disabled={disabled} aria-pressed={prompt.select ? selection.includes(index) : undefined} onClick={event => {
         if (disabled || event.detail > 1) return
         if (choice.card) onPreview?.(choice.card, choice.location)
         if (choice.card && !prompt.select && !prompt.selection_progress && (choice.action === 'activate' || chain)) onActivate?.(choice.card)
@@ -95,7 +97,8 @@ export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZo
         <span>{prompt.ordered && selection.includes(index) && `${selection.indexOf(index) + 1}. `}{choice.label}</span>
         {choice.card && choice.location && <div className="duel-choice-origin" aria-hidden="true"><CardOrigin zone={choice.location.zone} opponent={seat !== undefined && choice.location.owner !== seat} /></div>}
       </button>)}</div>}
-    {choices.length > limit && <button onClick={() => setLimit(old => old + 60)}>Weitere Optionen anzeigen ({choices.length - limit})</button>}
+    {cardChoices.length > limit && <button onClick={() => setLimit(old => old + 60)}>Weitere Optionen anzeigen ({cardChoices.length - limit})</button>}
+    {pass && prompt && <div className="duel-chain-footer"><span>Oder mit Rechtsklick passen</span><button className="duel-chain-pass" disabled={disabled} onClick={() => send('answer', { prompt: prompt.id, selected: [pass.index] })}>Nicht anketten</button></div>}
     {!hideConfirmation && (prompt?.select || prompt?.counter) && <button disabled={disabled || !validCount} onClick={() => send('answer', { prompt: prompt.id, selected: selection })}>{attackTarget ? 'Angriff bestätigen' : 'Auswahl bestätigen'}</button>}
     {!hideConfirmation && prompt?.select && selection.length > 0 && <button disabled={disabled} onClick={() => setSelection([])}>Auswahl zurücksetzen</button>}
     {prompt?.cancel && <button disabled={disabled} onClick={() => send('answer', { prompt: prompt.id, selected: [], cancel: true })}>{prompt.selection_progress?.can_finish ? 'Auswahl bestätigen' : 'Auswahl abbrechen'}</button>}
