@@ -14,6 +14,23 @@ CATALOG = {101: {'name': 'Testkarte', 'description': 'Privater Text', 'atk': 100
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_sparse_field_snapshot_keeps_summons_in_same_slots_for_both_seats(self):
+        def board():
+            return {'deck': 30, 'zones': {str(zone): [] for zone in (2, 4, 8, 16, 32, 64)}}
+        boards = [board(), board()]
+        boards[1]['zones']['4'] = [None, None, {'code': 101, 'position': 1}, None, None, None, {'code': 101, 'position': 1}]
+        boards[1]['zones']['8'] = [None, {'code': 101, 'position': 8}]
+        self.p.consume({'status': 0, 'messages': [], 'query_boards': boards})
+        for seat in (0, 1):
+            field = self.p.view(seat)['boards'][1]['field']
+            self.assertEqual([(entry['zone'], entry['sequence']) for entry in field], [(4, 2), (4, 6), (8, 1)])
+            self.assertEqual([entry['card']['code'] for entry in field[:2]], [101, 101])
+            self.assertEqual(field[2]['card'] is None, seat == 0)
+        boards[1]['zones']['4'][2] = None
+        self.p.consume({'status': 0, 'messages': [], 'query_boards': boards})
+        for seat in (0, 1):
+            self.assertEqual([(entry['zone'], entry['sequence']) for entry in self.p.view(seat)['boards'][1]['field']], [(4, 6), (8, 1)])
+
     def test_step_selection_exposes_required_and_selected_counts_only_to_deciding_player(self):
         message = struct.pack('<BBBBII', 26, 0, 0, 1, 2, 2)
         message += struct.pack('<IIBBII', 1, 101, 0, 1, 0, 0)

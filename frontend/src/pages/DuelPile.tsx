@@ -35,7 +35,7 @@ export function DuelPile({ owner, zone, label, values, prompt, disabled, activeL
         {view==='menu' && summons.length>0 && <h3>Mögliche Spezialbeschwörungen</h3>}
         {view==='menu' && effects.length>0 && <button className="arena-pile-effect-button" disabled={disabled} onClick={()=>setView('effects')}>✦ Effekt aktivieren ({effects.length})</button>}
         {view==='effects' && <><button className="arena-pile-back" onClick={()=>setView('menu')}>← Zurück</button><h3>Aktivierbare Karten</h3></>}
-        <div className="arena-pile-options">{options.map(choice=><button key={choice.index} disabled={disabled} aria-label={choice.label} onClick={()=>{chooseAction(choice.index);setOpen(false)}}>
+        <div className="arena-pile-options">{options.map(choice=><button key={choice.index} data-duel-action={choice.action} disabled={disabled} aria-label={choice.label} onClick={()=>{chooseAction(choice.index);setOpen(false)}}>
           {choice.card?.image_url && <img src={API_BASE_URL.replace(/\/api\/?$/,'')+choice.card.image_url} alt="" onError={event=>{event.currentTarget.hidden=true}} />}
           <span><strong>{choice.card?.name || choice.label}</strong><small>{choice.action==='special_summon'?'Spezialbeschwören':choice.label}</small></span><b aria-hidden="true">→</b>
         </button>)}</div>

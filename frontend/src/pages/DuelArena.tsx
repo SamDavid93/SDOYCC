@@ -5,6 +5,7 @@ import cardBack from '../assets/card-back.jpg'
 import { DuelPhaseControl } from './DuelPhaseControl'
 import { effectAvailableAt } from './duelFeedback'
 import { DuelPlayerHUD } from './DuelPlayerHUD'
+import { DuelActionLabel } from './DuelActionLabel'
 import { DuelPile } from './DuelPile'
 
 type Props = { sides: Side[]; seat: number; card: (value: EngineCard | null, key: string, covered?: boolean, location?: DuelLocation) => ReactNode;
@@ -36,7 +37,7 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
       {zoneChoice >= 0 && <button className="arena-zone-choice" aria-label={`${label} auswählen`} disabled={disabled} aria-pressed={zoneSelection.includes(zoneChoice)} onClick={() => chooseZone(zoneChoice)} />}
       {options.length > 0 && <button className="arena-action-hotspot" aria-label={`${label} ${prompt?.select ? 'auswählen' : 'Aktionen'}`} aria-pressed={selected} onClick={event => { if(event.detail < 2) chooseLocation({owner,zone,sequence}) }} onDoubleClick={() => { if(prompt?.select) chooseLocation({owner,zone,sequence},true) }} />}
       {options.length > 0 && <span className="arena-action-badge" aria-hidden="true">{attackReady ? '⚔' : prompt?.select ? selected ? '✓' : '◎' : '✦'}</span>}
-      {activeAt(owner,zone,sequence) && options.length > 0 && !prompt?.select && !prompt?.counter && <div className="arena-card-actions" aria-label="Kartenaktionen">{options.map(choice => <button key={choice.index} disabled={disabled} onClick={() => chooseAction(choice.index)}>{choice.label}</button>)}</div>}
+      {activeAt(owner,zone,sequence) && options.length > 0 && !prompt?.select && !prompt?.counter && <div className="arena-card-actions" aria-label="Kartenaktionen">{options.map(choice => <button key={choice.index} className="duel-action-button" data-duel-action={choice.action} disabled={disabled} onClick={() => chooseAction(choice.index)}><DuelActionLabel action={choice.action} label={choice.label} /></button>)}</div>}
       {activeAt(owner,zone,sequence) && selected && prompt?.select && <div className="arena-card-actions" aria-label="Auswahl auf dem Feld"><button disabled={disabled || !selectionValid} onClick={confirmSelection}>{selectionLabel}</button><button disabled={disabled} onClick={()=>chooseLocation({owner,zone,sequence})}>Abwählen</button></div>}
       <span className="arena-zone-label">{label}</span>
       {entry ? card(entry.card, `${owner}:${zone}:${sequence}`, Boolean(entry.position & 10), {owner,zone,sequence}) : <span className="arena-empty-mark">◇</span>}
@@ -67,7 +68,7 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
           onDragStart={event => { setDragging(index); setDrop(null); event.dataTransfer.setData('text/plain', String(index)); event.dataTransfer.effectAllowed = 'move' }} onDragEnd={() => setDragging(null)}>
           {card(value, `hand:${index}`, false, {owner,zone:2,sequence:index})}
           {activeAt(owner,2,index) && prompt?.select && handChoices.some(choice=>zoneSelection.includes(choice.index)) && <div className="arena-hand-actions" aria-label="Auswahl auf der Hand"><button disabled={disabled || !selectionValid} onClick={confirmSelection}>{selectionLabel}</button><button disabled={disabled} onClick={()=>chooseLocation({owner,zone:2,sequence:index})}>Abwählen</button></div>}
-          {options.length > 0 && <div className="arena-hand-actions" aria-label="Kartenaktionen">{options.map(option => <button key={option.choiceIndex} disabled={disabled} onClick={() => { chooseAction(option.choiceIndex, drop?.index === index ? drop.target : undefined); setDrop(null) }}>{option.action === 'set_spell' || option.action === 'set_monster' ? 'Setzen' : option.action === 'activate' ? 'Aktivieren' : option.action === 'special_summon' ? 'Spezialbeschwören' : 'Beschwören'}</button>)}{drop?.index === index && <button onClick={() => setDrop(null)}>Abbrechen</button>}</div>}
+          {options.length > 0 && <div className="arena-hand-actions" aria-label="Kartenaktionen">{options.map(option => <button key={option.choiceIndex} className="duel-action-button" data-duel-action={option.action} disabled={disabled} onClick={() => { chooseAction(option.choiceIndex, drop?.index === index ? drop.target : undefined); setDrop(null) }}><DuelActionLabel action={option.action} label={option.action === 'set_spell' || option.action === 'set_monster' ? 'Setzen' : option.action === 'activate' ? 'Aktivieren' : option.action === 'special_summon' ? 'Spezialbeschwören' : 'Beschwören'} /></button>)}{drop?.index === index && <button onClick={() => setDrop(null)}>Abbrechen</button>}</div>}
         </div>
       })}</div>
       <div className="arena-layout">

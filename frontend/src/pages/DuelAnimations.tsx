@@ -9,6 +9,7 @@ import { bossSummon, DuelSummonCutin } from './DuelSummonCutin'
 type Location = { owner: number; zone: number; sequence: number; position?: number }
 export type DuelEvent = { id: number; kind: string; winner?: number | null; added?: boolean; delta?: number; affected_cards?: { role: string; name: string }[]; direct?: boolean; card?: EngineCard; effect?: string | null; player?: number; count?: number; value?: number; phase?: number; number?: number; step?: number; code?: number; text?: string; method?: string; values?: number[]; cards?: { name: string }[]; before?: Location & { position?: number }; after?: Location & { position?: number }; source?: Location; target?: Location; attacker?: Location; defender?: Location; location?: Location }
 type Mode = 'full' | 'fast' | 'reduced'
+export type DuelPlayback = { through: number; idle: boolean; event: DuelEvent | null }
 const captions: Record<string, string> = { draw: 'Karte gezogen', move: 'Karte bewegt', position: 'Position geändert',
   turn: 'Neuer Spielzug', turn_end: 'Zug beendet', phase_request: 'Beendet Zug', phase: 'Phasenwechsel', lp: 'Lebenspunkte geändert', summon: 'Beschwörung',
   chain: 'Effekt aktiviert', chain_step: 'Kette', attack: 'Angriff', win: 'Duell beendet',
@@ -18,7 +19,7 @@ const captions: Record<string, string> = { draw: 'Karte gezogen', move: 'Karte b
 const methods: Record<string, string> = { normal: 'Normal-/Tributbeschwörung', flip: 'Flippbeschwörung', special: 'Spezialbeschwörung', fusion: 'Fusion', synchro: 'Synchro', xyz: 'Xyz', link: 'Link', ritual: 'Ritual', pendulum: 'Pendel', covered: 'Verdeckte Beschwörung' }
 const chainSteps: Record<number, string> = { 71: 'Kette fortgesetzt', 72: 'Effekt wird aufgelöst', 73: 'Effekt aufgelöst', 74: 'Kette beendet', 75: 'Aktivierung negiert', 76: 'Effekt negiert' }
 
-export function DuelAnimations({ events, runId, onEffect, seat, disabled, surrender, phase, turn, turnNumber, decisionPending=false }: { events: DuelEvent[]; runId: string; phase?: number; turn?: number; turnNumber?: number; decisionPending?:boolean;
+export function DuelAnimations({ events, runId, onEffect, onPlayback, seat, disabled, surrender, phase, turn, turnNumber, decisionPending=false }: { events: DuelEvent[]; runId: string; phase?: number; turn?: number; turnNumber?: number; decisionPending?:boolean; onPlayback?: (playback: DuelPlayback) => void;
   onEffect?: (card: EngineCard, effect?: string | null) => void; seat?: number; disabled?: boolean; surrender?: () => void }) {
   const [mode, setMode] = useState<Mode>(() => {
     const stored = localStorage.getItem('duel-motion')
@@ -29,6 +30,8 @@ export function DuelAnimations({ events, runId, onEffect, seat, disabled, surren
   const [queue, setQueue] = useState<DuelEvent[]>([])
   const [cutins,setCutins]=useState(()=>localStorage.getItem('duel-cutins')!=='off')
   const watermark = useRef<number | null>(null), audio = useRef<DuelSoundPlayer | null>(null)
+  const completed = useRef(0)
+  const queuedThrough = useRef(0)
   const lastSound = useRef<number | null>(null), lastPhase = useRef<string | null>(null)
   useEffect(() => { watermark.current = null; lastSound.current=null; lastPhase.current=null; audio.current?.stop(); setQueue([]); setActive(null) }, [runId])
   useEffect(() => {
@@ -47,12 +50,14 @@ export function DuelAnimations({ events, runId, onEffect, seat, disabled, surren
     const newest = Math.max(0, ...events.map(event => event.id))
     if (watermark.current === null) {
       watermark.current = newest
+      completed.current = newest
+      queuedThrough.current = newest
       if (phase) setQueue([{id:-1,kind:'phase',phase,player:turn,number:turnNumber}])
       return
     }
     const unseen = events.filter(event => event.id > watermark.current!).sort((a, b) => a.id - b.id)
     watermark.current = Math.max(watermark.current, newest)
-    if (document.hidden) return
+    if (document.hidden) { completed.current = newest; queuedThrough.current = newest; return }
     // The viewer follows confirmed effects immediately, independently of animation playback.
     const effects = unseen.filter(event => event.kind === 'chain' && event.card)
     const latestEffect = effects.at(-1)
@@ -68,7 +73,8 @@ export function DuelAnimations({ events, runId, onEffect, seat, disabled, surren
       lastPhase.current = key
       return true
     })
-    if (shown.length) setQueue(old => [...old, ...shown].slice(-30))
+    // Preserve attacks, damage and the final result in engine order.
+    if (shown.length) { queuedThrough.current = shown.at(-1)!.id; setQueue(old => [...old, ...shown]) }
   }, [events, onEffect, seat, sound])
   useEffect(() => {
     if (active || !queue.length) return
@@ -78,9 +84,18 @@ export function DuelAnimations({ events, runId, onEffect, seat, disabled, surren
     if (!active) return
     const routine = ['move','position','shuffle','counter','material','equip','unequip','target','untarget','hint','zones'].includes(active.kind)
     const duration = cutins && bossSummon(active,seat) ? mode==='full'?1450:mode==='fast'?650:350 : active.kind === 'win' ? 1800 : active.kind === 'chain' && active.card ? (mode === 'fast' ? 450 : 900) : phaseAnnouncement(active,seat) ? 850 : active.kind === 'chain_step' ? 180 : routine ? 90 : mode === 'full' ? 650 : mode === 'fast' ? 220 : 180
-    const timer = setTimeout(() => setActive(null), duration)
+    const timer = setTimeout(() => { completed.current = Math.max(completed.current, active.id); setActive(null) }, duration)
     return () => clearTimeout(timer)
   }, [active, mode, onEffect, seat, cutins])
+  useEffect(() => {
+    // Defer until newly received events have entered the queue. Reporting idle
+    // in the ingestion render would reveal a terminal snapshot too early.
+    const timer = setTimeout(() => {
+      const idle = !active && !queue.length && completed.current >= queuedThrough.current
+      onPlayback?.({ through: idle ? watermark.current || 0 : completed.current, idle, event: active })
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [active, queue, events, onPlayback])
   useEffect(() => {
     if (!active || lastSound.current===active.id) return
     lastSound.current=active.id
@@ -90,7 +105,7 @@ export function DuelAnimations({ events, runId, onEffect, seat, disabled, surren
     }
   }, [active, sound, seat, cutins, mode])
   useEffect(() => {
-    const catchUp = () => { if (document.hidden) { setQueue([]); setActive(null); audio.current?.stop() } }
+    const catchUp = () => { if (document.hidden) { completed.current = watermark.current || 0; setQueue([]); setActive(null); audio.current?.stop() } }
     document.addEventListener('visibilitychange', catchUp)
     return () => document.removeEventListener('visibilitychange', catchUp)
   }, [])
@@ -107,7 +122,7 @@ export function DuelAnimations({ events, runId, onEffect, seat, disabled, surren
       <label><input aria-label="Boss-Cut-ins" type="checkbox" checked={cutins} onChange={event=>{setCutins(event.target.checked);localStorage.setItem('duel-cutins',event.target.checked?'on':'off')}} />Boss-Cut-ins</label>
       <button aria-pressed={sound} onClick={() => void toggleSound()}>Ton {sound ? 'an' : 'aus'}</button>
       <label>Lautstärke<input aria-label="Duell-Lautstärke" type="range" min="0" max="1" step="0.05" value={volume} onChange={event => { const next=Number(event.target.value); setVolume(next); localStorage.setItem('duel-volume',String(next)) }} /></label>
-      <button disabled={!active && !queue.length} onClick={() => { setQueue([]); setActive(null); audio.current?.stop() }}>Animationen überspringen</button>
+      <button disabled={!active && !queue.length} onClick={() => { completed.current = watermark.current || 0; setQueue([]); setActive(null); audio.current?.stop() }}>Animationen überspringen</button>
     </div>
     {surrender && <button className="duel-surrender" disabled={disabled} onClick={surrender}>Duell aufgeben</button>}
     <a href={`${import.meta.env.BASE_URL}duel-sounds/CREDITS.md`} target="_blank" rel="noreferrer">Soundquellen</a>
