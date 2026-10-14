@@ -11,9 +11,11 @@ import './master-duel-content.css'
 import './master-duel-game.css'
 import { PackOpeningProvider } from './components/PackOpening'
 import { SessionProvider } from './Session'
+import { InteractionPolicy } from './components/InteractionPolicy'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <InteractionPolicy />
     <HashRouter>
       <SessionProvider><PackOpeningProvider><App /></PackOpeningProvider></SessionProvider>
     </HashRouter>

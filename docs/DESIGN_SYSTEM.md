@@ -29,6 +29,13 @@ Manrope und DM Mono werden mit ihren SIL-OFL-Lizenzen lokal ausgeliefert:
 Tastaturfokus, mobile Menüsteuerung mit Escape und reduzierte Bewegung werden
 berücksichtigt. Der vorgegebene Copyright-Hinweis bleibt unverändert.
 
+`InteractionPolicy` unterdrückt seitenweit das Browser-Kontextmenü, ohne die
+Rechtsklick-Aktionen des Spiels oder Deckeditors zu blockieren. Die Oberfläche
+verwendet `user-select: none`; Eingabefelder bleiben bearbeitbar und ihre Inhalte
+auswählbar. Im Duell bedeutet Rechtsklick ausschließlich dann „Nicht anketten“,
+wenn diese Wahl im aktuellen Kettenfenster angeboten wird. Verpflichtende
+Effekte und laufende Antworten werden dadurch nicht abgebrochen.
+
 ## Prüfung
 
 `backend/tests/dark_design_browser_checks.py` öffnet die echte Anwendung mit einer

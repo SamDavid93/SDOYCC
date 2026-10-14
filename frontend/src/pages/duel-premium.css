@@ -1,4 +1,5 @@
 /* The arena is a self-contained scene. Decoration never catches player input. */
+.duel-chain-notice{flex-wrap:wrap}.duel-chain-notice>small{font-size:10px;color:#a5bed0;margin-left:auto}
 .app-shell:has(.duel-worker-table.is-playing){background:#060c14}
 .app-shell:has(.duel-worker-table.is-playing)>.sidebar,
 .app-shell:has(.duel-worker-table.is-playing)>.mobile-scrim,

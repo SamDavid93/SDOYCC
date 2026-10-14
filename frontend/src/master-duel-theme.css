@@ -26,6 +26,10 @@
   accent-color: var(--md-gold);
 }
 body { background: var(--md-bg); }
+html, body, body * { -webkit-user-select: none !important; user-select: none !important; }
+body :is(input, textarea, [contenteditable=true], [contenteditable=''], [contenteditable=plaintext-only]) {
+  -webkit-user-select: text !important; user-select: text !important;
+}
 ::selection { color: #fff7d9; background: #816438; }
 :focus-visible { outline: 2px solid var(--md-cyan); outline-offset: 4px; }
 button, a, input, select, textarea, summary { -webkit-tap-highlight-color: transparent; }
