@@ -57,7 +57,7 @@ window.__log=()=>{frame.board.events.push({id:3,kind:'attack',affected_cards:[{r
 window.__effect=(seat)=>{frame.seat=seat;frame.board.seat=seat;frame.board.prompt=null;frame.board.events.push({id:frame.board.events.length+1,kind:'chain',card,source:{owner:0,zone:4,sequence:0},number:1,effect:'Ein bestätigter Testeffekt'});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__feedback=(chain=false)=>{frame.seat=0;frame.board.seat=0;frame.board.turn=0;frame.board.boards[0]={...side,hand:[card],grave:[card],extra:[card],removed:[card],field:[{zone:4,sequence:0,position:1,card},{zone:8,sequence:0,position:8,card}]};frame.board.prompt={id:300,title:chain?'Auf die Kette reagieren':'Aktion wählen',choices:[2,4,8,16,32,64,1].map(zone=>({label:'Aktivieren: Testkarte '+zone,card,...(chain?{}:{action:'activate'}),location:{owner:0,zone,sequence:0}}))};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__announce=(kind,phase,player=1)=>{frame.board.events.push({id:Math.max(0,...frame.board.events.map(e=>e.id))+1,kind,phase,player,number:2});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
-window.__pick=(minimum,maximum=minimum,ordered=false,zone=1)=>{frame.board.prompt={id:500+frame.board.revision,title:'Karten auswählen',hint:'Wähle Karten, die deiner Hand hinzugefügt werden.',select:true,minimum,maximum,ordered,choices:[0,1,2].map(i=>({label:'Auswahl '+(i+1),card,location:{owner:0,zone,sequence:i}}))};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__pick=(minimum,maximum=minimum,ordered=false,zone=1,count=3)=>{frame.board.prompt={id:500+frame.board.revision,title:'Karten auswählen',hint:'Wähle Karten, die deiner Hand hinzugefügt werden.',select:true,minimum,maximum,ordered,choices:Array.from({length:count},(_,i)=>i).map(i=>({label:'Auswahl '+(i+1),card,location:{owner:0,zone,sequence:i}}))};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__pickStep=()=>{window.__pick(2);frame.board.prompt={...frame.board.prompt,title:'Auswahl ändern',select:false,cancel:false,selection_progress:{minimum:2,maximum:2,selected:0,can_finish:false}};window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__scene=(event)=>{frame.board.seat=frame.seat=0;frame.board.turn=0;frame.board.phase=4;frame.board.prompt=null;
 const visible={...card,image_url:'/scene-card.jpg',atk:3000,defense:2500};
@@ -393,6 +393,28 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     hand_popup.get_by_role('button',name='Auswahl 2',exact=True).dblclick()
                     expect(hand_popup).to_have_count(0)
                     assert page.evaluate('window.__answers.at(-1).selected')==[1]
+                    # Effect choices stay a single horizontal row; clicking previews without submitting.
+                    for viewport in ({'width':1440,'height':1000}, {'width':390,'height':844}):
+                        page.set_viewport_size(viewport)
+                        page.evaluate('window.__scene();window.__pick(2,2,false,1,24)')
+                        popup=page.locator('.arena-card-choice-popup')
+                        expect(popup).to_be_visible()
+                        strip=popup.locator('.duel-choice-list')
+                        assert strip.evaluate('(e)=>e.scrollWidth>e.clientWidth && e.scrollHeight<=e.clientHeight+1')
+                        count_before=page.evaluate('window.__answers.length')
+                        popup.get_by_role('button',name='Auswahl 1',exact=True).click()
+                        expect(page.locator('.duel-card-inspector h2')).to_have_text('Testkarte')
+                        expect(page.locator('.duel-card-description')).to_have_text('Deutscher Kartentext')
+                        assert page.evaluate('window.__answers.length')==count_before
+                        strip.hover()
+                        page.mouse.wheel(0,500)
+                        page.wait_for_timeout(150)
+                        assert strip.evaluate('(e)=>e.scrollLeft>0')
+                        popup.get_by_role('button',name='Auswahl 24',exact=True).click()
+                        popup.get_by_role('button',name='Auswahl bestätigen',exact=True).click()
+                        assert page.evaluate('window.__answers.at(-1).selected')==[0,23]
+                        page.evaluate('window.__scene();window.__pick(1,1,false,2,24)')
+                        page.screenshot(path=str(ROOT/f'artifacts/duel-horizontal-choices-{viewport["width"]}.png'),full_page=True)
                     # Physical shared zones keep their DOM identity when controllers change.
                     page.evaluate('window.__physicalExtraNodes=Array.from(document.querySelectorAll(".arena-extra-row > .arena-slot"))')
                     for viewport in ({'width':1440,'height':1000}, {'width':390,'height':844}):

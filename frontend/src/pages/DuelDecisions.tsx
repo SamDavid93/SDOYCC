@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { API_BASE_URL } from '../api/transport'
 import { includeChoice, selectionComplete } from './duelSelection'
 import { DuelSelectionProgress } from './DuelSelectionProgress'
+import type { EngineCard } from './DuelWorkerTable'
 
 export type DuelLocation = { owner: number; zone: number; sequence: number }
 export type WorkerPrompt = { id: number; title: string; kind?: string; placement?: boolean; hint?: string; select?: boolean; ordered?: boolean; cancel?: boolean;
@@ -10,9 +11,10 @@ export type WorkerPrompt = { id: number; title: string; kind?: string; placement
   selection_progress?: { minimum: number; maximum: number; selected: number; can_finish: boolean };
   effect_card?: { code: number; name: string; image_url?: string; description?: string };
   counter?: boolean; counter_limits?: number[]; counter_total?: number; minimum?: number; maximum?: number;
-  choices: { label: string; card: { name: string; image_url?: string; type?: number } | null; action?: string; location?: DuelLocation }[] }
+  choices: { label: string; card: (Partial<EngineCard> & { name: string }) | null; action?: string; location?: DuelLocation }[] }
 
-export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZoneSelection, hideChoices = false, hideSurrender = false, attackTarget = false, choiceIndices, hideConfirmation = false, showOrigins=false }: { prompt: WorkerPrompt | null | undefined; disabled: boolean; showOrigins?:boolean;
+export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZoneSelection, hideChoices = false, hideSurrender = false, attackTarget = false, choiceIndices, hideConfirmation = false, showOrigins=false, onPreview }: { prompt: WorkerPrompt | null | undefined; disabled: boolean; showOrigins?:boolean;
+  onPreview?: (card: Partial<EngineCard> & { name: string }) => void;
   hideConfirmation?: boolean;
   choiceIndices?: number[];
   hideChoices?: boolean; hideSurrender?: boolean; attackTarget?: boolean;
@@ -21,6 +23,19 @@ export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZo
   const [localSelection, setLocalSelection] = useState<number[]>([])
   const click = useRef<{ prompt: number; index: number; before: number[] } | null>(null)
   const pendingClick = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const list = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const element = list.current
+    if (!element) return
+    const wheel = (event: WheelEvent) => {
+      if (!element.closest('.arena-card-choice-popup')) return
+      if (element.scrollWidth <= element.clientWidth || Math.abs(event.deltaX) >= Math.abs(event.deltaY) || event.ctrlKey) return
+      event.preventDefault()
+      element.scrollLeft += event.deltaY * (event.deltaMode === 1 ? 20 : event.deltaMode === 2 ? element.clientWidth : 1)
+    }
+    element.addEventListener('wheel', wheel, { passive: false })
+    return () => element.removeEventListener('wheel', wheel)
+  }, [prompt?.id, hideChoices])
   useEffect(() => () => { if (pendingClick.current) clearTimeout(pendingClick.current) }, [prompt?.id])
   const chain = prompt?.kind === 'chain' || prompt?.title === 'Auf die Kette reagieren'
   useEffect(() => {
@@ -46,10 +61,11 @@ export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZo
     {prompt?.ordered && <p>Klicke die Karten in der gewünschten Reihenfolge an.</p>}
     {prompt?.counter && <p>Verteile {prompt.counter_total} zu entfernende Zählmarken.</p>}
     {prompt && prompt.choices.length > 30 && <label>Karten / Optionen suchen<input value={filter} onChange={event => { setFilter(event.target.value); setLimit(60) }} /></label>}
-    {!hideChoices && <div className="duel-choice-list">{prompt && choices.slice(0, limit).map(({ choice, index }) => prompt.counter ?
+    {!hideChoices && <div ref={list} className="duel-choice-list">{prompt && choices.slice(0, limit).map(({ choice, index }) => prompt.counter ?
       <label key={index}>{choice.label} · höchstens {prompt.counter_limits?.[index]}<input type="number" min={0} max={prompt.counter_limits?.[index]} value={selection[index] || 0} disabled={disabled} onChange={event => setSelection(old => old.map((value, i) => i === index ? Math.max(0, Math.min(prompt.counter_limits?.[index] || 0, Math.floor(Number(event.target.value)))) : value))} /></label> :
       <button key={index} data-duel-action={choice.action} aria-description={showOrigins ? origin(choice.location?.zone) : undefined} className={!disabled && (choice.action === 'activate' || (chain && choice.card) || (prompt.effect_location && choice.label === 'Ja')) ? 'effect-available' : undefined} disabled={disabled} aria-pressed={prompt.select ? selection.includes(index) : undefined} onClick={event => {
         if (disabled || event.detail > 1) return
+        if (choice.card) onPreview?.(choice.card)
         if (prompt.selection_progress) {
           if (pendingClick.current) clearTimeout(pendingClick.current)
           pendingClick.current = setTimeout(() => { pendingClick.current = null; send('answer', { prompt: prompt.id, selected: [index] }) }, 300)
