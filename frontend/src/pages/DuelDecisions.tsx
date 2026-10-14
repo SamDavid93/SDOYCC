@@ -13,7 +13,8 @@ export type WorkerPrompt = { id: number; title: string; kind?: string; placement
   counter?: boolean; counter_limits?: number[]; counter_total?: number; minimum?: number; maximum?: number;
   choices: { label: string; card: (Partial<EngineCard> & { name: string }) | null; action?: string; location?: DuelLocation }[] }
 
-export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZoneSelection, hideChoices = false, hideSurrender = false, attackTarget = false, choiceIndices, hideConfirmation = false, showOrigins=false, onPreview }: { prompt: WorkerPrompt | null | undefined; disabled: boolean; showOrigins?:boolean;
+export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZoneSelection, hideChoices = false, hideSurrender = false, attackTarget = false, choiceIndices, hideConfirmation = false, showOrigins=false, onPreview, onActivate }: { prompt: WorkerPrompt | null | undefined; disabled: boolean; showOrigins?:boolean;
+  onActivate?: (card: Partial<EngineCard> & { name: string }) => void;
   onPreview?: (card: Partial<EngineCard> & { name: string }) => void;
   hideConfirmation?: boolean;
   choiceIndices?: number[];
@@ -66,6 +67,7 @@ export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZo
       <button key={index} data-duel-action={choice.action} aria-description={showOrigins ? origin(choice.location?.zone) : undefined} className={!disabled && (choice.action === 'activate' || (chain && choice.card) || (prompt.effect_location && choice.label === 'Ja')) ? 'effect-available' : undefined} disabled={disabled} aria-pressed={prompt.select ? selection.includes(index) : undefined} onClick={event => {
         if (disabled || event.detail > 1) return
         if (choice.card) onPreview?.(choice.card)
+        if (choice.card && !prompt.select && !prompt.selection_progress && (choice.action === 'activate' || chain)) onActivate?.(choice.card)
         if (prompt.selection_progress) {
           if (pendingClick.current) clearTimeout(pendingClick.current)
           pendingClick.current = setTimeout(() => { pendingClick.current = null; send('answer', { prompt: prompt.id, selected: [index] }) }, 300)

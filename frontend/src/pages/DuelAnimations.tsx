@@ -61,7 +61,7 @@ export function DuelAnimations({ events, runId, onEffect, onPlayback, seat, disa
     // The viewer follows confirmed effects immediately, independently of animation playback.
     const effects = unseen.filter(event => event.kind === 'chain' && event.card)
     const latestEffect = effects.at(-1)
-    if (latestEffect?.card) onEffect?.(latestEffect.card, latestEffect.effect)
+    if (latestEffect?.card && latestEffect.source?.owner === seat) onEffect?.(latestEffect.card, latestEffect.effect)
     if (sound) effects.filter(event => event.source?.owner === seat).forEach(event => audio.current?.play(event))
     const shown = unseen.filter(event => {
       if (event.kind === 'information') return false

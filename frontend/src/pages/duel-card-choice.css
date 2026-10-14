@@ -1,4 +1,9 @@
-.duel-arena .arena-decision-overlay.arena-card-choice-popup { width: min(1000px, calc(100% - 24px)); top: 14%; bottom: auto; left: 50%; transform: translateX(-50%); max-height: none; overflow: hidden; padding: 10px 14px; }
+.duel-arena .arena-decision-overlay.arena-card-choice-popup { width: min(1000px, calc(100% - 24px)); top: auto; bottom: 22%; left: 50%; transform: translateX(-50%); max-height: none; overflow: hidden; padding: 10px 14px; background: linear-gradient(140deg, #163950a8, #091b2e91); backdrop-filter: blur(2px); }
+.arena-card-choice-popup:has(.duel-effect-context) .duel-decisions > p { display: none; }
+.duel-arena .arena-card-choice-popup .duel-choice-list > button { background: #102d426b; }
+.duel-effect-context { padding: 6px 8px; border-left: 2px solid #eed292; background: #10243866; margin-bottom: 5px; }
+.duel-effect-context strong { color: #ffe2a3; font-size: 13px; }
+.duel-effect-context p { color: #edf5ff; font-size: 11px; line-height: 1.4; margin: 4px 0 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .arena-card-choice-popup .duel-decisions { display: block; max-height: none; }
 .arena-card-choice-popup .duel-decisions h2 { font-size: 15px; margin: 0 0 5px; }
 .arena-card-choice-popup .duel-decisions > p { margin: 3px 0; font-size: 11px; line-height: 1.3; }
@@ -9,7 +14,7 @@
 .arena-card-choice-popup .duel-selection-progress > progress { display: none; }
 .duel-arena .arena-card-choice-popup .duel-choice-list { display: flex; flex-wrap: nowrap; gap: 10px; overflow-x: auto; overflow-y: hidden; overscroll-behavior: contain; min-height: 0; margin: 6px 0; padding: 4px 3px 10px; scrollbar-width: thin; scrollbar-color: #91bfe1 #102438; scroll-snap-type: x proximity; }
 .duel-arena .arena-card-choice-popup .duel-choice-list > button { flex: 0 0 clamp(100px, 10vw, 145px); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 5px; min-width: 0; margin: 0; padding: 6px; font-size: 11px; text-align: center; scroll-snap-align: start; }
-.duel-arena .arena-card-choice-popup .duel-chain-card { height: clamp(65px, 17dvh, 145px); width: auto; max-width: 100%; object-fit: contain; }
+.duel-arena .arena-card-choice-popup .duel-chain-card { height: clamp(60px, 12dvh, 110px); width: auto; max-width: 100%; object-fit: contain; }
 .arena-card-choice-popup .duel-choice-list > button > span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
 .arena-card-choice-popup .duel-choice-list > button[aria-pressed=true] { border-color: #ffe192; box-shadow: inset 0 0 0 2px #e5bf62; background: #394335; }
 .arena-card-choice-popup .duel-choice-origin { font-size: 9px; }
@@ -17,5 +22,5 @@
 @media (max-height: 550px) {
   .arena-card-choice-popup .duel-decisions > p { display: none; }
   .arena-card-choice-popup .duel-selection-progress > small { display: none; }
-  .duel-arena .arena-decision-overlay.arena-card-choice-popup { top: 8%; padding: 6px 10px; }
+  .duel-arena .arena-decision-overlay.arena-card-choice-popup { top: auto; bottom: 27%; padding: 6px 10px; }
 }

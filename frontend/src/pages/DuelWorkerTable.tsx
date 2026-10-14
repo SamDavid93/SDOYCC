@@ -33,14 +33,21 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   const latest = useRef<WorkerResult | null>(null)
   latest.current = result
   const [playback, setPlayback] = useState<DuelPlayback>({through: -1, idle: false, event: null})
+  const presentationReady = useRef(false)
+  const playbackGame = useRef<number | null>(null)
+  const [activation, setActivation] = useState<{ card: EngineCard; text?: string } | null>(null)
   const [visualLP, setVisualLP] = useState<number[] | null>(null)
   const lastDamage = useRef<number | null>(null)
   const onPlayback = useCallback((next: DuelPlayback) => {
+    playbackGame.current = latest.current?.match?.game || 1
     setPlayback(next)
     const boards = latest.current?.board?.boards
     if (!boards) return
     const caughtUp = next.idle && next.through >= Math.max(0, ...(latest.current?.board?.events.map(event => event.id) || []))
     const event = next.event
+    const effectEvent = event?.kind === 'chain' ? event : event?.kind === 'chain_step' && event.step === 72
+      ? latest.current?.board?.events.filter(item => item.kind === 'chain' && item.id <= event.id && item.number === event.number).at(-1) : null
+    if (effectEvent?.card) { setPreview(effectEvent.card); setPreviewEffect(effectEvent.effect || 'Effekt wird aufgelöst') }
     const newDamage = event?.kind === 'lp' && event.id !== lastDamage.current
     if (newDamage) lastDamage.current = event.id
     setVisualLP(previous => {
@@ -80,7 +87,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   }
   const announceReady = useCallback(() => {
     const current = latest.current, ws = socket.current, prompt = current?.board?.prompt
-    if (!authenticated.current || !ws || ws.readyState !== WebSocket.OPEN || !current?.clock?.readiness_required || !prompt || !current.board || terminal(current) || current.match?.phase === 'sideboarding') return
+    if (!presentationReady.current || !authenticated.current || !ws || ws.readyState !== WebSocket.OPEN || !current?.clock?.readiness_required || !prompt || !current.board || terminal(current) || current.match?.phase === 'sideboarding') return
     const sent = readySent.current
     if (sent?.socket === ws && sent.prompt === prompt.id && sent.revision === current.board.revision) return
     ws.send(JSON.stringify({type: 'decision_ready', prompt: prompt.id, revision: current.board.revision}))
@@ -138,6 +145,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   useEffect(() => { if (result && terminal(result)) window.dispatchEvent(new Event('hub-data-changed')) }, [result?.state])
   useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { setPreview(null); setActiveLocation(null); setPendingAttack(null) } }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close) }, [])
   function send(kind: string, body: Record<string, unknown>, finishSelection = false) {
+    if (kind === 'answer' && !presentationReady.current) return
     if (!connected || busy || pendingCommand.current || socket.current?.readyState !== WebSocket.OPEN) return
     if (kind === 'answer') announceReady()
     pendingCommand.current = { revision: result?.board?.revision || 0, prompt: result?.board?.prompt?.id }
@@ -148,20 +156,21 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   }
   const board = result?.board, prompt = board?.prompt
   const newestEvent = Math.max(0, ...(board?.events.map(event => event.id) || []))
+  presentationReady.current = playbackGame.current === (result?.match?.game || 1) && playback.idle && playback.through >= newestEvent
   const resultVisible = Boolean(result && terminal(result) && (result.state !== 'finished' || !board || playback.idle && playback.through >= newestEvent))
   useEffect(() => { if (board) setVisualLP(previous => previous || board.boards.map(side => side.lp)) }, [board])
   useEffect(() => {
     if (!board) return
     setVisualLP(board.boards.map(side => side.lp))
     setPlayback({through: -1, idle: false, event: null})
-    setZoneSelection([]); setActiveLocation(null); setPendingAttack(null); setGuidedAction(null); setAttackFlow(false)
+    setZoneSelection([]); setActiveLocation(null); setPendingAttack(null); setGuidedAction(null); setActivation(null); setAttackFlow(false)
     lastDamage.current = null; readySent.current = null; placement.current = null; finishSelectionAfter.current = null
   }, [result?.match?.game])
   useEffect(() => {
-    if (finishSelectionAfter.current === null || !prompt || prompt.id <= finishSelectionAfter.current || busy || !connected) return
+    if (!presentationReady.current || finishSelectionAfter.current === null || !prompt || prompt.id <= finishSelectionAfter.current || busy || !connected) return
     finishSelectionAfter.current = null
     if (prompt.selection_progress?.can_finish && prompt.cancel) send('answer', { prompt: prompt.id, selected: [], cancel: true })
-  }, [prompt?.id, busy, connected])
+  }, [prompt?.id, busy, connected, playback.idle, playback.through])
   useEffect(() => { if (board?.events.some(event => event.kind === 'attack' && event.id > attackStartedAfter.current)) setAttackFlow(false) }, [board?.revision])
   const chainReaction = prompt?.kind === 'chain' || prompt?.title === 'Auf die Kette reagieren'
   useEffect(()=>{
@@ -170,11 +179,23 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     if(completed || result && terminal(result) || board?.turn!==guidedAction.turn || prompt?.id!==guidedAction.prompt && prompt?.title==='Aktion wählen')setGuidedAction(null)
   },[prompt?.id,board?.revision,board?.turn,result?.state,guidedAction])
   useEffect(() => { setZoneSelection(prompt?.counter ? prompt.choices.map(() => 0) : []); setActiveLocation(null); setPendingAttack(null); if (prompt?.title === 'Aktion wählen') setAttackFlow(false) }, [prompt?.id])
-  const disabled = busy || !connected || Boolean(result && terminal(result))
+  const disabled = busy || !connected || Boolean(result && terminal(result)) || !presentationReady.current
+  const chainEnd = Math.max(0, ...(board?.events.filter(event => event.kind === 'chain_step' && event.step === 74).map(event => event.id) || []))
+  const lastActivation = board?.events.filter(event => event.kind === 'chain' && event.card && event.id > chainEnd).at(-1)
+  const resolution = board?.events.filter(event => event.kind === 'chain_step' && event.step === 72 && event.id > chainEnd).at(-1)
+  const activeEffect = resolution && resolution.id > (lastActivation?.id || 0)
+    ? board?.events.filter(event => event.kind === 'chain' && event.number === resolution.number && event.id > chainEnd).at(-1) : lastActivation
+  const effectCard = prompt?.effect_card || activeEffect?.card || activation?.card
+  const effectText = activeEffect?.effect || prompt?.hint || activation?.text || effectCard?.description || prompt?.title
+  const resolvingEffect = Boolean(prompt && prompt.title !== 'Aktion wählen' && effectCard)
+  useEffect(() => {
+    if (!resolvingEffect || disabled || !effectCard) return
+    setPreview(effectCard); setPreviewEffect(effectText || 'Effekt auflösen')
+  }, [prompt?.id, disabled])
   useEffect(() => {
     if (disabled || !prompt || !result?.clock?.readiness_required || pendingCommand.current) return
     // Two paint opportunities let the prompt and its local selection state mount.
-    // Cinematic overlays pass pointer events and compact around live decisions.
+    // Start the server clock only after all preceding visible events finish.
     let paint = 0
     const first = requestAnimationFrame(() => { paint = requestAnimationFrame(() => {
       if (!pendingCommand.current) announceReady()
@@ -207,6 +228,8 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   }
   function chooseAction(index: number, target?: DuelLocation) {
     if (!prompt || disabled || pendingCommand.current) return
+    const effectChoice = prompt.choices[index]
+    if (effectChoice?.action === 'activate' && effectChoice.card) setActivation({ card: { ...effectChoice.card, code: effectChoice.card.code ?? 0 }, text: prompt.hint })
     if (prompt.choices[index]?.action === 'attack') { setActiveLocation(null); setPendingAttack(index); return }
     const choice=prompt.choices[index]
     if(choice?.card && ['summon','special_summon','set_monster','set_spell'].includes(choice.action || '')) {
@@ -219,7 +242,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   const phaseLabels = ['Kampfphase','Hauptphase 2','Zug beenden']
   const freeChoices = prompt?.choices.map((choice,index)=>({choice,index})).filter(({choice})=>!choice.location && !phaseLabels.includes(choice.label)).map(({index})=>index) || []
   const pileChoices = activeLocation && ![2,4,8].includes(activeLocation.zone & 127) ? choicesAt(activeLocation).map(({index})=>index) : []
-  const showDecision = !!prompt && (prompt.title !== 'Aktion wählen' || freeChoices.length > 0 || pileChoices.length > 0)
+  const showDecision = presentationReady.current && !!prompt && (prompt.title !== 'Aktion wählen' || freeChoices.length > 0 || pileChoices.length > 0)
   const handSelection = Boolean((prompt?.select || prompt?.selection_progress) && prompt.choices.some(choice=>choice.location?.owner===board?.seat && choice.location?.zone===2))
   const selectOnField = !handSelection && !!prompt?.select && prompt.choices.every(choice => choice.location && [2,4,8].includes(choice.location.zone)) && new Set(prompt.choices.map(choice=>`${choice.location?.owner}:${choice.location?.zone}:${choice.location?.sequence}`)).size === prompt.choices.length
   useEffect(()=>{if(handSelection)document.querySelector<HTMLElement>('.arena-hand-choice-popup h2')?.focus({preventScroll:true})},[prompt?.id,handSelection])
@@ -269,13 +292,14 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
             else send('answer', { prompt: prompt.id, selected: [index] })
           }} chooseAction={chooseAction}>
           <div className="arena-hud" role="status"><span>Zug {board.turn_number} · {board.turn === board.seat ? 'Dein Zug' : 'Gegnerischer Zug'} · {duelPhaseName(board.phase)}</span></div>
-          <DuelAnimations key={`${runId}:${result.match?.game || 1}`} onPlayback={onPlayback} decisionPending={Boolean(prompt) && !disabled} events={board.events} runId={runId} onEffect={showEffect} seat={board.seat} phase={board.phase} turn={board.turn} turnNumber={board.turn_number} disabled={disabled} surrender={() => { if(window.confirm('Duell wirklich aufgeben?')) send('surrender',{}) }} />
+          <DuelAnimations key={`${runId}:${result.match?.game || 1}`} onPlayback={onPlayback} decisionPending={Boolean(prompt) && connected && !busy} events={board.events} runId={runId} onEffect={showEffect} seat={board.seat} phase={board.phase} turn={board.turn} turnNumber={board.turn_number} disabled={disabled} surrender={() => { if(window.confirm('Duell wirklich aufgeben?')) send('surrender',{}) }} />
           {guidedAction && prompt && prompt.id!==guidedAction.prompt && prompt.title!=='Aktion wählen' && !chainReaction && !terminal(result) && <DuelActionGuide context={guidedAction} prompt={prompt} />}
           {pendingAttack !== null && prompt && <section className="arena-attack-confirm" role="dialog" aria-label="Angriff vorbereiten"><h2>⚔ Angriff starten?</h2><p>{prompt.choices[pendingAttack]?.card?.name || 'Dein Monster'} soll angreifen. Danach wählst du ein erlaubtes Ziel.</p><button disabled={disabled} onClick={()=>{ attackStartedAfter.current = Math.max(0,...board.events.map(event=>event.id)); setAttackFlow(true); send('answer',{prompt:prompt.id,selected:[pendingAttack]}); setPendingAttack(null) }}>Angriff starten</button><button onClick={()=>setPendingAttack(null)}>Abbrechen</button></section>}
           {!showDecision && pendingAttack === null && !disabled && <p className="arena-action-guide">{prompt ? 'Markierte Karte anklicken · Phasenwechsel über den Kreis' : 'Dein Gegner entscheidet …'}</p>}
           {showDecision && result && !terminal(result) && <div className={chainReaction ? 'duel-chain-overlay' : 'arena-decision-overlay' + (handSelection ? ' arena-hand-choice-popup' : '') + (!selectOnField && prompt?.kind !== 'zones' && (prompt?.select || prompt?.selection_progress) && prompt?.choices.some(choice => choice.card) ? ' arena-card-choice-popup' : '') + (selectOnField || prompt?.kind === 'zones' ? ' arena-field-selection-guide' : '')} role={handSelection ? 'dialog' : chainReaction ? 'region' : undefined} aria-label={handSelection ? 'Handkarten für einen Effekt auswählen' : chainReaction ? 'Kettenreaktion' : undefined}>
             {chainReaction && <div className="duel-chain-notice"><span aria-hidden="true">∞</span><strong>Deine Kettenreaktion</strong>{prompt?.choices.some(choice => choice.label === 'Nicht anketten' && !choice.card && !choice.action && !choice.location) && <small>Rechtsklick: Nicht anketten</small>}</div>}
-            <DuelDecisions onPreview={value => { setPreview({ ...value, code: value.code ?? 0 }); setPreviewEffect(null) }} showOrigins={handSelection} prompt={prompt} disabled={disabled} send={send} zoneSelection={zoneSelection} onZoneSelection={setZoneSelection} hideChoices={selectOnField || prompt?.kind === 'zones'} hideConfirmation={selectOnField && zoneSelection.length > 0} hideSurrender attackTarget={attackFlow && Boolean(prompt?.select)} choiceIndices={prompt?.title === 'Aktion wählen' ? pileChoices.length ? pileChoices : freeChoices : undefined} />
+            {resolvingEffect && effectCard && <div className="duel-effect-context" role="status"><strong>Effekt auflösen: {effectCard.name}</strong><p title={effectText || effectCard.description}>{effectText || effectCard.description || 'Wähle die Karten für diesen Effekt.'}</p></div>}
+            <DuelDecisions onActivate={value => setActivation({ card: { ...value, code: value.code ?? 0 } })} onPreview={value => { setPreview({ ...value, code: value.code ?? 0 }); setPreviewEffect(null) }} showOrigins={handSelection} prompt={prompt} disabled={disabled} send={send} zoneSelection={zoneSelection} onZoneSelection={setZoneSelection} hideChoices={selectOnField || prompt?.kind === 'zones'} hideConfirmation={selectOnField && zoneSelection.length > 0} hideSurrender attackTarget={attackFlow && Boolean(prompt?.select)} choiceIndices={prompt?.title === 'Aktion wählen' ? pileChoices.length ? pileChoices : freeChoices : undefined} />
           </div>}
         </DuelArena>
       </div>

@@ -8,6 +8,13 @@ setzt das Budget nicht zurück. Die separate Side-Deck-Frist bleibt 180 Sekunden
 Die menschliche Entscheidungszeit beginnt erst, wenn die authentifizierte
 Duellverbindung `decision_ready` für die aktuelle Prompt-ID und Board-Revision
 gemeldet hat. Das Frontend meldet dies nach dem Rendern der bedienbaren Auswahl.
+Zusätzlich müssen alle vorausgehenden sichtbaren Ereignisse einschließlich
+Zugende, Phasenwechsel und Kettenauflösungen vollständig abgespielt sein.
+Vorher bleiben Feldaktionen, Auswahlfenster, Rechtsklick und automatische
+Antworten gesperrt. Die Freigabe prüft den Wiedergabestand gegen die neueste
+Ereignis-ID und das aktuelle Spiel innerhalb eines Matches. Eine früh empfangene
+Standby-Entscheidung kann dadurch nicht während der Darstellung des vorherigen
+gegnerischen Zugs beantwortet werden. Auch `decision_ready` wartet auf diesen Stand.
 Die Serverantwort enthält `ready_ack`, niemals die Aktionsquittung `ack`.
 `clock.readiness_required` kennzeichnet dieses Protokoll; `waiting_for` und
 `ready_timeout` beschreiben die noch ausstehende Darstellung.
@@ -19,8 +26,16 @@ Eine gültige Spielantwort stoppt die Zeit beim Eingang auf dem Server;
 Autorisierungs-, Regelkern- und Übertragungsarbeit zählt nicht als Denkzeit.
 Deterministische leere Kettenfenster werden ohne Spielerzeit beantwortet.
 Die Test-KI benötigt keine Browserbestätigung und verbraucht nur ihre eigene
-Entscheidungszeit. Kosmetische Animationen, während deren die Auswahl bereits
-bedienbar bleibt, unterbrechen die Denkzeit nicht.
+Entscheidungszeit. Bereits bedienbare Entscheidungen erhalten keine zusätzliche
+Zeit durch rein dekorative, von der Ereigniswiedergabe unabhängige Effekte.
+
+Effektauswahlen nennen die vom Regelkern übermittelte Effektkarte beziehungsweise
+die Karte des aktuell aufgelösten Kettenglieds. Der verfügbare Engine-Effekttext
+oder Auswahlhinweis steht daneben; andernfalls dient der Kartentext als Rückfall.
+Der linke Viewer folgt dieser Quelle und kann durch Anklicken einer Auswahlkarte
+zum Nachlesen gewechselt werden. Das horizontale Auswahlfenster liegt transparent
+auf der eigenen Spielfeldhälfte. Gegnerische Aktivierungen aktualisieren den
+Viewer erst mit ihrem Wiedergabeereignis; eigene behalten ihre direkte Anzeige.
 
 Die Anzeige sitzt als großer Kreis links auf Höhe der Spielfeldmitte gegenüber
 der Phasenanzeige. Sie zeigt die eigene Zeit in Minuten und Sekunden, darunter
