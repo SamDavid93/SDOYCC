@@ -343,6 +343,14 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     assert answers[1]['selected']==[] and answers[1]['cancel'] is True
                     assert answers[1]['prompt']>answers[0]['prompt']
                     page.evaluate('window.__scene();window.__pick(2,2,false,2)')
+                    hand_popup=page.get_by_role('dialog',name='Handkarten für einen Effekt auswählen')
+                    expect(hand_popup).to_be_visible()
+                    expect(hand_popup.get_by_role('heading')).to_be_focused()
+                    expect(hand_popup.locator('.duel-choice-list>button')).to_have_count(3)
+                    expect(hand_popup.locator('.duel-choice-origin').first).to_have_text('Hand')
+                    hand_popup.get_by_role('button',name='Auswahl 1',exact=True).click()
+                    expect(hand_popup.get_by_role('button',name='Auswahl 1',exact=True)).to_have_attribute('aria-pressed','true')
+                    hand_popup.get_by_role('button',name='Auswahl 1',exact=True).click()
                     expect(progress).to_contain_text('Wähle genau 2 Karten')
                     own=page.locator('.arena-own .arena-hand-card>.duel-playing-card')
                     own.nth(0).dblclick()
@@ -361,6 +369,18 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     page.get_by_role('button',name='Auswahl 1',exact=True).click()
                     page.get_by_role('button',name='Auswahl 2',exact=True).dblclick()
                     expect(page.locator('.arena-decision-overlay')).to_have_count(0)
+                    page.evaluate('window.__scene();window.__pick(1,1,false,2)')
+                    expect(hand_popup).to_be_visible()
+                    page.screenshot(path=str(ROOT/'artifacts/duel-hand-effect-popup-mobile.png'),full_page=True)
+                    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+                    hand_popup.get_by_role('button',name='Auswahl 1',exact=True).click()
+                    confirm=hand_popup.get_by_role('button',name='Auswahl bestätigen',exact=True)
+                    expect(confirm).to_be_enabled()
+                    popup_bounds=hand_popup.bounding_box();confirm_bounds=confirm.bounding_box()
+                    assert confirm_bounds['y']+confirm_bounds['height']<=popup_bounds['y']+popup_bounds['height']
+                    hand_popup.get_by_role('button',name='Auswahl 2',exact=True).dblclick()
+                    expect(hand_popup).to_have_count(0)
+                    assert page.evaluate('window.__answers.at(-1).selected')==[1]
                     # Physical shared zones keep their DOM identity when controllers change.
                     page.evaluate('window.__physicalExtraNodes=Array.from(document.querySelectorAll(".arena-extra-row > .arena-slot"))')
                     for viewport in ({'width':1440,'height':1000}, {'width':390,'height':844}):
@@ -477,7 +497,7 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     assert not key_warnings, key_warnings
                     assert not errors, errors
                     browser.close()
-                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','own effect updates viewer immediately without center animation; opponent effect remains visible','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','larger arena fits 720p and 1080p including footer allowance','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement','one-card double-click submits exactly once','incomplete multi-selection stays open','maximum selection cannot be exceeded','double-click preserves original selection order','step selection auto-finishes only after engine confirms completion','double-click selects own hand cards','larger own hand fits mobile','required-card count remains visible on mobile','periodic clock state cannot acknowledge a pending action','two shared extra zones retain physical identity across controller and prompt changes for both seats and viewports','occupied shared zones stay visible and placement preserves original indexes','extra deck lists only legal summons and separates browsing','grave and banished action lists preserve original engine indexes','summon guidance keeps card method and material or zone step visible','pile menus fit mobile and close with Escape','opponent boss summon cut-ins with attribute-matched original sound','own weak and covered monsters never trigger a cut-in','decisions compact the cut-in without blocking chain answers','desktop mobile reduced-motion and cut-in disable controls'],'console_errors':errors}))
+                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','own effect updates viewer immediately without center animation; opponent effect remains visible','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','larger arena fits 720p and 1080p including footer allowance','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement','one-card double-click submits exactly once','incomplete multi-selection stays open','maximum selection cannot be exceeded','double-click preserves original selection order','step selection auto-finishes only after engine confirms completion','double-click selects own hand cards','larger own hand fits mobile','required-card count remains visible on mobile','periodic clock state cannot acknowledge a pending action','two shared extra zones retain physical identity across controller and prompt changes for both seats and viewports','occupied shared zones stay visible and placement preserves original indexes','extra deck lists only legal summons and separates browsing','grave and banished action lists preserve original engine indexes','summon guidance keeps card method and material or zone step visible','pile menus fit mobile and close with Escape','opponent boss summon cut-ins with attribute-matched original sound','own weak and covered monsters never trigger a cut-in','decisions compact the cut-in without blocking chain answers','desktop mobile reduced-motion and cut-in disable controls','hand effect choices automatically open a focused popup with shared selection','mobile hand popup retains visible confirmation and supports double-click'],'console_errors':errors}))
             finally:
                 process.terminate()
                 try: process.wait(timeout=10)
