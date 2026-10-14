@@ -1,5 +1,19 @@
 # Veröffentlichung: GitHub Pages und lokaler Server
 
+**Automatische Wiederholungen, 14.10.2026:** `start-public-test.bat` wartet bei
+vorübergehenden DNS-/Verbindungsfehlern, bis der öffentliche Zugang bereit ist.
+Die Wiederholungen beginnen nach zwei Sekunden und warten höchstens 30 Sekunden
+zwischen Versuchen; es gibt dafür kein festes Gesamttimeout. Der Starter zeigt
+den betroffenen Schritt und den nächsten Versuch an. Mit **Strg+C** lässt sich
+das Warten abbrechen. Das gilt auch für Tunnelaufbau, Health-Prüfung,
+CORS-Verbindung und vorübergehende GitHub-Netzwerkfehler. Stirbt ein Tunnel
+während des Starts, wird er neu aufgebaut und seine neue Adresse übernommen.
+Ein bereits gestartetes Backend wird dabei nicht erneut gestartet. Fehlende
+Voraussetzungen, ein beendeter Backendprozess, ungültige GitHub-Anmeldedaten und
+eine falsche CORS-Freigabe bleiben echte Fehler. Die automatische Wiederholung
+betrifft den Startvorgang bis zur erfolgreichen Verbindung; sie ist kein neuer
+dauerhafter Überwachungsdienst.
+
 Stand: 03.10.2026. Die Website ist unter [samdavid93.github.io/SDOYCC](https://samdavid93.github.io/SDOYCC/) veröffentlicht. Der lokale Server ist über einen vorübergehenden Cloudflare Quick Tunnel ohne eigene Domain angebunden. Produktionsmodus, deaktivierter Demo-Zugang und CORS sind geprüft. Der Testzugang bleibt vom laufenden PC, Backend und Tunnel abhängig.
 
 ## Testzugang auf diesem PC starten und beenden

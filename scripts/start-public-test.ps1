@@ -7,6 +7,7 @@ if (-not $lockAcquired) {
     exit 1
 }
 $root = Split-Path $PSScriptRoot -Parent
+. (Join-Path $PSScriptRoot 'public-test-retry.ps1')
 Set-Location -LiteralPath $root
 $python = Join-Path $root '.venv\Scripts\python.exe'
 $cloudflared = Join-Path $root 'artifacts\tools\cloudflared\cloudflared.exe'
@@ -19,25 +20,44 @@ $env:PYTHONPATH = Join-Path $root 'backend'
 $newTunnel = $null
 $state = $null
 
-function Wait-Health([string]$address) {
-    # The native worker verifies thousands of files before accepting requests.
-    $healthTimer = [System.Diagnostics.Stopwatch]::StartNew()
-    while ($healthTimer.Elapsed.TotalSeconds -lt 180) {
+function New-TestTunnel {
+    Invoke-PublicTestRetry -Label 'Cloudflare-Tunnel' -Operation {
+        $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
+        $stderr = Join-Path $runtime "tunnel-$stamp.log"
+        $stdout = Join-Path $runtime "tunnel-$stamp-out.log"
+        $errors = Join-Path $runtime "tunnel-$stamp-stderr.log"
+        $tunnel = Start-Process -FilePath $cloudflared -ArgumentList @('tunnel', '--no-autoupdate', '--protocol', 'http2', '--url', 'http://127.0.0.1:8002', '--logfile', ('"' + $stderr + '"')) -WindowStyle Hidden -WorkingDirectory $root -RedirectStandardOutput $stdout -RedirectStandardError $errors -PassThru
+        $script:newTunnel = $tunnel
+        $url = $null
         try {
-            $response = Invoke-RestMethod -Uri ($address + '/api/health') -TimeoutSec 5
-            if ($response.status -eq 'ok') { return }
-        } catch { }
-        Start-Sleep -Seconds 2
-    }
-    throw "Health-Pruefung fehlgeschlagen: $address"
+            for ($attempt = 0; $attempt -lt 120; $attempt++) {
+                $tunnel.Refresh()
+                if ($tunnel.HasExited) { throw [System.Net.WebException]::new("Tunnel noch nicht verbunden. Log: $stderr") }
+                if (Test-Path -LiteralPath $stderr) {
+                    $stream = [System.IO.File]::Open($stderr, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+                    $reader = [System.IO.StreamReader]::new($stream)
+                    try { $logText = $reader.ReadToEnd() } finally { $reader.Dispose() }
+                    $match = [regex]::Match($logText, 'https://[a-z0-9-]+\.trycloudflare\.com')
+                    if ($match.Success) { $url = $match.Value; break }
+                }
+                Start-Sleep -Seconds 1
+            }
+            if (-not $url) { throw [System.Net.WebException]::new("Noch keine Tunnel-Adresse. Log: $stderr") }
+            $tunnelState = [PSCustomObject]@{ tunnel_pid = $tunnel.Id; started_utc = $tunnel.StartTime.ToUniversalTime().ToString('o'); url = $url }
+            $tunnelState | ConvertTo-Json | Set-Content -LiteralPath $stateFile -Encoding UTF8
+            return $tunnelState
+        } finally {
+            # This process was created by this attempt, never an unrelated PID.
+            if (-not $url) { $tunnel.Refresh(); if (-not $tunnel.HasExited) { $tunnel.Kill() } }
+        }
+    } -RetryWhen { param($failure) $failure.Exception -is [System.Net.WebException] }
 }
 
 try {
     foreach ($path in @($python, $cloudflared, $gh, (Join-Path $root '.env'))) {
         if (-not (Test-Path -LiteralPath $path)) { throw "Voraussetzung fehlt: $path. Siehe docs/PUBLISHING.md." }
     }
-    & $gh auth status *> $null
-    if ($LASTEXITCODE -ne 0) { throw 'GitHub-Anmeldung fehlt. Zuerst gh auth login ausfuehren.' }
+    Invoke-PublicTestGitHub -Executable $gh -Arguments @('auth','status') -Label 'GitHub-Anmeldung'
     & $python backend/scripts/release_check.py
     if ($LASTEXITCODE -ne 0) { throw 'Lokale Systempruefung fehlgeschlagen; Start abgebrochen.' }
     New-Item -ItemType Directory -Force -Path $runtime | Out-Null
@@ -68,33 +88,7 @@ try {
             $tunnel.StartTime.ToUniversalTime().ToString('o') -eq $candidate.started_utc -and
             $candidate.url -match '^https://[a-z0-9-]+\.trycloudflare\.com$') { $state = $candidate }
     }
-    if (-not $state) {
-        $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
-        $stderr = Join-Path $runtime "tunnel-$stamp.log"
-        $stdout = Join-Path $runtime "tunnel-$stamp-out.log"
-        $errors = Join-Path $runtime "tunnel-$stamp-stderr.log"
-        $tunnel = Start-Process -FilePath $cloudflared -ArgumentList @('tunnel', '--no-autoupdate', '--protocol', 'http2', '--url', 'http://127.0.0.1:8002', '--logfile', ('"' + $stderr + '"')) -WindowStyle Hidden -WorkingDirectory $root -RedirectStandardOutput $stdout -RedirectStandardError $errors -PassThru
-        $newTunnel = $tunnel
-        $url = $null
-        for ($attempt = 0; $attempt -lt 30; $attempt++) {
-            $tunnel.Refresh()
-            if ($tunnel.HasExited) { throw "Tunnel konnte nicht starten. Log: $stderr" }
-            if (Test-Path -LiteralPath $stderr) {
-                $stream = [System.IO.File]::Open($stderr, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
-                $reader = [System.IO.StreamReader]::new($stream)
-                try { $logText = $reader.ReadToEnd() } finally { $reader.Dispose() }
-                $match = [regex]::Match($logText, 'https://[a-z0-9-]+\.trycloudflare\.com')
-                if ($match.Success) { $url = $match.Value; break }
-            }
-            Start-Sleep -Seconds 1
-        }
-        if (-not $url) {
-            Stop-Process -Id $tunnel.Id -ErrorAction SilentlyContinue
-            throw "Keine Tunnel-Adresse erhalten. Log: $stderr"
-        }
-        $state = [PSCustomObject]@{ tunnel_pid = $tunnel.Id; started_utc = $tunnel.StartTime.ToUniversalTime().ToString('o'); url = $url }
-        $state | ConvertTo-Json | Set-Content -LiteralPath $stateFile -Encoding UTF8
-    }
+    if (-not $state) { $state = New-TestTunnel }
     Write-Host "Test-Tunnel: $($state.url)"
     & $python backend/scripts/configure_public.py --frontend-url $frontend --backend-url $state.url --apply
     if ($LASTEXITCODE -ne 0) { throw 'Oeffentliche Konfiguration fehlgeschlagen.' }
@@ -102,16 +96,33 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Produktionspruefung fehlgeschlagen; Backend bleibt gestoppt.' }
 
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
-    Start-Process -FilePath $python -ArgumentList @('-m', 'uvicorn', 'app.main:app', '--app-dir', 'backend', '--host', '127.0.0.1', '--port', '8002', '--no-access-log') -WindowStyle Hidden -WorkingDirectory $root -RedirectStandardOutput (Join-Path $runtime "backend-$stamp-out.log") -RedirectStandardError (Join-Path $runtime "backend-$stamp.log") | Out-Null
-    Wait-Health 'http://127.0.0.1:8002'
-    Wait-Health $state.url
-    $preflight = Invoke-WebRequest -UseBasicParsing -Uri ($state.url + '/api/auth/login') -Method Options -Headers @{ Origin = 'https://samdavid93.github.io'; 'Access-Control-Request-Method' = 'POST'; 'Access-Control-Request-Headers' = 'content-type' } -TimeoutSec 15
-    if ($preflight.Headers['Access-Control-Allow-Origin'] -ne 'https://samdavid93.github.io') { throw 'CORS-Pruefung fehlgeschlagen.' }
+    $backendProcess = Start-Process -FilePath $python -ArgumentList @('-m', 'uvicorn', 'app.main:app', '--app-dir', 'backend', '--host', '127.0.0.1', '--port', '8002', '--no-access-log') -WindowStyle Hidden -WorkingDirectory $root -RedirectStandardOutput (Join-Path $runtime "backend-$stamp-out.log") -RedirectStandardError (Join-Path $runtime "backend-$stamp.log") -PassThru
+    Wait-PublicTestHealth -Address 'http://127.0.0.1:8002' -Process $backendProcess
+    while ($true) {
+        try {
+            $tunnel = Get-Process -Id $state.tunnel_pid -ErrorAction SilentlyContinue
+            if (-not $tunnel -or $tunnel.Path -ne $cloudflared -or $tunnel.StartTime.ToUniversalTime().ToString('o') -ne $state.started_utc) {
+                throw [System.InvalidOperationException]::new('Gespeicherter Tunnel wurde beendet.')
+            }
+            Wait-PublicTestHealth -Address $state.url -Process $tunnel
+            $preflight = Invoke-PublicTestRetry -Label 'Oeffentliche CORS-Verbindung' -Operation {
+                $tunnel.Refresh()
+                if ($tunnel.HasExited) { throw [System.InvalidOperationException]::new('Tunnel wurde beendet.') }
+                Invoke-WebRequest -UseBasicParsing -Uri ($state.url + '/api/auth/login') -Method Options -Headers @{ Origin = 'https://samdavid93.github.io'; 'Access-Control-Request-Method' = 'POST'; 'Access-Control-Request-Headers' = 'content-type' } -TimeoutSec 15
+            } -RetryWhen { param($failure) $failure.Exception.GetType() -ne [System.InvalidOperationException] }
+            if ($preflight.Headers['Access-Control-Allow-Origin'] -ne 'https://samdavid93.github.io') { throw 'CORS-Pruefung fehlgeschlagen.' }
+            break
+        } catch [System.InvalidOperationException] {
+            Write-Host 'Tunnel-Verbindung verloren. Tunnel wird neu aufgebaut; Backend bleibt gestartet.'
+            Start-Sleep -Seconds 2
+            $state = New-TestTunnel
+            & $python backend/scripts/configure_public.py --frontend-url $frontend --backend-url $state.url --apply
+            if ($LASTEXITCODE -ne 0) { throw 'Oeffentliche Konfiguration fehlgeschlagen.' }
+        }
+    }
 
-    & $gh variable set VITE_API_BASE_URL --repo $repository --body ($state.url + '/api')
-    if ($LASTEXITCODE -ne 0) { throw 'GitHub-Variable konnte nicht gesetzt werden.' }
-    & $gh workflow run deploy-pages.yml --repo $repository --ref main
-    if ($LASTEXITCODE -ne 0) { throw 'Pages-Workflow konnte nicht gestartet werden.' }
+    Invoke-PublicTestGitHub -Executable $gh -Arguments @('variable','set','VITE_API_BASE_URL','--repo',$repository,'--body',($state.url + '/api')) -Label 'GitHub-Variable'
+    Invoke-PublicTestGitHub -Executable $gh -Arguments @('workflow','run','deploy-pages.yml','--repo',$repository,'--ref','main') -Label 'Pages-Verbindung'
     Write-Host "Backend und Tunnel laufen im Hintergrund. Pages-Build gestartet: https://github.com/$repository/actions"
     Write-Host "Website nach erfolgreichem Build: $frontend"
     Write-Host 'PC eingeschaltet lassen. stop-public-test.bat beendet nur den Tunnel. Nach einem PC-Neustart diese BAT erneut ausfuehren.'
