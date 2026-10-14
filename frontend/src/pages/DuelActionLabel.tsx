@@ -1,5 +1,10 @@
 import { EyeOff, Sparkles, Swords, Zap } from 'lucide-react'
 
+export function setActionsLast(a: {action?: string}, b: {action?: string}) {
+  const isSet = (action?: string) => action === 'set_monster' || action === 'set_spell'
+  return Number(isSet(a.action)) - Number(isSet(b.action))
+}
+
 export function DuelActionLabel({action,label}:{action?:string;label:string}) {
   const set=action==='set_monster' || action==='set_spell'
   const summon=action==='summon' || action==='special_summon'

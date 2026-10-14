@@ -504,7 +504,7 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     expect(actions.locator('[data-duel-action="activate"]')).to_be_visible()
                     styles=actions.locator('[data-duel-action]').evaluate_all('(buttons)=>buttons.map(b=>({background:getComputedStyle(b).backgroundColor,border:getComputedStyle(b).borderStyle,icon:!!b.querySelector("svg"),detail:!!b.querySelector("small")}))')
                     assert len({item['background'] for item in styles})==4,styles
-                    assert styles[1]['border']=='dashed' and all(item['icon'] and item['detail'] for item in styles),styles
+                    assert styles[-1]['border']=='dashed' and all(item['icon'] and item['detail'] for item in styles),styles
                     page.screenshot(path=str(ROOT/'artifacts/duel-distinct-actions.png'))
                     page.route('**/missing-card-image.png',lambda route:route.abort())
                     page.evaluate('window.__badImage()')

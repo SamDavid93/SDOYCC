@@ -5,7 +5,7 @@ import cardBack from '../assets/card-back.jpg'
 import { DuelPhaseControl } from './DuelPhaseControl'
 import { effectAvailableAt } from './duelFeedback'
 import { DuelPlayerHUD } from './DuelPlayerHUD'
-import { DuelActionLabel } from './DuelActionLabel'
+import { DuelActionLabel, setActionsLast } from './DuelActionLabel'
 import { DuelPile } from './DuelPile'
 
 type Props = { sides: Side[]; seat: number; card: (value: EngineCard | null, key: string, covered?: boolean, location?: DuelLocation) => ReactNode;
@@ -19,8 +19,8 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
   useEffect(() => { setDrop(null); setDragging(null) }, [prompt?.id])
   const actions = (index: number, zone?: number) => prompt?.choices.map((choice, choiceIndex) => ({ ...choice, choiceIndex })).filter(choice =>
     choice.location?.owner === seat && choice.location.zone === 2 && choice.location.sequence === index &&
-    (zone === 8 ? choice.action === 'set_spell' : zone === 4 ? ['summon', 'special_summon', 'set_monster'].includes(choice.action || '') : ['summon', 'special_summon', 'set_monster', 'set_spell', 'activate'].includes(choice.action || ''))) || []
-  const optionsAt = (owner: number, zone: number, sequence: number) => prompt?.choices.map((choice, index) => ({ ...choice, index })).filter(choice => choice.location?.owner === owner && choice.location.zone === zone && choice.location.sequence === sequence) || []
+    (zone === 8 ? choice.action === 'set_spell' : zone === 4 ? ['summon', 'special_summon', 'set_monster'].includes(choice.action || '') : ['summon', 'special_summon', 'set_monster', 'set_spell', 'activate'].includes(choice.action || ''))).sort(setActionsLast) || []
+  const optionsAt = (owner: number, zone: number, sequence: number) => prompt?.choices.map((choice, index) => ({ ...choice, index })).filter(choice => choice.location?.owner === owner && choice.location.zone === zone && choice.location.sequence === sequence).sort(setActionsLast) || []
   const activeAt = (owner: number, zone: number, sequence: number) => activeLocation?.owner === owner && (activeLocation.zone & 127) === zone && activeLocation.sequence === sequence
   function slot(owner: number, zone: number, sequence: number, label: string, physicalKey = `${owner}:${zone}:${sequence}`) {
     const entry = sides[owner].field.find(value => value.zone === zone && value.sequence === sequence)

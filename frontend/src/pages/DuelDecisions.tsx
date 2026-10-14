@@ -1,3 +1,4 @@
+import { setActionsLast } from './DuelActionLabel'
 import { useEffect, useRef, useState } from 'react'
 import { API_BASE_URL } from '../api/transport'
 import { includeChoice, selectionComplete } from './duelSelection'
@@ -33,7 +34,7 @@ export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZo
   const [filter, setFilter] = useState(''), [limit, setLimit] = useState(60)
   useEffect(() => { click.current = null; setSelection(prompt?.counter ? prompt.choices.map(() => 0) : []) }, [prompt?.id])
   useEffect(() => { setFilter(''); setLimit(60) }, [prompt?.id])
-  const choices = prompt?.choices.map((choice, index) => ({ choice, index })).filter(({ choice, index }) => (!choiceIndices || choiceIndices.includes(index)) && choice.label.toLocaleLowerCase('de').includes(filter.toLocaleLowerCase('de'))) || []
+  const choices = prompt?.choices.map((choice, index) => ({ choice, index })).filter(({ choice, index }) => (!choiceIndices || choiceIndices.includes(index)) && choice.label.toLocaleLowerCase('de').includes(filter.toLocaleLowerCase('de'))).sort((a, b) => setActionsLast(a.choice, b.choice)) || []
   const validCount = prompt?.counter ? selection.reduce((sum, value) => sum + value, 0) === prompt.counter_total :
     selection.length >= (prompt?.minimum || 0) && selection.length <= (prompt?.maximum || 0)
   const origin=(zone?:number)=>({1:'Deck',2:'Hand',4:'Spielfeld',8:'Spielfeld',16:'Friedhof',32:'Verbannt',64:'Extra-Deck'} as Record<number,string>)[zone || 0] || 'Karte'
