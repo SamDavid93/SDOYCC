@@ -1,19 +1,28 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { ArrowRight, Gem } from 'lucide-react'
 import type { BoosterSummary } from '../api/client'
 import { BoosterArtwork } from './BoosterArtwork'
 import officialCovers from '../data/officialBoosterCovers.json'
+import { transparentPackCover } from './transparentPackCover'
 
 const coverIdentity = (name: string) => name.replace(/\s+Booster$/i, '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '')
 
-export function BoosterCover({ name, code }: { name: string; code?: string | null }) {
+export function BoosterCover({ name, code, transparent = false }: { name: string; code?: string | null; transparent?: boolean }) {
   const cover = (officialCovers as Record<string, { file: string; width: number; height: number; focus?: number[] }>)[coverIdentity(name)]
   const url = cover ? import.meta.env.BASE_URL + cover.file : null
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
-  return <div className="booster-cover">{cover && url && failedUrl !== url
-    ? cover.focus ? <svg className="official-product-cover" viewBox={cover.focus.join(' ')} width="100%" height="100%" role="img" aria-label={`Offizielles Cover: ${name}`} style={{ minWidth: 0, minHeight: 0, overflow: 'hidden' }}><image href={url} width={cover.width} height={cover.height} onError={() => setFailedUrl(url)} /></svg>
-      : <img src={url} width={cover.width} height={cover.height} alt={`Offizielles Cover: ${name}`} loading="lazy" decoding="async" onError={() => setFailedUrl(url)} />
+  const [cutout, setCutout] = useState<{ url: string; image: string } | null>(null)
+  useEffect(() => {
+    if (!transparent || !url) return
+    let cancelled = false
+    transparentPackCover(url).then(image => { if (!cancelled) setCutout({ url, image }) }).catch(() => { if (!cancelled) setFailedUrl(url) })
+    return () => { cancelled = true }
+  }, [transparent, url])
+  const source = transparent ? cutout?.url === url ? cutout.image : null : url
+  return <div className="booster-cover">{cover && url && source && failedUrl !== url
+    ? cover.focus ? <svg className="official-product-cover" viewBox={cover.focus.join(' ')} width="100%" height="100%" role="img" aria-label={`Offizielles Cover: ${name}`} style={{ minWidth: 0, minHeight: 0, overflow: 'hidden' }}><image href={source} width={cover.width} height={cover.height} onError={() => setFailedUrl(url)} /></svg>
+      : <img src={source} width={cover.width} height={cover.height} alt={`Offizielles Cover: ${name}`} loading="lazy" decoding="async" onError={() => setFailedUrl(url)} />
     : <BoosterArtwork name={name} code={code} />}</div>
 }
 
