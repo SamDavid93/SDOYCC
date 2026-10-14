@@ -5,7 +5,7 @@ import { Notifications } from './components/Notifications'
 import { SiteFooter } from './components/SiteFooter'
 import logoUrl from './assets/sdoycc-logo.png'
 import bannerUrl from './assets/sdoycc-banner.png'
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { BookOpen, Layers3, ArrowRight, Boxes, ChevronRight, Gem, LayoutDashboard, LogOut, Menu, PackageOpen, Sparkles, Swords, Tags, Users, X } from 'lucide-react'
 import { BoosterTile } from './components/BoosterDisplay'
@@ -37,6 +37,16 @@ const navItems = [
 export default function App() {
   const { user, error, logout, revision } = useSession()
   const [menuOpen, setMenuOpen] = useState(false)
+  const menuButton = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (!menuOpen) return
+    document.querySelector<HTMLButtonElement>('.sidebar .mobile-close')?.focus()
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { setMenuOpen(false); menuButton.current?.focus() }
+    }
+    window.addEventListener('keydown', close)
+    return () => window.removeEventListener('keydown', close)
+  }, [menuOpen])
   const [packCount, setPackCount] = useState<number | null>(null)
   useEffect(() => {
     let active = true
@@ -72,14 +82,14 @@ export default function App() {
   else if (path === '/admin') page = <AdminPage />
   else if (/^\/admin\/users\/\d+$/.test(path)) page = <AdminPage userId={Number(path.split('/')[3])} />
   return <div className="app-shell">
-    <aside className={`sidebar ${menuOpen ? 'is-open' : ''}`}>
-      <div className="brand-row brand-art-row"><NavLink to="/" className="brand-home" aria-label="SDOYCC – Zur Startseite" onClick={() => setMenuOpen(false)}><img className="brand-logo" src={logoUrl} width="1254" height="1254" alt="SDOYCC – SamDavidOfficial’s Yu-Gi-Oh Card Collector" /></NavLink><button className="icon-button mobile-close" onClick={() => setMenuOpen(false)} aria-label="Menü schließen"><X size={18} /></button></div>
+    <aside id="hub-navigation" className={`sidebar ${menuOpen ? 'is-open' : ''}`}>
+      <div className="brand-row brand-art-row"><NavLink to="/" className="brand-home" aria-label="SDOYCC – Zur Startseite" onClick={() => setMenuOpen(false)}><img className="brand-logo" src={logoUrl} width="1254" height="1254" alt="SDOYCC – SamDavidOfficial’s Yu-Gi-Oh Card Collector" /><span className="brand-wordmark" aria-hidden="true"><strong>SDOYCC</strong><small>COLLECT · BUILD · DUEL</small></span></NavLink><button className="icon-button mobile-close" onClick={() => setMenuOpen(false)} aria-label="Menü schließen"><X size={18} /></button></div>
       <div className="profile-chip"><div className="avatar">{user.display_name.slice(0, 2).toUpperCase()}</div><div className="profile-copy"><strong>{user.display_name}</strong><span>{user.twitch_id ? '@' + user.username : 'Lokales Demo-Konto'}</span></div></div>
       <nav className="main-nav" aria-label="Hauptnavigation"><p className="eyebrow">DEIN HUB</p>{navItems.map(({ label, path: target, icon: Icon }) => <NavLink key={target} to={target} end={target === '/'} onClick={() => setMenuOpen(false)} className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><Icon size={18} /><span>{label}</span>{target === '/my-packs' && packCount !== null && <b className="nav-pack-count">{packCount}</b>}</NavLink>)}</nav>
       <div className="sidebar-bottom">{canReadAdmin(user.role) && <NavLink className="nav-item" to="/admin" onClick={() => setMenuOpen(false)}><Users size={18} />Admin-Menü</NavLink>}<NavLink className="nav-item" to="/account"><Users size={18} />Konto & Sammelpunkte</NavLink><button className="nav-item logout-button" onClick={() => void logout()}><LogOut size={18} />Abmelden</button></div>
     </aside>
     {menuOpen && <button className="mobile-scrim" onClick={() => setMenuOpen(false)} aria-label="Menü schließen" />}
-    <main className="main-content"><header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Menü öffnen"><Menu size={20} /></button><div className="breadcrumbs"><span>Hub</span><ChevronRight size={14} /><strong>{pageTitle}</strong></div><div className="top-actions"><Notifications key={user.id} /><NavLink className="top-pack-link" to="/my-packs"><Layers3 size={16} /><span>{packCount ?? '…'} Packs</span></NavLink><NavLink to="/account" className="currency"><Gem size={15} />{user.diamonds.toLocaleString('de-DE')} Sammelpunkte</NavLink></div></header>
+    <main className="main-content"><header className="topbar"><button ref={menuButton} aria-expanded={menuOpen} aria-controls="hub-navigation" className="icon-button mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Menü öffnen"><Menu size={20} /></button><div className="breadcrumbs"><span>Hub</span><ChevronRight size={14} /><strong>{pageTitle}</strong></div><div className="top-actions"><Notifications key={user.id} /><NavLink className="top-pack-link" to="/my-packs"><Layers3 size={16} /><span>{packCount ?? '…'} Packs</span></NavLink><NavLink to="/account" className="currency"><Gem size={15} />{user.diamonds.toLocaleString('de-DE')} Sammelpunkte</NavLink></div></header>
     {error && <div className="api-notice" role="alert">{error}</div>}
     <div className="app-route-slot" key={user.id}><Suspense fallback={<div className="page-wrap" role="status">Bereich wird geladen …</div>}>{page}</Suspense></div><SiteFooter /></main>
   </div>

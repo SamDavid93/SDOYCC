@@ -1,4 +1,5 @@
 import logoUrl from './assets/sdoycc-logo.png'
+import bannerUrl from './assets/sdoycc-banner.png'
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { api, sessionToken, setSessionToken, jsonPost } from './api/transport'
 
@@ -62,7 +63,7 @@ export function LoginPage() {
     } catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Anmeldung fehlgeschlagen') }
     finally { setBusy(false) }
   }
-  return <main className="login-page"><section className="login-panel"><img className="auth-brand-logo" src={logoUrl} width="1254" height="1254" alt="SDOYCC – SamDavidOfficial’s Yu-Gi-Oh Card Collector" />
+  return <main className="login-page"><aside className="auth-showcase" aria-label="Willkommen bei SDOYCC"><img src={bannerUrl} alt="" width="1672" height="941" /><p className="eyebrow">SAMMELN. DECKS BAUEN. DUELLIEREN.</p><h2>Deine Karten.<br />Dein nächster Zug.</h2><p>Entdecke neue Booster, vervollständige deine Sammlung und bringe dein Deck in die Arena.</p><div className="auth-showcase-steps" aria-hidden="true"><span><b>01</b> SAMMLUNG</span><span><b>02</b> DECKBAU</span><span><b>03</b> DUELL</span></div></aside><section className="login-panel"><img className="auth-brand-logo" src={logoUrl} width="1254" height="1254" alt="SDOYCC – SamDavidOfficial’s Yu-Gi-Oh Card Collector" />
     <h1>Dein Stream.<br />Deine Kartensammlung.</h1>
     <p>Melde dich mit deinem Twitch-Benutzernamen und deinem Hub-Passwort an.</p>
     {(error || actionError) && <div className="api-notice" role="alert">{actionError || error}</div>}

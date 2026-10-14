@@ -1,0 +1,267 @@
+/* Game surfaces share the site's midnight, brushed metal and warm gold palette.
+   Field geometry, action colours and state animations stay in their own styles. */
+.app-shell .page-wrap:has(.duel-worker-table.is-playing) { max-width: none; }
+.page-wrap.decks-page {
+  --deck-gold: var(--md-gold, #e6c77e);
+  --deck-teal: #8bd8c8;
+  color: var(--md-text, #edf3ff);
+}
+
+.page-wrap.decks-page .deck-hero {
+  border-color: #65583e;
+  background:
+    linear-gradient(115deg, transparent 56%, #d6b36f09 56.1%, #d6b36f09 74%, transparent 74.1%),
+    radial-gradient(ellipse at 95% 20%, #71603938, transparent 55%),
+    linear-gradient(135deg, #182438, #0b111e 75%);
+  box-shadow: inset 0 1px #e7d4a32a, inset 0 -1px #0008, 0 18px 48px #0004;
+}
+.page-wrap.decks-page .deck-hero-symbol { filter: drop-shadow(0 0 25px #e6c77e30); }
+.page-wrap.decks-page .deck-tile {
+  border-color: var(--md-border, #2b3b56);
+  border-radius: 10px;
+  background: linear-gradient(150deg, #18243a, #0e1626);
+  box-shadow: inset 0 1px #d4e2ff12, 0 12px 30px #0003;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.page-wrap.decks-page .deck-tile:hover {
+  border-color: #8c7850;
+  box-shadow: inset 0 1px #e6c77e26, 0 15px 34px #0005, 0 0 25px #e6c77e08;
+}
+.page-wrap.decks-page .deck-tile-art {
+  background:
+    repeating-linear-gradient(135deg, transparent 0 28px, #e6c77e06 29px 30px),
+    radial-gradient(ellipse at center, #6a583637, transparent 70%), #0a1221;
+  box-shadow: inset 0 -1px #e6c77e20;
+}
+.page-wrap.decks-page .deck-tile-art i { border-color: #ae925b; background: linear-gradient(150deg, #26364e, #0b1423); }
+.page-wrap.decks-page .deck-tile-art svg { filter: drop-shadow(0 0 16px #e6c77e3d); }
+.page-wrap.decks-page .deck-tile h3 a { color: #f4ead1; }
+.page-wrap.decks-page :is(.deck-phase-note, .deck-empty) { background-color: #101a2b; }
+.page-wrap.decks-page .deck-recovery { background: #292337; color: #dfd8c6; border-color: #8b764b; }
+.page-wrap.decks-page .deck-recovery h2 { color: #f6e4b7; }
+.page-wrap.decks-page .deck-feedback {
+  background: linear-gradient(110deg, #372d20, #1b2030);
+  color: #fae7bb;
+  border-color: #a58b52;
+  box-shadow: inset 0 1px #e6c77e25, 0 10px 30px #0005;
+}
+
+/* A quiet canvas keeps the card art and ownership states easy to scan. */
+.page-wrap.decks-page.deck-editor { background: radial-gradient(ellipse at 50% 0, #2235523b, transparent 65%); }
+.page-wrap.decks-page.deck-editor .deck-editor-heading h1 { color: #f4ead1; letter-spacing: .015em; }
+.page-wrap.decks-page.deck-editor .deck-save-indicator { color: #9cddc6; }
+.page-wrap.decks-page.deck-editor .deck-panel {
+  border-color: #34435e;
+  border-radius: 7px;
+  background: linear-gradient(155deg, #172238, #0d1627 55%);
+  box-shadow: inset 0 1px #dbe7ff12, 0 12px 30px #0003;
+  scrollbar-color: #465977 #0a1322;
+}
+.page-wrap.decks-page.deck-editor .deck-composition {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 3px, #a5c0e502 3px 4px),
+    radial-gradient(ellipse at 50% 100%, #14334b4d, transparent 75%), #0c1525;
+}
+.page-wrap.decks-page.deck-editor :is(.deck-panel h2, .deck-review h3) { color: #f0e5ca; }
+.page-wrap.decks-page.deck-editor :is(.deck-area-heading, .deck-catalog-options>summary) {
+  background: linear-gradient(100deg, #26364d, #141f31);
+  color: #e6edf9;
+  box-shadow: inset 0 1px #c5d6f114, inset 0 -1px #03091688;
+}
+.page-wrap.decks-page.deck-editor .deck-area-heading { border-bottom-color: #3b4d68; }
+.page-wrap.decks-page.deck-editor .deck-area-heading[aria-pressed=true] {
+  border-left-color: var(--md-gold, #e6c77e);
+  background: linear-gradient(100deg, #423b2b, #172337 72%);
+}
+.page-wrap.decks-page.deck-editor .deck-area-heading b { color: #f0d797; font-variant-numeric: tabular-nums; }
+.page-wrap.decks-page.deck-editor .deck-area-heading small { color: #9baac3; }
+.page-wrap.decks-page.deck-editor :is(.deck-settings, .deck-arrange, .deck-extra-tools, .deck-catalog-options) { color: #aebdd4; }
+.page-wrap.decks-page.deck-editor :is(.deck-settings, .deck-arrange, .deck-extra-tools, .deck-catalog-options)>summary:hover { color: #e9d29a; }
+.page-wrap.decks-page.deck-editor .deck-catalog-options>summary { border-radius: 3px; }
+.page-wrap.decks-page.deck-editor :is(input, select, textarea) {
+  border-color: #3a4b66;
+  background: #090f1e;
+  color: #edf3ff;
+  box-shadow: inset 0 2px 5px #0004;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.page-wrap.decks-page.deck-editor :is(input, select, textarea):focus {
+  border-color: #80b9d7;
+  box-shadow: inset 0 2px 5px #0004, 0 0 0 2px #78d5f119;
+}
+.page-wrap.decks-page.deck-editor .deck-inspector { background: linear-gradient(160deg, #1f2a40, #0c1423 58%); border-top-color: #8d7850; }
+.page-wrap.decks-page.deck-editor .deck-inspector-image .card-image-wrap { box-shadow: 0 10px 24px #0008, 0 0 22px #e6c77e0a; }
+.page-wrap.decks-page.deck-editor .deck-inspector-budget {
+  border-block: 1px solid #42516b77;
+  background: linear-gradient(100deg, #22334a44, transparent);
+}
+.page-wrap.decks-page.deck-editor .deck-inspector-budget span { color: #a6b5cd; }
+.page-wrap.decks-page.deck-editor .deck-inspector-budget b { color: #f0ddb2; font-variant-numeric: tabular-nums; }
+.page-wrap.decks-page.deck-editor .deck-inspector-type { color: #aebfd7; }
+.page-wrap.decks-page.deck-editor .deck-inspector-stats { color: #b7c8dd; }
+.page-wrap.decks-page.deck-editor .deck-inspector-stats b { color: #f4e4bf; }
+.page-wrap.decks-page.deck-editor .deck-inspector-description { color: #d5deed; }
+.page-wrap.decks-page.deck-editor .deck-inspector a { color: #8fcee7; }
+.page-wrap.decks-page.deck-editor :is(.deck-inspector-actions button, .deck-pagination button, .deck-actions button) {
+  border-color: #465671;
+  color: #d7e4f4;
+  background: linear-gradient(145deg, #283b55, #152136);
+  box-shadow: inset 0 1px #cde1ff14;
+}
+.page-wrap.decks-page.deck-editor :is(.deck-inspector-actions button, .deck-pagination button, .deck-actions button):hover:not(:disabled):not([aria-disabled=true]) {
+  border-color: #9a8758;
+  color: #fff1cf;
+  background: linear-gradient(145deg, #36425a, #202a3e);
+}
+.page-wrap.decks-page.deck-editor :is(.deck-entry, .deck-budget-card) .card-image-wrap {
+  box-shadow: 0 3px 8px #0008;
+  transition: box-shadow .18s ease;
+}
+.page-wrap.decks-page.deck-editor :is(.deck-entry, .deck-budget-card):hover .card-image-wrap {
+  box-shadow: 0 0 0 1px #cbb26c, 0 6px 12px #0008;
+}
+.page-wrap.decks-page.deck-editor .deck-entry.is-invalid .card-image-wrap { box-shadow: 0 0 0 1px #e48d97; }
+.page-wrap.decks-page.deck-editor .deck-tile-quantity { background: #070c18ed; box-shadow: 0 0 0 1px #b8c9e63b; font-variant-numeric: tabular-nums; }
+.page-wrap.decks-page.deck-editor .deck-tile-status { box-shadow: 0 1px 5px #0008; }
+.page-wrap.decks-page.deck-editor .deck-info-button { border-color: #b9a066; background: #111b2ded; color: #f4dfac; }
+.page-wrap.decks-page.deck-editor .deck-area-empty { color: #91a2bd; border-color: #34425b; background: #0a122080; }
+.page-wrap.decks-page.deck-editor :is(.deck-result-count, .deck-grid-legend, .deck-inspector-empty) { color: #a2b1c8; }
+.page-wrap.decks-page.deck-editor .deck-review { background: linear-gradient(120deg, #1c2739, #0e1727); }
+.page-wrap.decks-page.deck-editor .deck-mobile-tabs button { background: linear-gradient(145deg, #1c2c43, #111b2c); border-color: #384c68; }
+.page-wrap.decks-page.deck-editor .deck-mobile-tabs button[aria-pressed=true] { background: #363228; border-color: #c4a96c; color: #ffe9b4; }
+
+/* Lobby: a single illuminated arena card and a restrained command column. */
+.page-wrap.duel-zone-page {
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, transparent 67%, #8d709c0a 67.1%, transparent 85%),
+    radial-gradient(ellipse at 100% 100%, #40244a35, transparent 55%),
+    radial-gradient(ellipse at 5% 0, #24426724, transparent 65%), #0b1120;
+}
+.page-wrap.duel-zone-page .duel-hub-heading h1 { color: #f3e6c6; letter-spacing: .02em; }
+.page-wrap.duel-zone-page .duel-hub-status { color: #a9bfd6; }
+.page-wrap.duel-zone-page .duel-mode-card {
+  border-color: #796641;
+  border-radius: 8px;
+  background: linear-gradient(150deg, #202b3e, #0b1323 75%);
+  box-shadow: inset 0 1px #e6c77e40, 0 20px 55px #0005;
+}
+.page-wrap.duel-zone-page .duel-mode-topline {
+  background: linear-gradient(100deg, #d8c69c30, #4c5c7433);
+  color: #dfd9c9;
+  box-shadow: inset 0 -1px #e6c77e29;
+}
+.page-wrap.duel-zone-page .duel-mode-art {
+  background:
+    linear-gradient(130deg, transparent 16%, #d6bb7624 16.1%, transparent 16.5%, transparent 83%, #d6bb761c 83.1%, transparent 83.5%),
+    repeating-linear-gradient(135deg, transparent 0 55px, #e6c77e07 56px 57px),
+    radial-gradient(ellipse at center, #a4873c3b, transparent 66%),
+    radial-gradient(ellipse at 50% 100%, #193c5e66, transparent 70%);
+}
+.page-wrap.duel-zone-page .duel-mode-art::before { border-color: #b49b5c75; box-shadow: 0 0 0 8px #e6c77e05, 0 0 35px #d9b86012; }
+.page-wrap.duel-zone-page .duel-mode-art::after { border-color: #b49b5c35; box-shadow: inset 0 0 0 6px #e6c77e04; }
+.page-wrap.duel-zone-page .duel-mode-emblem {
+  border-color: #d2b679;
+  border-radius: 20px;
+  color: #f1dca4;
+  background: radial-gradient(circle at 40% 20%, #8a713a, #293343 58%, #111b2d);
+  box-shadow: inset 0 0 0 4px #0c142388, inset 0 0 0 5px #d8bd6e24, 0 0 55px #e0bb6829, 0 14px 24px #0006;
+}
+.page-wrap.duel-zone-page .duel-mode-emblem svg { filter: drop-shadow(0 3px 0 #65522d) drop-shadow(0 0 15px #e6c77e48); }
+.page-wrap.duel-zone-page .duel-mode-art>span { color: #d0b879; text-shadow: 0 0 18px #dfbd6533; }
+.page-wrap.duel-zone-page .duel-mode-copy h2 { color: #f7e9c9; text-shadow: 0 2px 8px #0005; }
+.page-wrap.duel-zone-page .duel-mode-switch button {
+  border-color: #41516c;
+  border-radius: 5px;
+  background: linear-gradient(140deg, #24344d, #121d31);
+  color: #c7d5e8;
+  box-shadow: inset 0 1px #c7d9f516;
+}
+.page-wrap.duel-zone-page .duel-mode-switch button[aria-pressed=true] {
+  border-color: #c1a567;
+  background: linear-gradient(130deg, #6b5834, #32332e 65%);
+  color: #fff0c7;
+  box-shadow: inset 0 1px #f2d59b36, inset 0 -3px #c5a45c, 0 0 18px #e6c77e0c;
+}
+.page-wrap.duel-zone-page .duel-hub-steps { background: #080f1a44; border-color: #59617a55; }
+.page-wrap.duel-zone-page .duel-hub-steps b { color: #e5ce95; background: #293146; box-shadow: inset 0 0 0 1px #a88d4d55; }
+.page-wrap.duel-zone-page :is(.duel-hub-details, .duel-history, .duel-hub-join, .duel-hub-link, .duel-hub-room-info) {
+  border-color: #3c4a64;
+  background: linear-gradient(125deg, #1a263c, #0e1829);
+  box-shadow: inset 0 1px #c3d5ee12, 0 5px 15px #0002;
+}
+.page-wrap.duel-zone-page :is(.duel-hub-details, .duel-history, .duel-hub-join)[open] { border-color: #776a4c; }
+.page-wrap.duel-zone-page :is(.duel-hub-details, .duel-history, .duel-hub-join)>summary:hover,
+.page-wrap.duel-zone-page .duel-hub-link:hover { color: #f1dba4; background: #c4b17708; }
+.page-wrap.duel-zone-page .duel-hub-launch {
+  border-color: #6b624c;
+  border-radius: 7px;
+  background: radial-gradient(ellipse at 0 0, #41507840, transparent 70%), linear-gradient(140deg, #222e45, #111a2c);
+  box-shadow: inset 0 1px #dfcb9b27, 0 14px 35px #0004;
+}
+.page-wrap.duel-zone-page .duel-hub-deck strong { color: #f2e5c7; }
+.page-wrap.duel-zone-page :is(.duel-hub-launch select, .duel-hub-join input) { background: #080f1e; border-color: #4b5c78; box-shadow: inset 0 2px 6px #0005; }
+.page-wrap.duel-zone-page .duel-hub-play {
+  border-color: #e4d99a;
+  border-radius: 5px;
+  background: linear-gradient(110deg, #dfc273, #f1e3a0 53%, #c1b257);
+  color: #202313;
+  letter-spacing: .055em;
+  box-shadow: inset 0 1px #fff5c9, inset 0 -2px #8c763c, 0 5px 25px #c6ad4a26;
+  transition: filter .18s ease, box-shadow .18s ease;
+}
+.page-wrap.duel-zone-page .duel-hub-play:hover:not(:disabled) { filter: brightness(1.12); box-shadow: inset 0 1px #fff5c9, inset 0 -2px #8c763c, 0 6px 30px #c6ad4a3d; }
+.page-wrap.duel-zone-page .duel-hub-play:disabled { background: #263044; border-color: #46536d; color: #93a1b8; box-shadow: none; }
+.page-wrap.duel-zone-page .duel-room { border-color: #5e5b51; background: linear-gradient(140deg, #202b41, #0d1729); box-shadow: inset 0 1px #dec89b1f; }
+.page-wrap.duel-zone-page .duel-seat { background: linear-gradient(150deg, #17283c, #0c1728); border-color: #3c526a; }
+.page-wrap.duel-zone-page .duel-avatar { border-color: #ac965f; background: radial-gradient(circle at 30% 20%, #3f4c56, #101c2d); box-shadow: 0 0 22px #e6c77e0d; }
+.page-wrap.duel-zone-page .duel-own-deck { background: #0c1729; border-color: #3b4c67; }
+.page-wrap.duel-zone-page :is(button, a, summary, select, input):focus-visible { outline-color: #e6c77e; }
+
+/* In a live duel the sapphire/ruby turn cues and gold effect cues retain priority. */
+.duel-worker-table .duel-arena {
+  border-color: #7c818a;
+  border-radius: 11px;
+  box-shadow: inset 0 0 0 5px #080f1c, inset 0 0 0 6px #77818f55, inset 0 0 55px #04081266, 0 20px 65px #0009;
+}
+.duel-worker-table .duel-arena::before { border-color: #d4c39724; background: linear-gradient(90deg, #b3c7e00c, transparent 16%, transparent 84%, #b3c7e00c); }
+.duel-worker-table .duel-card-inspector {
+  border-color: #70664f;
+  background: linear-gradient(155deg, #233149, #101a2b 55%, #0b1322);
+  box-shadow: inset 0 1px #e6c77e30, 0 14px 38px #0006;
+}
+.duel-worker-table .duel-card-inspector h2 { color: #f1e3c2; }
+.duel-worker-table .duel-card-inspector>small { color: #bca974; }
+.duel-worker-table .duel-card-description { color: #d0daea; }
+.duel-worker-table .duel-inspector-empty>span { color: #b49d69; text-shadow: 0 0 24px #e6c77e24; }
+.duel-worker-table .arena-player>header.duel-player-hud { box-shadow: inset 0 1px #c3def515, 0 5px 18px #0005; }
+.duel-worker-table .arena-player .duel-life { font-variant-numeric: tabular-nums; }
+.duel-worker-table .duel-player-identity h2,
+.duel-worker-table .duel-player-identity>span { line-height: 1.2; }
+.duel-worker-table .arena-slot:not(.action-available):not(.zone-disabled):not(.zone-selectable):not(.zone-droppable):not(.zone-selected):not(.effect-available):not(.attack-ready):not(.action-focused) {
+  border-color: #94abc34a;
+  background: linear-gradient(145deg, #42577520, #050d18a6);
+  box-shadow: inset 0 0 0 3px #0a142380, inset 0 0 22px #0005, 0 1px #bbd0e91a;
+}
+.duel-worker-table .arena-slot::before { border-color: #a6bdd51c; }
+.duel-worker-table .arena-empty-mark { color: #b9cce22a; text-shadow: 0 0 10px #9ac8ef14; }
+.duel-worker-table .arena-card-stats>strong { background: #080f1bef; border-color: #a6b3c34d; box-shadow: 0 3px 8px #0008; }
+.duel-worker-table .arena-pile:not(.effect-available):not(.action-available) { background: linear-gradient(145deg, #31415966, #081221e6); border-color: #687c985e; }
+.duel-worker-table :is(.arena-card-actions, .arena-hand-actions, .arena-phase-options, .arena-pile-browser, .arena-settings-content) {
+  border-color: #8a99b6;
+  background: linear-gradient(140deg, #263650fa, #0b1729fa);
+  box-shadow: inset 0 1px #e2d5ab26, 0 14px 38px #000b;
+}
+.duel-worker-table .duel-worker-result { border-color: #9b8757; background: linear-gradient(130deg, #313645, #111a2b); box-shadow: inset 0 1px #e6c77e38, 0 18px 45px #0006; }
+.duel-worker-table .duel-worker-result h2 { color: #f4dfad; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-wrap.decks-page .deck-tile,
+  .page-wrap.decks-page.deck-editor :is(input, select, textarea, .card-image-wrap),
+  .page-wrap.duel-zone-page .duel-hub-play { transition: none; }
+}
+
+/* Keep the full arena above the copyright footer at 720p with local font metrics. */
+@media (max-height: 800px) and (min-width: 761px) {
+  .duel-worker-table .duel-arena { padding-bottom: 18px; }
+}

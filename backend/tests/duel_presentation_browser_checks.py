@@ -25,6 +25,9 @@ import { bossSummon } from '../src/pages/DuelSummonCutin'
 import { bossSoundFor, DuelSoundPlayer } from '../src/pages/duelSounds'
 import '../src/styles.css'
 import '../src/pages/decks.css'
+import '../src/master-duel-theme.css'
+import '../src/master-duel-content.css'
+import '../src/master-duel-game.css'
 sessionStorage.setItem('hub-session', 'synthetic-presentation-token')
 const card = {code:1,name:'Testkarte',description:'Deutscher Kartentext',image_url:'/test-card.svg',atk:1000,defense:1000}
 const side = {lp:8000,deck:30,hand:[],grave:[],field:[]}
