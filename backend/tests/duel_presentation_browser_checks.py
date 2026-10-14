@@ -68,6 +68,7 @@ window.__pileFlow=()=>{window.__scene();const extra={...card,name:'Synchro-Test'
 window.__pileStep=(stage)=>{frame.board.prompt={id:1200+frame.board.revision,title:stage==='materials'?'Materialien wählen':stage==='zones'?'Zone wählen':'Aktion wählen',...(stage==='materials'?{select:true,minimum:2,maximum:2}:stage==='zones'?{kind:'zones',placement:true}:{}),choices:stage==='materials'?[0,1].map(sequence=>({label:'Material '+sequence,card,location:{owner:0,zone:4,sequence}})):stage==='zones'?[6,2].map(sequence=>({label:'Zone '+sequence,card:null,location:{owner:0,zone:4,sequence}})):[{label:'Zug beenden',card:null}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__clock=(active=null,seat=0)=>{frame.seat=seat;frame.clock={remaining:[180,300],active,side_remaining:null,readiness_required:true,waiting_for:null,ready_timeout:null};frame.board.prompt=null;frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__syncedEffect=()=>{const id=Math.max(0,...frame.board.events.map(e=>e.id));frame.board.events.push({id:id+1,kind:'turn_end',player:1},{id:id+2,kind:'phase',phase:2,player:0,number:2});frame.board.turn=0;frame.board.phase=2;frame.board.prompt={id:9000,title:'Karten auswählen',hint:'Ziehe 1 Karte.',effect_card:{...card,name:'Standby-Monster'},select:true,minimum:1,maximum:1,choices:[{label:'Effektziel',card,location:{owner:0,zone:1,sequence:0}}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__mixedOrigins=()=>{window.__pick(1,1,false,1,5);frame.board.prompt.choices.forEach((c,i)=>{c.location={owner:i===3?1:0,zone:[16,2,1,32,64][i],sequence:0}});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__currentDecision=()=>({prompt:frame.board.prompt?.id,revision:frame.board.revision})
 window.__clockTick=()=>window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})
 window.__nextGame=()=>{frame.seat=0;frame.match={version:1,game:2,phase:'playing',score:[1,0],ready:[false,false],chooser:null,next_starter:null};frame.board.revision=1;frame.board.seat=0;frame.board.turn=0;frame.board.events=[{id:1,kind:'phase',phase:4,player:0,number:1}];frame.board.boards.forEach(s=>s.lp=8000);frame.clock={remaining:[360,360],active:null,side_remaining:null,readiness_required:true,waiting_for:0,ready_timeout:30};frame.board.prompt={id:1,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
@@ -416,6 +417,21 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                         assert page.evaluate('window.__answers.at(-1).selected')==[0,23]
                         page.evaluate('window.__scene();window.__pick(1,1,false,2,24)')
                         page.screenshot(path=str(ROOT/f'artifacts/duel-horizontal-choices-{viewport["width"]}.png'),full_page=True)
+                    # Identical cards are distinguished by exact engine location, never by card text.
+                    page.set_viewport_size({'width':1440,'height':1000})
+                    page.evaluate('window.__scene();window.__mixedOrigins()')
+                    origins=page.locator('.arena-card-choice-popup')
+                    for zone, label in [(16,'Friedhof'),(2,'Hand'),(1,'Deck'),(32,'Gegner: Verbannt'),(64,'Extra-Deck')]:
+                        expect(origins.locator(f'button[data-choice-zone="{zone}"] .card-origin-symbol')).to_contain_text(label)
+                    grave=origins.locator('button[data-choice-zone="16"]')
+                    grave.click()
+                    expect(page.locator('.duel-card-inspector > .card-origin-symbol')).to_contain_text('Friedhof')
+                    grave.click()
+                    origins.locator('button[data-choice-zone="1"]').click()
+                    expect(page.locator('.duel-card-inspector > .card-origin-symbol')).to_contain_text('Deck')
+                    page.screenshot(path=str(ROOT/'artifacts/duel-same-card-distinct-origins.png'),full_page=True)
+                    origins.get_by_role('button',name='Auswahl best\u00e4tigen',exact=True).click()
+                    assert page.evaluate('window.__answers.at(-1).selected')==[2]
                     # Physical shared zones keep their DOM identity when controllers change.
                     page.evaluate('window.__physicalExtraNodes=Array.from(document.querySelectorAll(".arena-extra-row > .arena-slot"))')
                     for viewport in ({'width':1440,'height':1000}, {'width':390,'height':844}):
@@ -647,7 +663,7 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     expect(page.locator('.duel-effect-context')).to_contain_text('Ziehe 1 Karte.')
                     expect(page.locator('.duel-card-inspector h2')).to_have_text('Standby-Monster')
                     expect(page.locator('.duel-card-inspector').get_by_role('img',name='Empf\u00e4nger-Monster')).to_be_visible()
-                    expect(page.locator('.duel-card-inspector .effect-location-symbols')).to_contain_text('Deck')
+                    expect(page.locator('.arena-card-choice-popup .card-origin-symbol')).to_contain_text('Deck')
                     page.wait_for_function('window.__readyFrames.at(-1).prompt===9000')
                     page.screenshot(path=str(ROOT/'artifacts/duel-synced-effect-context.png'),full_page=True)
                     assert not errors, errors

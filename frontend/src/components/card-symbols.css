@@ -13,3 +13,13 @@
 .duel-effect-context .effect-location-symbols { margin: 6px 0; }
 .duel-effect-context .effect-location-symbol { flex: 0 1 auto; flex-direction: row; padding: 4px 8px; }
 .duel-effect-context .effect-location-symbol svg { width: 24px; height: 24px; }
+.card-origin-symbol { display: inline-flex; align-items: center; gap: 7px; padding: 5px 8px; border: 1px solid currentColor; border-radius: 6px; background: #0b2234dd; font-size: 11px; line-height: 1.25; }
+.card-origin-symbol > svg { width: 30px; height: 30px; flex-shrink: 0; }
+.card-origin-symbol > strong { color: inherit; font-size: inherit; }
+.duel-arena .arena-card-choice-popup .duel-choice-origin { display: block; padding: 0; background: transparent; }
+.duel-choice-origin .card-origin-symbol { font-size: 10px; padding: 4px 6px; }
+.duel-choice-origin .card-origin-symbol > svg { width: 28px; height: 28px; }
+.duel-choice-origin .card-origin-symbol { box-sizing: border-box; max-width: 100%; }
+@media (max-width: 760px) {
+  .duel-choice-origin .card-origin-symbol { flex-direction: column; gap: 3px; text-align: center; }
+}

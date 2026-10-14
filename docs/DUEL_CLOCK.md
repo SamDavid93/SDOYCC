@@ -37,6 +37,14 @@ zum Nachlesen gewechselt werden. Das horizontale Auswahlfenster liegt transparen
 auf der eigenen Spielfeldhälfte. Gegnerische Aktivierungen aktualisieren den
 Viewer erst mit ihrem Wiedergabeereignis; eigene behalten ihre direkte Anzeige.
 
+Jede angebotene Karte zeigt ihren tatsächlichen Herkunftsort aus
+`choice.location.zone` als Symbol und Beschriftung. Gleiche Kartencodes in Hand,
+Friedhof, Deck oder Verbannt bleiben getrennte Optionen mit ihrem ursprünglichen
+Engine-Antwortindex. Fremde Orte tragen zusätzlich „Gegner“. Die Herkunft wird
+nicht aus Kartentext oder Effektziel abgeleitet. Beim Anklicken übernimmt der
+Viewer den Ort genau dieses Exemplars; eine allgemeine Liste erwähnter
+Effektbereiche wird dort nicht mehr angezeigt.
+
 Die Anzeige sitzt als großer Kreis links auf Höhe der Spielfeldmitte gegenüber
 der Phasenanzeige. Sie zeigt die eigene Zeit in Minuten und Sekunden, darunter
 die gegnerische Zeit. Nur der serverseitig aktive Spieler zählt lokal sichtbar

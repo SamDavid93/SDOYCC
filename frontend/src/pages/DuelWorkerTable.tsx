@@ -13,7 +13,7 @@ import './duel-arena.css'
 import './duel-premium.css'
 import './duel-card-choice.css'
 import cardBack from '../assets/card-back.jpg'
-import { EffectLocations, TunerBadge } from '../components/CardSymbols'
+import { CardOrigin, TunerBadge } from '../components/CardSymbols'
 
 export type EngineCard = { attribute?: number; type?: number; level?: number; code: number; name: string; description?: string; image_url?: string; fallback_image_url?: string; atk?: number; defense?: number }
 function imageFailed(event: SyntheticEvent<HTMLImageElement>, card: EngineCard) {
@@ -34,7 +34,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   const latest = useRef<WorkerResult | null>(null)
   latest.current = result
   const [playback, setPlayback] = useState<DuelPlayback>({through: -1, idle: false, event: null})
-  const [previewEffectZones, setPreviewEffectZones] = useState<number[]>([])
+  const [previewOrigin, setPreviewOrigin] = useState<DuelLocation | null>(null)
   const presentationReady = useRef(false)
   const playbackGame = useRef<number | null>(null)
   const [activation, setActivation] = useState<{ card: EngineCard; text?: string } | null>(null)
@@ -49,7 +49,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     const event = next.event
     const effectEvent = event?.kind === 'chain' ? event : event?.kind === 'chain_step' && event.step === 72
       ? latest.current?.board?.events.filter(item => item.kind === 'chain' && item.id <= event.id && item.number === event.number).at(-1) : null
-    if (effectEvent?.card) { setPreview(effectEvent.card); setPreviewEffect(effectEvent.effect || 'Effekt wird aufgelöst'); setPreviewEffectZones(effectEvent.source ? [effectEvent.source.zone] : []) }
+    if (effectEvent?.card) { setPreview(effectEvent.card); setPreviewEffect(effectEvent.effect || 'Effekt wird aufgelöst'); setPreviewOrigin(effectEvent.source || null) }
     const newDamage = event?.kind === 'lp' && event.id !== lastDamage.current
     if (newDamage) lastDamage.current = event.id
     setVisualLP(previous => {
@@ -72,7 +72,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   const showEffect = useCallback((card: EngineCard, effect?: string | null) => {
     setPreview(card); setPreviewEffect(effect || 'Effekt aktiviert')
     const event = latest.current?.board?.events.filter(item => item.kind === 'chain' && item.card?.code === card.code).at(-1)
-    setPreviewEffectZones(event?.source ? [event.source.zone] : [])
+    setPreviewOrigin(event?.source || null)
   }, [])
   const placement = useRef<DuelLocation | null>(null)
   const finishSelectionAfter = useRef<number | null>(null)
@@ -193,11 +193,10 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     ? board?.events.filter(event => event.kind === 'chain' && event.number === resolution.number && event.id > chainEnd).at(-1) : lastActivation
   const effectCard = prompt?.effect_card || activeEffect?.card || activation?.card
   const effectText = activeEffect?.effect || prompt?.hint || activation?.text || effectCard?.description || prompt?.title
-  const effectZones = presentationReady.current ? [prompt?.effect_location?.zone, activeEffect?.source?.zone, ...(prompt?.choices.map(choice => choice.location?.zone) || [])].filter((zone): zone is number => zone !== undefined) : []
   const resolvingEffect = Boolean(prompt && prompt.title !== 'Aktion wählen' && effectCard)
   useEffect(() => {
     if (!resolvingEffect || disabled || !effectCard) return
-    setPreview(effectCard); setPreviewEffect(effectText || 'Effekt auflösen'); setPreviewEffectZones([])
+    setPreview(effectCard); setPreviewEffect(effectText || 'Effekt auflösen'); setPreviewOrigin(prompt?.effect_location || activeEffect?.source || null)
   }, [prompt?.id, disabled])
   useEffect(() => {
     if (disabled || !prompt || !result?.clock?.readiness_required || pendingCommand.current) return
@@ -216,7 +215,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     if (!options.length) return
     const side = board!.boards[location.owner]
     const shown = location.zone === 2 ? side.hand[location.sequence] : location.zone === 64 ? side.extra?.[location.sequence] : location.zone === 16 ? side.grave[location.sequence] : location.zone === 32 ? side.removed?.[location.sequence] : side.field.find(entry => entry.zone === location.zone && entry.sequence === location.sequence)?.card
-    if (shown) { setPreview(shown); setPreviewEffect(null) }
+    if (shown) { setPreview(shown); setPreviewEffect(null); setPreviewOrigin(location) }
     if (prompt.select && options.length === 1) {
       setActiveLocation(location)
       const index = options[0].index
@@ -263,7 +262,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     placement.current = null
     if (index >= 0) send('answer', { prompt: prompt.id, selected: [index] })
   }, [prompt?.id, connected, busy])
-  const card = (value: EngineCard | null, key: string, covered = false, location?: DuelLocation) => <button key={`${key}:${value?.code || 0}:${covered}`} className={'duel-playing-card' + (!value || covered ? ' covered' : '') + (location && !disabled && effectAvailableAt(prompt,location) ? ' effect-available' : '')} disabled={!value && !(location && choicesAt(location).length && !disabled)} onClick={event => { if (event.detail > 1) return; if (value) { setPreview(value); setPreviewEffect(null) } if (location) chooseLocation(location) }} onDoubleClick={() => { if (location && prompt?.select) chooseLocation(location,true) }} aria-label={value ? value.name + ' ansehen' : 'Verdeckte Karte'}>{!value || covered ? <img src={cardBack} alt="Kartenrückseite" draggable={false} /> : <><TunerBadge type={value.type} compact />{value.image_url && <img key={value.image_url} src={API_BASE_URL.replace(/\/api\/?$/, '') + value.image_url} alt="" loading="eager" onLoad={event=>{event.currentTarget.dataset.ready="true";event.currentTarget.hidden=false}} onError={event => imageFailed(event, value)} />}<strong>{value.name}</strong><small>{value.atk !== undefined ? `ATK ${value.atk} · DEF ${value.defense}` : 'Kartentext ansehen'}</small></>}</button>
+  const card = (value: EngineCard | null, key: string, covered = false, location?: DuelLocation) => <button key={`${key}:${value?.code || 0}:${covered}`} className={'duel-playing-card' + (!value || covered ? ' covered' : '') + (location && !disabled && effectAvailableAt(prompt,location) ? ' effect-available' : '')} disabled={!value && !(location && choicesAt(location).length && !disabled)} onClick={event => { if (event.detail > 1) return; if (value) { setPreview(value); setPreviewEffect(null); setPreviewOrigin(location || null) } if (location) chooseLocation(location) }} onDoubleClick={() => { if (location && prompt?.select) chooseLocation(location,true) }} aria-label={value ? value.name + ' ansehen' : 'Verdeckte Karte'}>{!value || covered ? <img src={cardBack} alt="Kartenrückseite" draggable={false} /> : <><TunerBadge type={value.type} compact />{value.image_url && <img key={value.image_url} src={API_BASE_URL.replace(/\/api\/?$/, '') + value.image_url} alt="" loading="eager" onLoad={event=>{event.currentTarget.dataset.ready="true";event.currentTarget.hidden=false}} onError={event => imageFailed(event, value)} />}<strong>{value.name}</strong><small>{value.atk !== undefined ? `ATK ${value.atk} · DEF ${value.defense}` : 'Kartentext ansehen'}</small></>}</button>
   return <section className={'duel-worker-table' + (board && result && !resultVisible && result.match?.phase !== 'sideboarding' ? ' is-playing' : '')} onContextMenu={event => {
     event.preventDefault()
     if (event.button !== 2 || !chainReaction || disabled || pendingCommand.current) return
@@ -284,7 +283,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
           {preview ? <><button className="outline-button" onClick={() => setPreview(null)}>Vorschau schließen</button><h2>{preview.name}</h2>
             {preview.image_url && <img key={preview.image_url} src={API_BASE_URL.replace(/\/api\/?$/, '') + preview.image_url} alt={preview.name} onError={event => imageFailed(event, preview)} />}
             <TunerBadge type={preview.type} />
-            {previewEffect && <EffectLocations text={previewEffect} zones={[...previewEffectZones, ...(preview.code === effectCard?.code ? effectZones : [])]} />}
+            {previewOrigin && <CardOrigin zone={previewOrigin.zone} opponent={previewOrigin.owner !== board.seat} />}
             {preview.atk !== undefined && <p>ATK {preview.atk} · DEF {preview.defense ?? '—'}</p>}
             {previewEffect && <p className="duel-inspector-effect" role="status">✦ {previewEffect}</p>}
             <small>Kartentext</small><p className="duel-card-description">{preview.description || 'Für diese Karte ist kein Text verfügbar.'}</p></>
@@ -307,8 +306,8 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
           {!showDecision && pendingAttack === null && !disabled && <p className="arena-action-guide">{prompt ? 'Markierte Karte anklicken · Phasenwechsel über den Kreis' : 'Dein Gegner entscheidet …'}</p>}
           {showDecision && result && !terminal(result) && <div className={chainReaction ? 'duel-chain-overlay' : 'arena-decision-overlay' + (handSelection ? ' arena-hand-choice-popup' : '') + (!selectOnField && prompt?.kind !== 'zones' && (prompt?.select || prompt?.selection_progress) && prompt?.choices.some(choice => choice.card) ? ' arena-card-choice-popup' : '') + (selectOnField || prompt?.kind === 'zones' ? ' arena-field-selection-guide' : '')} role={handSelection ? 'dialog' : chainReaction ? 'region' : undefined} aria-label={handSelection ? 'Handkarten für einen Effekt auswählen' : chainReaction ? 'Kettenreaktion' : undefined}>
             {chainReaction && <div className="duel-chain-notice"><span aria-hidden="true">∞</span><strong>Deine Kettenreaktion</strong>{prompt?.choices.some(choice => choice.label === 'Nicht anketten' && !choice.card && !choice.action && !choice.location) && <small>Rechtsklick: Nicht anketten</small>}</div>}
-            {resolvingEffect && effectCard && <div className="duel-effect-context" role="status"><strong>Effekt auflösen: {effectCard.name}</strong><EffectLocations text={effectText} zones={effectZones} /><p title={effectText || effectCard.description}>{effectText || effectCard.description || 'Wähle die Karten für diesen Effekt.'}</p></div>}
-            <DuelDecisions onActivate={value => setActivation({ card: { ...value, code: value.code ?? 0 } })} onPreview={value => { setPreview({ ...value, code: value.code ?? 0 }); setPreviewEffect(null) }} showOrigins={handSelection} prompt={prompt} disabled={disabled} send={send} zoneSelection={zoneSelection} onZoneSelection={setZoneSelection} hideChoices={selectOnField || prompt?.kind === 'zones'} hideConfirmation={selectOnField && zoneSelection.length > 0} hideSurrender attackTarget={attackFlow && Boolean(prompt?.select)} choiceIndices={prompt?.title === 'Aktion wählen' ? pileChoices.length ? pileChoices : freeChoices : undefined} />
+            {resolvingEffect && effectCard && <div className="duel-effect-context" role="status"><strong>Effekt auflösen: {effectCard.name}</strong><p title={effectText || effectCard.description}>{effectText || effectCard.description || 'Wähle die Karten für diesen Effekt.'}</p></div>}
+            <DuelDecisions seat={board.seat} onActivate={value => setActivation({ card: { ...value, code: value.code ?? 0 } })} onPreview={(value, location) => { setPreview({ ...value, code: value.code ?? 0 }); setPreviewEffect(null); setPreviewOrigin(location || null) }} showOrigins={handSelection} prompt={prompt} disabled={disabled} send={send} zoneSelection={zoneSelection} onZoneSelection={setZoneSelection} hideChoices={selectOnField || prompt?.kind === 'zones'} hideConfirmation={selectOnField && zoneSelection.length > 0} hideSurrender attackTarget={attackFlow && Boolean(prompt?.select)} choiceIndices={prompt?.title === 'Aktion wählen' ? pileChoices.length ? pileChoices : freeChoices : undefined} />
           </div>}
         </DuelArena>
       </div>
