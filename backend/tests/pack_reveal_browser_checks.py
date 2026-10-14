@@ -40,6 +40,7 @@ createRoot(document.getElementById('root')).render(<BrowserRouter><PackOpeningPr
                     page = browser.new_page()
                     errors, releases = [], []
                     opening = [0]
+                    card_count = [3]
                     page.on('pageerror', lambda error: errors.append(str(error)))
 
                     def api(route):
@@ -49,7 +50,7 @@ createRoot(document.getElementById('root')).render(<BrowserRouter><PackOpeningPr
                         path = route.request.url.split('/api/')[-1]
                         if path == 'boosters/1/open':
                             opening[0] += 1
-                            cards = [{'id':i+1,'name':f'Karte {i+1}','rarity':'ultra_rare','type':'Monster','image_url':'', 'set':'Test','set_code':'TEST'} for i in range(3)]
+                            cards = [{'id':i+1,'name':f'Karte {i+1}','rarity':'ultra_rare','type':'Monster','image_url':'', 'set':'Test','set_code':'TEST'} for i in range(card_count[0])]
                             route.fulfill(json={'opening_id':opening[0], 'booster_id':1,'remaining':3-opening[0],'credits_remaining':0,'cards':cards})
                         elif path.endswith('/reveal'):
                             releases.append({'path':path, 'indices':route.request.post_data_json['indices']})
@@ -82,6 +83,31 @@ createRoot(document.getElementById('root')).render(<BrowserRouter><PackOpeningPr
                     page.get_by_role('button',name='Öffnung schließen',exact=True).click()
                     page.wait_for_timeout(1000)
                     assert len(releases) == count, 'Closing revealed covered cards'
+                    page.emulate_media(reduced_motion='reduce')
+                    for width, height, amount in [(1920,1080,9),(1366,768,9),(1280,720,43),(390,844,9),(844,390,100)]:
+                        card_count[0] = amount
+                        page.set_viewport_size({'width':width,'height':height})
+                        page.get_by_role('button',name='Testpack öffnen',exact=True).click()
+                        expect(page.get_by_role('button',name='Karte 1 aufdecken',exact=True)).to_be_visible(timeout=10000)
+                        page.wait_for_timeout(150)
+                        def fits():
+                            return page.evaluate('''() => {
+                                const d=document.querySelector('.opening-show');
+                                return d.scrollHeight<=d.clientHeight+1 && d.scrollWidth<=d.clientWidth+1 &&
+                                  Array.from(d.querySelectorAll('.reveal-card,.summary-card,.opening-pages button,.opening-primary')).every(e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight+1&&r.left>=0&&r.right<=innerWidth+1});
+                            }''')
+                        assert fits(), f'Reveal overflow {width}x{height}, {amount} cards'
+                        seen = page.locator('.reveal-card').count()
+                        while page.get_by_role('button',name='Weiter',exact=True).count() and page.get_by_role('button',name='Weiter',exact=True).is_enabled():
+                            page.get_by_role('button',name='Weiter',exact=True).click()
+                            seen += page.locator('.reveal-card').count()
+                            assert fits()
+                        assert seen == amount, (seen,amount)
+                        page.get_by_role('button',name='Alle aufdecken',exact=True).click()
+                        page.wait_for_timeout(150)
+                        assert fits(), f'Summary overflow {width}x{height}, {amount} cards'
+                        page.screenshot(path=str(ROOT / f'artifacts/pack-viewport-{width}-{height}-{amount}.png'))
+                        page.get_by_role('button',name='Öffnung schließen',exact=True).click()
                     assert not errors, errors
                     browser.close()
             finally:

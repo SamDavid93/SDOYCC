@@ -7,6 +7,7 @@ import { BoosterCover } from './BoosterDisplay'
 import { label } from '../i18n'
 import { CardVisual } from './CardVisual'
 import { OpeningCardPreview } from './OpeningCardPreview'
+import './pack-opening-viewport.css'
 
 type Opening = { booster: BoosterSummary; result: BoosterOpening | null; error: string }
 type OpeningContextValue = { openPack: (booster: BoosterSummary) => Promise<BoosterOpening | null> }
@@ -108,6 +109,9 @@ function useOpeningSound() {
 function OpeningShow({ opening, close, next, nextBusy, nextError }: { opening: Opening; close: () => void; next: () => void; nextBusy: boolean; nextError: string }) {
   const { booster, result, error } = opening
   const dialog = useRef<HTMLDialogElement>(null)
+  const grid = useRef<HTMLDivElement>(null)
+  const [page, setPage] = useState(0)
+  const [layout, setLayout] = useState({ columns: 3, size: 9, width: 110 })
   const [phase, setPhase] = useState<'loading' | 'charge' | 'burst' | 'reveal' | 'summary'>('loading')
   const [revealed, setRevealed] = useState<number[]>([])
   const revealOpening = useRef<number | null>(null)
@@ -134,14 +138,16 @@ function OpeningShow({ opening, close, next, nextBusy, nextError }: { opening: O
     const element = dialog.current!
     const previousFocus = document.activeElement as HTMLElement | null
     const overflow = document.body.style.overflow
+    const rootOverflow = document.documentElement.style.overflow
+    document.documentElement.style.overflow = 'hidden'
     document.body.style.overflow = 'hidden'
     element.showModal()
-    return () => { element.close(); document.body.style.overflow = overflow; previousFocus?.focus({ preventScroll: true }) }
+    return () => { element.close(); document.body.style.overflow = overflow; document.documentElement.style.overflow = rootOverflow; previousFocus?.focus({ preventScroll: true }) }
   }, [])
   useEffect(() => {
     if (!result) return
     revealOpening.current = null
-    setRevealed([]); setLatest(null); setSpotlight(null); setPreviewIndex(null)
+    setRevealed([]); setLatest(null); setSpotlight(null); setPreviewIndex(null); setPage(0)
     setPhase(reduced ? 'reveal' : 'charge')
   }, [result])
   useEffect(() => { dialog.current?.scrollTo({ top: 0, behavior: 'instant' }) }, [phase])
@@ -153,6 +159,27 @@ function OpeningShow({ opening, close, next, nextBusy, nextError }: { opening: O
     return () => window.clearTimeout(timer)
   }, [phase, reduced])
   useEffect(() => {
+    if (!grid.current || !result) return
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect
+      if (width <= 0 || height <= 0) return
+      let chosen = { columns: 1, size: 1, width: 60 }
+      for (let size = Math.min(result.cards.length, 12); size >= 1; size--) {
+        let best = { columns: 1, size, width: 0 }
+        for (let columns = 1; columns <= size; columns++) {
+          const rows = Math.ceil(size / columns)
+          const cardWidth = Math.min(240, (width - (columns - 1) * 12) / columns, ((height - (rows - 1) * 12) / rows - 48) * 59 / 86)
+          if (cardWidth > best.width) best = { columns, size, width: cardWidth }
+        }
+        chosen = best
+        if (best.width >= 76) break
+      }
+      setLayout({ ...chosen, width: Math.max(24, Math.floor(chosen.width)) })
+    })
+    observer.observe(grid.current)
+    return () => observer.disconnect()
+  }, [phase, result])
+  useEffect(() => {
     if (spotlight === null) return
     const timer = window.setTimeout(() => setSpotlight(null), 1900)
     return () => window.clearTimeout(timer)
@@ -163,9 +190,15 @@ function OpeningShow({ opening, close, next, nextBusy, nextError }: { opening: O
     setRevealed(current => [...current, index]); setLatest(index); sound.play('reveal')
     if (!reduced && result && rarityStyle(result.cards[index].rarity) !== 'cyan') setSpotlight(index)
   }
-  const skip = () => { if (result) { revealOpening.current = result.opening_id; setRevealed(result.cards.map((_, index) => index)); setPhase('summary') } }
+  const skip = () => { if (result) { revealOpening.current = result.opening_id; setRevealed(result.cards.map((_, index) => index)); setPage(0); setPhase('summary') } }
   const allRevealed = !!result && revealed.length === result.cards.length
   const aura = latest === null || !result ? 'cyan' : rarityStyle(result.cards[latest].rarity)
+  const pages = Math.max(1, Math.ceil((result?.cards.length || 0) / layout.size))
+  const currentPage = Math.min(page, pages - 1)
+  const start = currentPage * layout.size
+  const visibleCards = result?.cards.slice(start, start + layout.size) || []
+  const gridStyle = { '--opening-columns': layout.columns, '--opening-card-width': `${layout.width}px` } as CSSProperties
+  const pagination = pages > 1 && <nav className="opening-pages" aria-label="Packkarten-Seiten"><button className="opening-secondary" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>Zurück</button><span aria-live="polite">Karten {start + 1}–{Math.min(start + layout.size, result?.cards.length || 0)} von {result?.cards.length} · Seite {currentPage + 1}/{pages}</span><button className="opening-secondary" disabled={currentPage === pages - 1} onClick={() => setPage(currentPage + 1)}>Weiter</button></nav>
   return createPortal(<dialog ref={dialog} className={`opening-show phase-${phase} aura-${aura}`} aria-labelledby="opening-title" onCancel={event => { event.preventDefault(); close() }}>
     <div className="opening-atmosphere" aria-hidden="true"><div className="opening-grid-floor" /><div className="opening-nebula" /><div className="opening-orbit orbit-a" /><div className="opening-orbit orbit-b" />{Array.from({ length: 32 }, (_, index) => <i className="opening-particle" key={index} style={{ '--x': `${(index * 37 + 11) % 100}%`, '--y': `${(index * 23 + 7) % 100}%`, '--delay': `${-(index % 7)}s`, '--travel': `${(index % 2 ? 1 : -1) * (80 + index * 8)}px` } as CSSProperties} />)}</div>
     <header className="opening-top"><span className="opening-brand"><Sparkles size={18} /> SDOYCC <small>{booster.product_type === 'structure_deck' ? 'DECK-ÖFFNUNG' : 'BOOSTER-ÖFFNUNG'}</small></span><div className="opening-controls"><button onClick={sound.toggle} aria-label={sound.enabled ? 'Ton ausschalten' : 'Ton einschalten'} aria-pressed={sound.enabled}>{sound.enabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</button><button disabled={!result || nextBusy} onClick={skip}><SkipForward size={16} />Animation überspringen</button><button aria-label="Öffnung schließen" disabled={nextBusy || (!result && !error)} onClick={close}><X size={20} /></button></div></header>
@@ -173,8 +206,8 @@ function OpeningShow({ opening, close, next, nextBusy, nextError }: { opening: O
       <div className="opening-heading"><p className="eyebrow">{phase === 'summary' ? 'DEINE SAMMLUNG WÄCHST' : phase === 'reveal' ? 'DER MOMENT GEHÖRT DIR' : 'ENERGIE WIRD FREIGESETZT'}</p><h1 id="opening-title">{phase === 'summary' ? 'Deine neuen Karten.' : phase === 'reveal' ? 'Dein Pack. Deine Entdeckung.' : booster.name}</h1><p aria-live="polite">{phase === 'loading' ? 'Dein Pack wird geöffnet …' : phase === 'charge' ? 'Ein Pack. Unzählige Möglichkeiten.' : phase === 'burst' ? 'Das Siegel bricht.' : phase === 'reveal' ? `${revealed.length} / ${result?.cards.length} Karten aufgedeckt · Tippe auf eine Karte` : `${result?.cards.length} Karten sind jetzt in deiner Sammlung.`}</p></div>
       {phase === 'reveal' && spotlight !== null && result && <div key={spotlight} className={`rarity-spotlight rarity-${rarityStyle(result.cards[spotlight].rarity)}`} aria-hidden="true"><div className="spotlight-rays" /><div className="spotlight-orbit" /><div className="spotlight-card"><CardVisual card={result.cards[spotlight]} /></div><div className="spotlight-copy"><span>{label(result.cards[spotlight].rarity)}</span><strong>{result.cards[spotlight].name}</strong></div></div>}
       {(phase === 'loading' || phase === 'charge' || phase === 'burst') && <div className="opening-pack-stage" aria-hidden="true"><div className="pack-energy-ring" /><div className="pack-light-column" /><div className="opening-pack"><div className="pack-half pack-top"><BoosterCover name={booster.name} code={booster.set_code} /></div><div className="pack-half pack-bottom"><BoosterCover name={booster.name} code={booster.set_code} /></div><div className="pack-seam" /></div><div className="pack-shockwave" /><span className="pack-stage-caption">{phase === 'loading' ? 'VERBINDUNG ZUM HUB' : 'DAS NÄCHSTE KAPITEL DEINER SAMMLUNG'}</span></div>}
-      {phase === 'reveal' && result && <><div className="opening-reveal-grid">{result.cards.map((card, index) => <div className={`reveal-slot rarity-${rarityStyle(card.rarity)} ${revealed.includes(index) ? 'is-revealed' : ''}`} key={index} style={{ '--card-index': index } as CSSProperties}><button className="reveal-card" aria-haspopup={revealed.includes(index) ? 'dialog' : undefined} aria-label={revealed.includes(index) ? `Kartenvorschau: ${card.name}` : `Karte ${index + 1} aufdecken`} onClick={() => reveal(index)}><span className="reveal-card-inner"><span className="reveal-back" aria-hidden="true"><span className="back-corner top">SDOYCC / {String(index + 1).padStart(2, '0')}</span><span className="back-sigil"><Sparkles size={42} /></span><span className="back-caption">SDOYCC<br /><small>ZUM AUFDECKEN ANTIPPEN</small></span></span><span className="reveal-front" aria-hidden={!revealed.includes(index)}><CardVisual card={card} /></span></span></button><div className="reveal-caption" aria-live="polite">{revealed.includes(index) ? <><span>{label(card.rarity)}</span><strong>{card.name}</strong><small>Antippen für Kartentext</small></> : <span>KARTE {String(index + 1).padStart(2, '0')}</span>}</div></div>)}</div><div className="opening-bottom"><p><Check size={15} />Deine Karten sind bereits sicher in deiner Sammlung.</p><button className="opening-primary" onClick={skip}>{allRevealed ? 'Ergebnis ansehen' : 'Alle aufdecken'}<ArrowRight size={17} /></button></div></>}
-      {phase === 'summary' && result && <><div className="opening-summary-grid">{result.cards.map((card, index) => <button type="button" className={`summary-card rarity-${rarityStyle(card.rarity)}`} key={index} aria-label={`Kartenvorschau: ${card.name}`} aria-haspopup="dialog" onClick={() => setPreviewIndex(index)}><CardVisual card={card} /><span className="summary-rarity">{label(card.rarity)}</span><span className="summary-preview-hint">Karte & Kartentext ansehen</span></button>)}</div><div className="opening-summary-footer">{nextError && <p className="opening-next-error" role="alert">{nextError} Deine zuvor geöffneten Karten bleiben gespeichert.</p>}{nextBusy && <p role="status">Dein nächstes Pack wird geöffnet …</p>}<span><Check size={17} />In deiner Sammlung gespeichert · {result.remaining} Packs dieser Edition übrig</span><div><button className="opening-primary" disabled={nextBusy || result.remaining < 1} onClick={next}>{nextBusy ? 'Pack wird geöffnet …' : result.remaining > 0 ? 'Nächstes Pack öffnen' : 'Keine Packs übrig'}<ArrowRight size={17} /></button><button className="opening-secondary" disabled={nextBusy} onClick={close}>Zurück zum Hub</button><NavLink className="opening-secondary" to="/my-packs" onClick={event => { if (nextBusy) event.preventDefault(); else close() }}>Meine Packs</NavLink><NavLink className="opening-secondary" to="/inventory" onClick={event => { if (nextBusy) event.preventDefault(); else close() }}>Zur Sammlung <ArrowRight size={17} /></NavLink></div></div></>}
+      {phase === 'reveal' && result && <><div ref={grid} style={gridStyle} className="opening-reveal-grid">{visibleCards.map((card, localIndex) => { const index = start + localIndex; return <div className={`reveal-slot rarity-${rarityStyle(card.rarity)} ${revealed.includes(index) ? 'is-revealed' : ''}`} key={index} style={{ '--card-index': index } as CSSProperties}><button className="reveal-card" aria-haspopup={revealed.includes(index) ? 'dialog' : undefined} aria-label={revealed.includes(index) ? `Kartenvorschau: ${card.name}` : `Karte ${index + 1} aufdecken`} onClick={() => reveal(index)}><span className="reveal-card-inner"><span className="reveal-back" aria-hidden="true"><span className="back-corner top">SDOYCC / {String(index + 1).padStart(2, '0')}</span><span className="back-sigil"><Sparkles size={42} /></span><span className="back-caption">SDOYCC<br /><small>ZUM AUFDECKEN ANTIPPEN</small></span></span><span className="reveal-front" aria-hidden={!revealed.includes(index)}><CardVisual card={card} /></span></span></button><div className="reveal-caption" aria-live="polite">{revealed.includes(index) ? <><span>{label(card.rarity)}</span><strong>{card.name}</strong><small>Antippen für Kartentext</small></> : <span>KARTE {String(index + 1).padStart(2, '0')}</span>}</div></div> })}</div>{pagination}<div className="opening-bottom"><p><Check size={15} />Deine Karten sind bereits sicher in deiner Sammlung.</p><button className="opening-primary" onClick={skip}>{allRevealed ? 'Ergebnis ansehen' : 'Alle aufdecken'}<ArrowRight size={17} /></button></div></>}
+      {phase === 'summary' && result && <><div ref={grid} style={gridStyle} className="opening-summary-grid">{visibleCards.map((card, localIndex) => { const index = start + localIndex; return <button type="button" className={`summary-card rarity-${rarityStyle(card.rarity)}`} key={index} aria-label={`Kartenvorschau: ${card.name}`} aria-haspopup="dialog" onClick={() => setPreviewIndex(index)}><CardVisual card={card} /><span className="summary-rarity">{label(card.rarity)}</span><span className="summary-name">{card.name}</span><span className="summary-preview-hint">Karte & Kartentext ansehen</span></button> })}</div>{pagination}<div className="opening-summary-footer">{nextError && <p className="opening-next-error" role="alert">{nextError} Deine zuvor geöffneten Karten bleiben gespeichert.</p>}{nextBusy && <p role="status">Dein nächstes Pack wird geöffnet …</p>}<span><Check size={17} />In deiner Sammlung gespeichert · {result.remaining} Packs dieser Edition übrig</span><div><button className="opening-primary" disabled={nextBusy || result.remaining < 1} onClick={next}>{nextBusy ? 'Pack wird geöffnet …' : result.remaining > 0 ? 'Nächstes Pack öffnen' : 'Keine Packs übrig'}<ArrowRight size={17} /></button><button className="opening-secondary" disabled={nextBusy} onClick={close}>Zurück zum Hub</button><NavLink className="opening-secondary" to="/my-packs" onClick={event => { if (nextBusy) event.preventDefault(); else close() }}>Meine Packs</NavLink><NavLink className="opening-secondary" to="/inventory" onClick={event => { if (nextBusy) event.preventDefault(); else close() }}>Zur Sammlung <ArrowRight size={17} /></NavLink></div></div></>}
     </>}
     {previewIndex !== null && result && <OpeningCardPreview card={result.cards[previewIndex]} packName={booster.name} close={() => setPreviewIndex(null)} />}
   </dialog>, document.body)

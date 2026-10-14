@@ -1,0 +1,45 @@
+.opening-show.opening-show[open] { box-sizing: border-box; display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+.opening-show .opening-top { flex: 0 0 auto; position: relative; padding: 10px clamp(12px, 3vw, 40px); gap: 8px; }
+.opening-show .opening-heading { flex: 0 0 auto; padding: 10px 16px 0; }
+.opening-show .opening-heading h1 { font-size: clamp(18px, 3vw, 34px); margin: 4px auto; line-height: 1.15; }
+.opening-show .opening-heading p { margin: 4px 0; }
+.opening-show .opening-pack-stage { flex: 1 1 0; min-height: 0; height: auto; container-type: size; }
+.opening-show .opening-pack { height: min(65cqh, 330px); width: auto; aspect-ratio: 7 / 10; }
+.opening-show :is(.opening-reveal-grid, .opening-summary-grid) { box-sizing: border-box; flex: 1 1 0; min-height: 0; width: 100%; max-width: 1600px; margin: 0 auto; padding: 12px 20px; gap: 12px; grid-template-columns: repeat(var(--opening-columns, 3), var(--opening-card-width, 110px)); justify-content: center; align-content: center; }
+.opening-show :is(.reveal-slot, .summary-card) { min-width: 0; width: var(--opening-card-width); }
+.opening-show .reveal-slot { animation-delay: calc(mod(var(--card-index), 12) * .04s); }
+.opening-show .reveal-caption { height: 48px; min-height: 0; box-sizing: border-box; padding: 5px 0 0; margin: 0; overflow: hidden; }
+.opening-show .reveal-caption :is(strong, small) { margin-top: 0; }
+.opening-show .reveal-caption :is(span, small) { font-size: 9px; line-height: 1.3; }
+.opening-show .reveal-caption strong { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; line-height: 1.4; }
+.opening-show .summary-card { height: calc(var(--opening-card-width) * 86 / 59 + 48px); padding: 0; border: 0; background: transparent; }
+.opening-show .summary-card .card-visual-copy { display: none; }
+.opening-show .summary-card .card-image-frame { aspect-ratio: 59 / 86; }
+.opening-show .summary-rarity { margin: 5px 0 0; font-size: 9px; line-height: 13px; }
+.opening-show .summary-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; line-height: 16px; }
+.opening-show .summary-preview-hint { display: block; margin: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 9px; line-height: 13px; }
+.opening-show :is(.opening-bottom, .opening-summary-footer) { flex: 0 0 auto; width: 100%; max-width: none; box-sizing: border-box; margin: 0; padding: 8px 20px 12px; }
+.opening-show .opening-bottom { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 8px 24px; }
+.opening-show .opening-bottom p { margin: 0; }
+.opening-show .opening-summary-footer > div { margin-top: 6px; flex-direction: row; gap: 6px; }
+.opening-show :is(.opening-primary, .opening-secondary) { padding: 9px 12px; font-size: 11px; }
+.opening-show .opening-pages { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 3px 12px; }
+.opening-pages span { font-size: 11px; text-align: center; }
+.opening-show .opening-error { min-height: 0; padding: 12px 24px; }
+.opening-show .rarity-spotlight { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+@media (max-height: 550px) {
+  .opening-show .opening-brand small, .opening-show .opening-heading .eyebrow, .opening-show .opening-bottom p { display: none; }
+  .opening-show .opening-heading { padding-top: 3px; }
+  .opening-show .opening-heading h1 { font-size: 18px; }
+  .opening-show .opening-top { padding-block: 5px; }
+  .opening-show .opening-summary-footer > span { font-size: 9px; }
+  .opening-show .opening-summary-footer { padding-block: 4px; }
+}
+@media (max-width: 500px) {
+  .opening-show .opening-top { justify-content: center; }
+  .opening-show .opening-heading .eyebrow { display: none; }
+  .opening-show .opening-controls { gap: 6px; }
+  .opening-show :is(.opening-reveal-grid, .opening-summary-grid) { padding-inline: 12px; }
+  .opening-show .opening-pages { gap: 6px; }
+  .opening-pages span { font-size: 10px; }
+}
