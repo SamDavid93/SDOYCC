@@ -9,7 +9,7 @@ export type WorkerPrompt = { id: number; title: string; kind?: string; placement
   selection_progress?: { minimum: number; maximum: number; selected: number; can_finish: boolean };
   effect_card?: { code: number; name: string; image_url?: string; description?: string };
   counter?: boolean; counter_limits?: number[]; counter_total?: number; minimum?: number; maximum?: number;
-  choices: { label: string; card: { name: string; image_url?: string } | null; action?: string; location?: DuelLocation }[] }
+  choices: { label: string; card: { name: string; image_url?: string; type?: number } | null; action?: string; location?: DuelLocation }[] }
 
 export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZoneSelection, hideChoices = false, hideSurrender = false, attackTarget = false, choiceIndices, hideConfirmation = false }: { prompt: WorkerPrompt | null | undefined; disabled: boolean;
   hideConfirmation?: boolean;

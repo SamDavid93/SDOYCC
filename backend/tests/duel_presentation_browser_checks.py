@@ -53,6 +53,8 @@ const visible={...card,image_url:'/scene-card.jpg',atk:3000,defense:2500};
 frame.board.boards=[{...side,lp:8000,hand:Array(6).fill(visible),grave:[visible],extra:[null,null],removed:[],field:[{zone:4,sequence:0,position:1,card:visible},{zone:4,sequence:2,position:4,card:visible},{zone:8,sequence:1,position:8,card:visible}]},{...side,lp:event?.kind==='lp'?7000:8000,hand:Array(4).fill(null),grave:[],extra:[null],removed:[],field:[{zone:4,sequence:0,position:8,card:null},{zone:4,sequence:2,position:1,card:visible},{zone:8,sequence:1,position:8,card:null}]}];
 if(event)frame.board.events.push({...event,id:Math.max(0,...frame.board.events.map(e=>e.id))+1});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__extra=(owners,seat,offer=false)=>{frame.board.seat=frame.seat=seat;frame.board.prompt=offer?{id:900+frame.board.revision,kind:'zones',minimum:1,maximum:1,choices:[{label:'Right',location:{owner:seat,zone:4,sequence:6}},{label:'Left',location:{owner:seat,zone:4,sequence:5}}]}:null;frame.board.boards.forEach(s=>s.field=s.field.filter(e=>e.zone!==4||e.sequence<5));owners.forEach((owner,i)=>{if(owner!==null)frame.board.boards[owner].field.push({zone:4,sequence:owner===seat?5+i:6-i,position:1,card})});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__pileFlow=()=>{window.__scene();const extra={...card,name:'Synchro-Test',type:0x2001};frame.board.boards[0].extra=[{...card,name:'Nicht beschwoerbar'},extra,{...card,name:'Fusion-Test'}];frame.board.prompt={id:1100+frame.board.revision,title:'Aktion wählen',choices:[{label:'Zug beenden',card:null},{label:'Spezialbeschwören: Synchro-Test',card:extra,action:'special_summon',location:{owner:0,zone:64,sequence:1}},{label:'Aktivieren: Synchro-Test',card:extra,action:'activate',location:{owner:0,zone:64,sequence:1}},{label:'Spezialbeschwören: Fusion-Test',card:{...card,name:'Fusion-Test'},action:'special_summon',location:{owner:0,zone:64,sequence:2}}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__pileStep=(stage)=>{frame.board.prompt={id:1200+frame.board.revision,title:stage==='materials'?'Materialien wählen':stage==='zones'?'Zone wählen':'Aktion wählen',...(stage==='materials'?{select:true,minimum:2,maximum:2}:stage==='zones'?{kind:'zones',placement:true}:{}),choices:stage==='materials'?[0,1].map(sequence=>({label:'Material '+sequence,card,location:{owner:0,zone:4,sequence}})):stage==='zones'?[6,2].map(sequence=>({label:'Zone '+sequence,card:null,location:{owner:0,zone:4,sequence}})):[{label:'Zug beenden',card:null}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="presentation" onExit={()=>{}} />)
 ''', encoding='utf8')
         env = {**os.environ, 'VITE_BASE_PATH': '/'}
@@ -182,7 +184,7 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                     expect(page.locator('.arena-own .arena-hand .duel-playing-card.effect-available')).to_have_count(1)
                     page.screenshot(path=str(ROOT/'artifacts/duel-effects-gold.png'))
                     page.locator('.arena-own .arena-pile[data-duel-zone="16"] summary').click()
-                    page.locator('.arena-own .arena-pile[data-duel-zone="16"] .duel-playing-card').click()
+                    page.locator('.arena-own .arena-pile[data-duel-zone="16"]').get_by_role('button',name='Effekt aktivieren',exact=False).click()
                     page.get_by_role('button',name='Aktivieren: Testkarte 16',exact=True).click()
                     assert page.evaluate('window.__answers.at(-1).selected') == [3]
                     expect(page.locator('.effect-available')).to_have_count(0)
@@ -371,10 +373,54 @@ createRoot(document.getElementById('root')).render(<DuelWorkerTable runId="prese
                             page.evaluate('(seat)=>window.__extra([null,null],seat,true)',seat)
                             page.locator('.arena-extra-row > .arena-slot').nth(0).locator('.arena-zone-choice').click()
                             assert page.evaluate('window.__answers.at(-1).selected') == [1]
+                    page.set_viewport_size({'width':1440,'height':1000})
+                    page.evaluate('window.__pileFlow()')
+                    extra=page.locator('.arena-own .arena-pile[data-duel-zone="64"]')
+                    extra.locator('summary').click()
+                    expect(extra.get_by_role('heading',name='Mögliche Spezialbeschwörungen')).to_be_visible()
+                    expect(extra.locator('.arena-pile-options>button')).to_have_count(2)
+                    expect(extra.get_by_role('button',name='Effekt aktivieren',exact=False)).to_contain_text('(1)')
+                    expect(extra.locator('.arena-pile-options')).not_to_contain_text('Nicht beschwoerbar')
+                    extra.get_by_role('button',name='Extra-Deck ansehen',exact=False).click()
+                    expect(extra.locator('.arena-pile-cards .duel-playing-card')).to_have_count(3)
+                    extra.get_by_role('button',name='Mögliche Aktionen',exact=False).click()
+                    extra.get_by_role('button',name='Spezialbeschwören: Synchro-Test',exact=True).click()
+                    assert page.evaluate('window.__answers.at(-1).selected') == [1]
+                    page.evaluate('window.__pileStep("materials")')
+                    guide=page.get_by_role('status',name='Deine laufende Kartenaktion')
+                    expect(guide).to_contain_text('Synchrobeschwörung')
+                    expect(guide).to_contain_text('Synchro-Test')
+                    expect(guide).to_contain_text('Materialien wählen')
+                    page.evaluate('window.__pileStep("zones")')
+                    expect(guide).to_contain_text('Zielfeld wählen')
+                    guide_bounds=guide.bounding_box()
+                    selection_bounds=page.locator('.arena-field-selection-guide').bounding_box()
+                    assert guide_bounds['y']+guide_bounds['height']<=selection_bounds['y']
+                    page.screenshot(path=str(ROOT/'artifacts/duel-summon-guidance.png'))
+                    page.locator('.arena-slot[data-duel-owner="0"][data-duel-zone="4"][data-duel-sequence="6"] .arena-zone-choice').click()
+                    assert page.evaluate('window.__answers.at(-1).selected') == [0]
+                    page.evaluate('window.__pileStep("idle")')
+                    expect(guide).to_have_count(0)
+                    page.evaluate('window.__feedback()')
+                    removed=page.locator('.arena-own .arena-pile[data-duel-zone="32"]')
+                    removed.locator('summary').click()
+                    removed.get_by_role('button',name='Effekt aktivieren',exact=False).click()
+                    expect(removed.locator('.arena-pile-options>button')).to_have_count(1)
+                    page.screenshot(path=str(ROOT/'artifacts/duel-pile-effects.png'))
+                    removed.get_by_role('button',name='Aktivieren: Testkarte 32',exact=True).click()
+                    assert page.evaluate('window.__answers.at(-1).selected') == [4]
+                    for width,height in ((1440,1000),(390,844)):
+                        page.set_viewport_size({'width':width,'height':height})
+                        page.evaluate('window.__pileFlow()')
+                        extra.locator('summary').click()
+                        bounds=extra.locator('.arena-pile-browser').bounding_box()
+                        assert bounds and bounds['x']>=0 and bounds['x']+bounds['width']<=width+1,bounds
+                        page.keyboard.press('Escape')
+                        expect(extra).not_to_have_attribute('open','')
                     assert not key_warnings, key_warnings
                     assert not errors, errors
                     browser.close()
-                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','own effect updates viewer immediately without center animation; opponent effect remains visible','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','larger arena fits 720p and 1080p including footer allowance','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement','one-card double-click submits exactly once','incomplete multi-selection stays open','maximum selection cannot be exceeded','double-click preserves original selection order','step selection auto-finishes only after engine confirms completion','double-click selects own hand cards','larger own hand fits mobile','required-card count remains visible on mobile','periodic clock state cannot acknowledge a pending action','two shared extra zones retain physical identity across controller and prompt changes for both seats and viewports','occupied shared zones stay visible and placement preserves original indexes'],'console_errors':errors}))
+                print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','own effect updates viewer immediately without center animation; opponent effect remains visible','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','larger arena fits 720p and 1080p including footer allowance','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement','one-card double-click submits exactly once','incomplete multi-selection stays open','maximum selection cannot be exceeded','double-click preserves original selection order','step selection auto-finishes only after engine confirms completion','double-click selects own hand cards','larger own hand fits mobile','required-card count remains visible on mobile','periodic clock state cannot acknowledge a pending action','two shared extra zones retain physical identity across controller and prompt changes for both seats and viewports','occupied shared zones stay visible and placement preserves original indexes','extra deck lists only legal summons and separates browsing','grave and banished action lists preserve original engine indexes','summon guidance keeps card method and material or zone step visible','pile menus fit mobile and close with Escape'],'console_errors':errors}))
             finally:
                 process.terminate()
                 try: process.wait(timeout=10)

@@ -5,6 +5,7 @@ import cardBack from '../assets/card-back.jpg'
 import { DuelPhaseControl } from './DuelPhaseControl'
 import { effectAvailableAt } from './duelFeedback'
 import { DuelPlayerHUD } from './DuelPlayerHUD'
+import { DuelPile } from './DuelPile'
 
 type Props = { sides: Side[]; seat: number; card: (value: EngineCard | null, key: string, covered?: boolean, location?: DuelLocation) => ReactNode;
   activeLocation: DuelLocation | null; chooseLocation: (location: DuelLocation, complete?: boolean) => void; children?: ReactNode;
@@ -49,10 +50,7 @@ export function DuelArena({ sides, seat, card, prompt, disabled, zoneSelection, 
     </div>
   }
   function pile(owner: number, zone: number, label: string, values: (EngineCard | null)[]) {
-    const available = !disabled && prompt?.choices.some(choice => choice.location?.owner === owner && choice.location.zone === zone)
-    const effectReady = !disabled && (values.some((_, sequence) => effectAvailableAt(prompt, {owner,zone,sequence})) || prompt?.choices.some(choice => choice.location?.owner === owner && choice.location.zone === zone && effectAvailableAt(prompt, choice.location)))
-    return <details className={'arena-pile' + (available ? ' action-available' : '') + (effectReady ? ' effect-available' : '')} open={activeLocation?.owner === owner && activeLocation.zone === zone || undefined} data-duel-owner={owner} data-duel-zone={zone}><summary>{label}{effectReady && <span className="arena-effect-label">✦ Effekt verfügbar</span>}<strong>{values.length}</strong></summary>
-      <div className="arena-pile-content">{values.map((value, index) => card(value, `${zone}:${index}`, false, {owner,zone,sequence:index}))}{!values.length && <small>Leer</small>}</div></details>
+    return <DuelPile owner={owner} zone={zone} label={label} values={values} prompt={prompt} disabled={disabled} activeLocation={activeLocation} card={card} chooseAction={chooseAction} />
   }
   function deck(owner: number) {
     const available = !disabled && prompt?.choices.some(choice => choice.location?.owner === owner && choice.location.zone === 1)

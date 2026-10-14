@@ -5,6 +5,7 @@ import { DuelAnimations, type DuelEvent } from './DuelAnimations'
 import { DuelDecisions, type WorkerPrompt, type DuelLocation } from './DuelDecisions'
 import { DuelSideboard, type MatchProgress } from './DuelSideboard'
 import { DuelArena } from './DuelArena'
+import { DuelActionGuide, type GuidedAction } from './DuelActionGuide'
 import { duelPhaseName } from './DuelPhaseControl'
 import { effectAvailableAt } from './duelFeedback'
 import { includeChoice, selectionComplete } from './duelSelection'
@@ -33,6 +34,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   const [activeLocation, setActiveLocation] = useState<DuelLocation | null>(null)
   const [pendingAttack, setPendingAttack] = useState<number | null>(null)
   const [attackFlow, setAttackFlow] = useState(false)
+  const [guidedAction,setGuidedAction] = useState<GuidedAction|null>(null)
   const attackStartedAfter = useRef(0)
   const [previewEffect, setPreviewEffect] = useState<string | null>(null)
   const showEffect = useCallback((card: EngineCard, effect?: string | null) => { setPreview(card); setPreviewEffect(effect || 'Effekt aktiviert') }, [])
@@ -68,12 +70,13 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
             pendingCommand.current = null; setBusy(false)
           }
           done = terminal(message.result)
-        } else if (message.type === 'error') { placement.current = null; finishSelectionAfter.current = null; pendingCommand.current = null; setBusy(false); setError(message.message) }
+        } else if (message.type === 'error') { setGuidedAction(null); placement.current = null; finishSelectionAfter.current = null; pendingCommand.current = null; setBusy(false); setError(message.message) }
       }
       ws.onclose = event => {
         clearInterval(heartbeat)
         if (disposed) return
         setConnected(false); setBusy(false)
+        setGuidedAction(null)
         pendingCommand.current = null
         finishSelectionAfter.current = null
         if (done) return
@@ -104,6 +107,11 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   }, [prompt?.id, busy, connected])
   useEffect(() => { if (board?.events.some(event => event.kind === 'attack' && event.id > attackStartedAfter.current)) setAttackFlow(false) }, [board?.revision])
   const chainReaction = prompt?.kind === 'chain' || prompt?.title === 'Auf die Kette reagieren'
+  useEffect(()=>{
+    if(!guidedAction)return
+    const completed=board?.events.some(event=>event.id>guidedAction.afterEvent && (event.kind==='summon' && event.player===board.seat || event.kind==='move' && event.after?.owner===board.seat && [4,8].includes(event.after.zone)) && event.affected_cards?.some(card=>card.name===guidedAction.card.name))
+    if(completed || result && terminal(result) || board?.turn!==guidedAction.turn || prompt?.id!==guidedAction.prompt && prompt?.title==='Aktion wählen')setGuidedAction(null)
+  },[prompt?.id,board?.revision,board?.turn,result?.state,guidedAction])
   useEffect(() => { setZoneSelection(prompt?.counter ? prompt.choices.map(() => 0) : []); setActiveLocation(null); setPendingAttack(null); if (prompt?.title === 'Aktion wählen') setAttackFlow(false) }, [prompt?.id])
   const disabled = busy || !connected || Boolean(result && terminal(result))
   function choicesAt(location: DuelLocation) { return prompt?.choices.map((choice, index) => ({ choice, index })).filter(({choice}) => choice.location?.owner === location.owner && choice.location.zone === location.zone && choice.location.sequence === location.sequence) || [] }
@@ -131,8 +139,13 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     } else setActiveLocation(location)
   }
   function chooseAction(index: number, target?: DuelLocation) {
-    if (!prompt || disabled) return
+    if (!prompt || disabled || pendingCommand.current) return
     if (prompt.choices[index]?.action === 'attack') { setActiveLocation(null); setPendingAttack(index); return }
+    const choice=prompt.choices[index]
+    if(choice?.card && ['summon','special_summon','set_monster','set_spell'].includes(choice.action || '')) {
+      setGuidedAction({action:choice.action!,card:choice.card,prompt:prompt.id,turn:board!.turn,afterEvent:Math.max(0,...board!.events.map(event=>event.id))})
+      setPreview(choice.card as EngineCard);setPreviewEffect(null)
+    }
     placement.current = target || null
     send('answer', { prompt: prompt.id, selected: [index] })
   }
@@ -182,6 +195,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
           }} chooseAction={chooseAction}>
           <div className="arena-hud" role="status"><span>Zug {board.turn_number} · {board.turn === board.seat ? 'Dein Zug' : 'Gegnerischer Zug'} · {duelPhaseName(board.phase)}</span>{result?.clock && <span role="timer" title="360 Sekunden Zeitkonto. 50 % der gegnerischen Entscheidungszeit werden gutgeschrieben, bis maximal 360 Sekunden.">Du {Math.ceil(result.clock.remaining[result.seat])} s · Gegner {Math.ceil(result.clock.remaining[1-result.seat])} s</span>}</div>
           <DuelAnimations events={board.events} runId={runId} onEffect={showEffect} seat={board.seat} phase={board.phase} turn={board.turn} turnNumber={board.turn_number} disabled={disabled} surrender={() => { if(window.confirm('Duell wirklich aufgeben?')) send('surrender',{}) }} />
+          {guidedAction && prompt && prompt.id!==guidedAction.prompt && prompt.title!=='Aktion wählen' && !chainReaction && !terminal(result) && <DuelActionGuide context={guidedAction} prompt={prompt} />}
           {pendingAttack !== null && prompt && <section className="arena-attack-confirm" role="dialog" aria-label="Angriff vorbereiten"><h2>⚔ Angriff starten?</h2><p>{prompt.choices[pendingAttack]?.card?.name || 'Dein Monster'} soll angreifen. Danach wählst du ein erlaubtes Ziel.</p><button disabled={disabled} onClick={()=>{ attackStartedAfter.current = Math.max(0,...board.events.map(event=>event.id)); setAttackFlow(true); send('answer',{prompt:prompt.id,selected:[pendingAttack]}); setPendingAttack(null) }}>Angriff starten</button><button onClick={()=>setPendingAttack(null)}>Abbrechen</button></section>}
           {!showDecision && pendingAttack === null && !disabled && <p className="arena-action-guide">{prompt ? 'Markierte Karte anklicken · Phasenwechsel über den Kreis' : 'Dein Gegner entscheidet …'}</p>}
           {showDecision && result && !terminal(result) && <div className={chainReaction ? 'duel-chain-overlay' : 'arena-decision-overlay' + (selectOnField || prompt?.kind === 'zones' ? ' arena-field-selection-guide' : '')} role={chainReaction ? 'region' : undefined} aria-label={chainReaction ? 'Kettenreaktion' : undefined}>
