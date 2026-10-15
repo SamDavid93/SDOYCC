@@ -30,6 +30,7 @@ def check_effect_context(page):
     expect(page.locator('.duel-card-rating')).to_be_visible()
     slot=page.locator('.arena-own .arena-monster-row .arena-slot').first.bounding_box()
     assert abs(slot['width']-slot['height'])<slot['height']*.12,slot
+    expect(page.locator('.arena-own .arena-monster-rating').first).to_have_text('\u2605 4')
     assert page.locator('.arena-card-stats > strong').first.evaluate('e=>parseFloat(getComputedStyle(e).fontSize)')>=16
     hand=page.locator('.arena-own .arena-hand-card')
     assert hand.count()>=3
@@ -73,7 +74,7 @@ import '../src/master-duel-theme.css'
 import '../src/master-duel-content.css'
 import '../src/master-duel-game.css'
 sessionStorage.setItem('hub-session', 'synthetic-presentation-token')
-const card = {code:1,type:0x1000 | 1,level:4,attribute:16,race:8192,name:'Testkarte',description_language:'de',description:'Deutscher Kartentext',image_url:'/test-card.svg',atk:1000,defense:1000}
+const card = {code:1,type:0x1000 | 1,level:4,rank:0,link:0,attribute:16,race:8192,name:'Testkarte',description_language:'de',description:'Deutscher Kartentext',image_url:'/test-card.svg',atk:1000,defense:1000}
 const side = {lp:8000,deck:30,hand:[],grave:[],field:[]}
 const frame = {id:'presentation',state:'running',seat:0,clock:{remaining:[360,360],active:null,side_remaining:null,readiness_required:true,waiting_for:0,ready_timeout:30},board:{revision:1,seat:0,turn:0,turn_number:1,phase:4,ended:false,events:[],
 boards:[{...side,field:[{zone:4,sequence:0,position:8,card},{zone:8,sequence:0,position:8,card},{zone:8,sequence:1,position:8,card}]},
@@ -124,6 +125,7 @@ window.__currentDecision=()=>({prompt:frame.board.prompt?.id,revision:frame.boar
 window.__clockTick=()=>window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})
 window.__nextGame=()=>{frame.seat=0;frame.match={version:1,game:2,phase:'playing',score:[1,0],ready:[false,false],chooser:null,next_starter:null};frame.board.revision=1;frame.board.seat=0;frame.board.turn=0;frame.board.events=[{id:1,kind:'phase',phase:4,player:0,number:1}];frame.board.boards.forEach(s=>s.lp=8000);frame.clock={remaining:[360,360],active:null,side_remaining:null,readiness_required:true,waiting_for:0,ready_timeout:30};frame.board.prompt={id:1,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__finish=()=>{const id=Math.max(0,...frame.board.events.map(e=>e.id));frame.state='finished';frame.winner_seat=1;frame.board.ended=true;frame.board.prompt=null;frame.board.boards[0].lp=0;frame.board.events.push({id:id+1,kind:'attack',attacker:{owner:1,zone:4,sequence:2},direct:true},{id:id+2,kind:'lp',player:0,value:0,delta:-8000},{id:id+3,kind:'win',winner:1});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__ratings=()=>{window.__scene();frame.board.boards.forEach(side=>{side.field=[{type:0x21,level:8,rank:0,link:0},{type:0x2001,level:10,rank:0,link:0},{type:0x41,level:12,rank:0,link:0},{type:0x800001,level:0,rank:4,link:0},{type:0x4000001,level:0,rank:0,link:3}].map((rating,sequence)=>({zone:4,sequence,position:1,card:{...card,...rating}}))});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__crowdedStats=()=>{window.__scene();frame.board.boards.forEach((side,owner)=>{side.field=Array.from({length:5},(_,sequence)=>({zone:4,sequence,position:1,card:{...card,atk:[4500,4000,100000,2500,0][sequence],defense:[4000,0,100000,3000,700][sequence],type:sequence===4?0x4000001:card.type}}))});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__actions=()=>{window.__scene();frame.board.prompt={id:1500+frame.board.revision,title:'Aktion w\u00e4hlen',choices:['activate','set_spell','summon','special_summon'].map(action=>({label:action,action,card,location:{owner:0,zone:2,sequence:0}}))};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__badImage=()=>{window.__scene();frame.board.boards[1].field[1].card={...card,name:'Visible opponent monster',image_url:'/missing-card-image.png'};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
@@ -158,6 +160,10 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                         return
                     if os.environ.get('SDOYCC_DUEL_STATS_ONLY') == '1':
                         expect(page.locator('.duel-arena')).to_be_visible()
+                        page.evaluate('window.__ratings()')
+                        for owner in (0,1):
+                            for sequence,value in enumerate(('\u2605 8','\u2605 10','\u2605 12','\u2605 R4','LINK 3')):
+                                expect(page.locator(f'.arena-slot[data-duel-owner="{owner}"][data-duel-zone="4"][data-duel-sequence="{sequence}"] .arena-monster-rating')).to_have_text(value)
                         page.evaluate('window.__crowdedStats()')
                         expect(page.locator('.arena-card-stats > strong')).to_have_count(10)
                         metrics=[]

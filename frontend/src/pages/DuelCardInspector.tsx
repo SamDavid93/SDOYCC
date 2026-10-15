@@ -1,3 +1,4 @@
+import { duelCardRating } from './duelCardRating'
 import { Flame, Droplets, Wind, Mountain, Sun, Moon, Sparkles, Star, Swords, Shield, Hexagon } from 'lucide-react'
 import { API_BASE_URL } from '../api/transport'
 import { CardOrigin, TunerBadge } from '../components/CardSymbols'
@@ -10,7 +11,7 @@ const races: Record<number,string> = {1:'Krieger',2:'Hexer',4:'Fee',8:'Unterwelt
 
 export function DuelCardInspector({ card, effect, origin, seat, close }: {card:EngineCard|null;effect:string|null;origin:DuelLocation|null;seat:number;close:()=>void}) {
   const type=card?.type || 0, monster=Boolean(type&1), link=Boolean(type&0x4000000), xyz=Boolean(type&0x800000)
-  const rating=link ? card?.link ?? card?.level : xyz ? card?.rank ?? card?.level : card?.level
+  const rating=card ? duelCardRating(card) : undefined
   const attribute=attributes[card?.attribute as keyof typeof attributes]
   const AttributeIcon=attribute?.[1]
   const subtype=monster?null:type&0x10000?'Schnellzauber':type&0x20000?'Permanent':type&0x40000?'Ausrüstung':type&0x80000?'Spielfeld':type&0x100000?'Konter':type&0x80?null:'Normal'
