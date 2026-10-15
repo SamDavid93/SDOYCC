@@ -9,6 +9,38 @@ from playwright.sync_api import sync_playwright, expect
 from browser_smoke import ROOT, free_port, wait_ready
 
 
+def check_battle_order(page):
+    for losers,split,width,terminal in (([0],False,1440,False),([1],False,1440,False),([0,1],False,1440,False),([1],True,390,False),([0],False,1440,True)):
+        page.set_viewport_size({'width':width,'height':1000 if width>400 else 844})
+        page.reload()
+        page.wait_for_function('window.__readyFrames.length>0')
+        page.evaluate('window.__battleBaseline()')
+        page.wait_for_function('window.__readyFrames.at(-1)?.prompt===window.__currentDecision().prompt')
+        ready_before=page.evaluate('window.__readyFrames.length')
+        page.evaluate('(split)=>window.__battleStrike(split)',split)
+        if split:
+            expect(page.locator('.duel-event-stage.event-attack')).to_be_visible()
+        page.evaluate('([losers,terminal])=>window.__battleResolve(losers,terminal)',[losers,terminal])
+        expect(page.locator('.duel-event-stage.event-attack')).to_be_visible()
+        page.evaluate('window.__clockTick()')
+        for owner in losers:
+            expect(page.locator(f'.arena-slot[data-duel-owner="{owner}"][data-duel-zone="4"][data-duel-sequence="0"] .duel-playing-card')).to_have_count(1)
+            expect(page.locator(f'[data-duel-owner="{owner}"][data-duel-zone="16"] > summary > strong')).to_have_text('0')
+        assert page.evaluate('window.__readyFrames.length')==ready_before
+        expect(page.locator('.duel-event-stage.event-lp')).to_be_visible()
+        for owner in losers:
+            expect(page.locator(f'.arena-slot[data-duel-owner="{owner}"][data-duel-zone="4"][data-duel-sequence="0"] .duel-playing-card')).to_have_count(1)
+        expect(page.locator('.duel-event-stage.event-destroy')).to_be_visible()
+        if terminal:
+            expect(page.get_by_role('status',name='Duellergebnis')).to_be_visible()
+        else:
+            page.wait_for_function('window.__readyFrames.at(-1)?.prompt===window.__currentDecision().prompt')
+        for owner in losers:
+            expect(page.locator(f'.arena-slot[data-duel-owner="{owner}"][data-duel-zone="4"][data-duel-sequence="0"] .duel-playing-card')).to_have_count(0)
+            expect(page.locator(f'[data-duel-owner="{owner}"][data-duel-zone="16"] > summary > strong')).to_have_text('1')
+        assert page.evaluate('window.__answers')==[]
+
+
 def check_effect_context(page):
     page.evaluate('window.__resolutionContext("resolution")')
     expect(page.locator('.duel-effect-context')).to_contain_text('Erste Effektkarte',timeout=10000)
@@ -125,6 +157,9 @@ window.__currentDecision=()=>({prompt:frame.board.prompt?.id,revision:frame.boar
 window.__clockTick=()=>window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})
 window.__nextGame=()=>{frame.seat=0;frame.match={version:1,game:2,phase:'playing',score:[1,0],ready:[false,false],chooser:null,next_starter:null};frame.board.revision=1;frame.board.seat=0;frame.board.turn=0;frame.board.events=[{id:1,kind:'phase',phase:4,player:0,number:1}];frame.board.boards.forEach(s=>s.lp=8000);frame.clock={remaining:[360,360],active:null,side_remaining:null,readiness_required:true,waiting_for:0,ready_timeout:30};frame.board.prompt={id:1,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__finish=()=>{const id=Math.max(0,...frame.board.events.map(e=>e.id));frame.state='finished';frame.winner_seat=1;frame.board.ended=true;frame.board.prompt=null;frame.board.boards[0].lp=0;frame.board.events.push({id:id+1,kind:'attack',attacker:{owner:1,zone:4,sequence:2},direct:true},{id:id+2,kind:'lp',player:0,value:0,delta:-8000},{id:id+3,kind:'win',winner:1});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__battleBaseline=()=>{window.__scene();frame.board.boards.forEach((side,owner)=>{side.field=[{zone:4,sequence:0,position:1,card:{...card,name:owner?'Verteidiger':'Angreifer'}}];side.grave=[];side.lp=8000});frame.board.events=[];frame.board.prompt={id:15000+frame.board.revision,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};frame.board.revision++;window.__clockTick()}
+window.__battleStrike=(split)=>{frame.board.prompt=null;frame.board.events.push({id:1,kind:'attack',attacker:{owner:0,zone:4,sequence:0},defender:{owner:1,zone:4,sequence:0}});frame.board.revision++;if(split)window.__clockTick()}
+window.__battleResolve=(losers,terminal=false)=>{frame.board.boards[losers[0]].lp=7500;frame.board.events.push({id:2,kind:'lp',player:losers[0],value:7500,delta:-500});losers.forEach((owner,i)=>{const entry=frame.board.boards[owner].field[0];frame.board.boards[owner].grave=[entry.card];frame.board.boards[owner].field=[];frame.board.events.push({id:3+i,kind:'destroy',before:{owner,zone:4,sequence:0,position:1},after:{owner,zone:16,sequence:0,position:1}})});frame.board.prompt={id:16000+frame.board.revision,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};if(terminal){frame.state='finished';frame.winner_seat=1;frame.board.ended=true;frame.board.prompt=null;frame.board.events.push({id:10,kind:'win',winner:1})};frame.board.revision++;window.__clockTick()}
 window.__ratings=()=>{window.__scene();frame.board.boards.forEach(side=>{side.field=[{type:0x21,level:8,rank:0,link:0},{type:0x2001,level:10,rank:0,link:0},{type:0x41,level:12,rank:0,link:0},{type:0x800001,level:0,rank:4,link:0},{type:0x4000001,level:0,rank:0,link:3}].map((rating,sequence)=>({zone:4,sequence,position:1,card:{...card,...rating}}))});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__crowdedStats=()=>{window.__scene();frame.board.boards.forEach((side,owner)=>{side.field=Array.from({length:5},(_,sequence)=>({zone:4,sequence,position:1,card:{...card,atk:[4500,4000,100000,2500,0][sequence],defense:[4000,0,100000,3000,700][sequence],type:sequence===4?0x4000001:card.type}}))});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__actions=()=>{window.__scene();frame.board.prompt={id:1500+frame.board.revision,title:'Aktion w\u00e4hlen',choices:['activate','set_spell','summon','special_summon'].map(action=>({label:action,action,card,location:{owner:0,zone:2,sequence:0}}))};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
@@ -151,6 +186,12 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     artwork=ROOT/'cache/cards-original/89631139.img'
                     page.route('**/scene-card.jpg', lambda route: route.fulfill(content_type='image/jpeg', body=artwork.read_bytes()) if artwork.exists() else route.fulfill(content_type='image/svg+xml',body='<svg xmlns="http://www.w3.org/2000/svg" width="80" height="120"><rect width="80" height="120" fill="teal"/></svg>'))
                     page.goto(url + '/' + folder.name + '/index.html')
+                    if os.environ.get('SDOYCC_DUEL_BATTLE_SYNC_ONLY') == '1':
+                        check_battle_order(page)
+                        assert not errors,errors
+                        browser.close()
+                        print(json.dumps({'battle_field_grave_order':'passed','both_players_and_simultaneous_destruction':'passed','split_packets_heartbeats_and_readiness':'passed'}))
+                        return
                     if os.environ.get('SDOYCC_DUEL_EFFECT_SOURCE_ONLY') == '1':
                         expect(page.locator('.duel-arena')).to_be_visible()
                         check_effect_context(page)
@@ -860,6 +901,7 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     page.screenshot(path=str(ROOT/'artifacts/duel-synced-effect-context.png'),full_page=True)
                     assert not errors, errors
                     check_effect_context(page)
+                    check_battle_order(page)
                     assert not errors, errors
                     browser.close()
                 print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','own effect updates viewer immediately without center animation; opponent effect remains visible','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','larger arena fits 720p and 1080p including footer allowance','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement','one-card double-click submits exactly once','incomplete multi-selection stays open','maximum selection cannot be exceeded','double-click preserves original selection order','step selection auto-finishes only after engine confirms completion','double-click selects own hand cards','larger own hand fits mobile','required-card count remains visible on mobile','periodic clock state cannot acknowledge a pending action','two shared extra zones retain physical identity across controller and prompt changes for both seats and viewports','occupied shared zones stay visible and placement preserves original indexes','extra deck lists only legal summons and separates browsing','grave and banished action lists preserve original engine indexes','summon guidance keeps card method and material or zone step visible','pile menus fit mobile and close with Escape','opponent boss summon cut-ins with attribute-matched original sound','own weak and covered monsters never trigger a cut-in','decisions compact the cut-in without blocking chain answers','desktop mobile reduced-motion and cut-in disable controls','hand effect choices automatically open a focused popup with shared selection','mobile hand popup retains visible confirmation and supports double-click'],'right_click_chain_skip_and_forced_guard':'passed','global_context_menu_and_selection_policy':'passed','decision_ready_deduplicated':'passed','left_middle_timer_and_paused_clock':'passed','terminal_attack_damage_result_order':'passed','failed_opponent_image_keeps_occupied_zone_visible':'passed','console_errors':errors}))

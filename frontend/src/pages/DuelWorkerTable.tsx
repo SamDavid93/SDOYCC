@@ -18,6 +18,7 @@ import { DuelEffectOptions } from './DuelEffectOptions'
 import { DuelCardInspector } from './DuelCardInspector'
 import './duel-reference-layout.css'
 import { germanEffectText } from './duelGermanText'
+import { DuelBoardTimeline } from './duelBoardTimeline'
 
 export type EngineCard = { race?: number; rank?: number; link?: number; lscale?: number; rscale?: number; attribute?: number; type?: number; level?: number; code: number; name: string; description?: string; description_language?: string; image_url?: string; fallback_image_url?: string; atk?: number; defense?: number }
 function imageFailed(event: SyntheticEvent<HTMLImageElement>, card: EngineCard) {
@@ -35,20 +36,24 @@ const terminal = (value: WorkerResult) => ['finished', 'aborted', 'recovery_requ
 
 export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () => void }) {
   const [result, setResult] = useState<WorkerResult | null>(null), [error, setError] = useState('')
+  const currentGame = result?.match?.game || 1
   const latest = useRef<WorkerResult | null>(null)
   latest.current = result
   const [playback, setPlayback] = useState<DuelPlayback>({through: -1, idle: false, event: null})
   const [previewOrigin, setPreviewOrigin] = useState<DuelLocation | null>(null)
   const presentationReady = useRef(false)
   const playbackGame = useRef<number | null>(null)
+  const boardTimeline = useRef(new DuelBoardTimeline())
   const [effectOptions, setEffectOptions] = useState<{ prompt: number; indices: number[] } | null>(null)
   const [timerWarning, setTimerWarning] = useState<{ seconds: number; serial: number } | null>(null)
   const warnTimer = useCallback((seconds: number) => setTimerWarning(old => ({ seconds, serial: (old?.serial || 0) + 1 })), [])
   const [visualLP, setVisualLP] = useState<number[] | null>(null)
   const lastDamage = useRef<number | null>(null)
   const onPlayback = useCallback((next: DuelPlayback) => {
-    playbackGame.current = latest.current?.match?.game || 1
+    if ((latest.current?.match?.game || 1) !== currentGame) return
+    playbackGame.current = currentGame
     setPlayback(next)
+    boardTimeline.current.complete(currentGame, next.through)
     const boards = latest.current?.board?.boards
     if (!boards) return
     const caughtUp = next.idle && next.through >= Math.max(0, ...(latest.current?.board?.events.map(event => event.id) || []))
@@ -66,7 +71,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
       values[event.player] = event.value ?? Math.max(0, values[event.player] + (event.delta || 0))
       return values
     })
-  }, [])
+  }, [currentGame])
   const [preview, setPreview] = useState<EngineCard | null>(null)
   const [zoneSelection, setZoneSelection] = useState<number[]>([])
   const selectionClick = useRef<{ prompt: number; index: number; before: number[] } | null>(null)
@@ -94,6 +99,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     setResult(old => {
       const previousGame = old?.match?.game || 1, nextGame = next.match?.game || 1
       if (old && ((terminal(old) && !terminal(next)) || previousGame > nextGame || (previousGame === nextGame && old.board && next.board && old.board.revision > next.board.revision))) return old
+      if (next.board) boardTimeline.current.record(nextGame, next.board.events, next.board.boards)
       clockReceivedAt.current = receivedAt
       return next
     })
@@ -168,6 +174,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     readySent.current = null
   }
   const board = result?.board, prompt = board?.prompt
+  const visibleSides = boardTimeline.current.visible(currentGame, playbackGame.current === currentGame ? playback.through : -1) || board?.boards
   useEffect(() => { setEffectOptions(null) }, [prompt?.id])
   const newestEvent = Math.max(0, ...(board?.events.map(event => event.id) || []))
   presentationReady.current = playbackGame.current === (result?.match?.game || 1) && playback.idle && playback.through >= newestEvent
@@ -307,7 +314,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     {board && result?.match?.phase !== 'sideboarding' && <>
       <div className="duel-arena-shell">
         <DuelCardInspector card={preview} effect={previewEffect} origin={previewOrigin} seat={board.seat} close={() => setPreview(null)} />
-        <DuelArena sides={board.boards.map((side, index) => ({...side, lp: visualLP?.[index] ?? side.lp}))} seat={board.seat} card={card} prompt={prompt} disabled={disabled}
+        <DuelArena sides={(visibleSides || board.boards).map((side, index) => ({...side, lp: visualLP?.[index] ?? side.lp}))} seat={board.seat} card={card} prompt={prompt} disabled={disabled}
           timer={result.clock ? {onWarning: warnTimer, ownRemaining: result.clock.remaining[result.seat], opponentRemaining: result.clock.remaining[1-result.seat], active: !connected || terminal(result) || busy && result.clock.active === result.seat ? null : result.clock.active === result.seat ? 'own' : result.clock.active === 1-result.seat ? 'opponent' : null, updatedAt: clockReceivedAt.current, limit: result.clock.limit, pausedReason: !connected ? 'Verbindung wird wiederhergestellt' : busy ? 'Aktion wird verarbeitet' : result.clock.waiting_for === result.seat ? 'Deine Auswahl wird vorbereitet' : result.clock.waiting_for === 1-result.seat ? 'Gegnerische Auswahl wird vorbereitet' : 'Keine Spielentscheidung erforderlich'} : undefined}
           activeLocation={activeLocation} chooseLocation={chooseLocation}
           selectionValid={zoneSelection.length >= (prompt?.minimum || 0) && zoneSelection.length <= (prompt?.maximum || 0)} selectionLabel={attackFlow ? 'Angriff bestätigen' : 'Auswahl bestätigen'} confirmSelection={()=>prompt && send('answer',{prompt:prompt.id,selected:zoneSelection})}

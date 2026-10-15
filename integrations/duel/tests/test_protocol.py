@@ -238,6 +238,23 @@ class BoundaryTests(unittest.TestCase):
         for seat in (0, 1):
             self.assertEqual(self.p.public_events(seat)[-1]['affected_cards'][0]['name'], 'Testkarte')
 
+    def test_battle_keeps_monster_on_field_until_engine_move(self):
+        for loser in (0, 1):
+            with self.subTest(loser=loser):
+                self.p = Projection(CATALOG)
+                for owner in (0, 1):
+                    self.p.field[owner][(4, 0)] = {'code': 101, 'position': 1}
+                self.consume_message(bytes([110]) + struct.pack('<BBIIBBII', 0, 4, 0, 1, 1, 4, 0, 1))
+                self.assertIn((4, 0), self.p.field[loser])
+                self.assertEqual(self.p.grave[loser], [])
+                self.consume_message(bytes([91]) + struct.pack('<BI', loser, 500))
+                self.assertIn((4, 0), self.p.field[loser])
+                self.assertEqual(self.p.grave[loser], [])
+                self.consume_message(bytes([50]) + struct.pack('<IBBIIBBIII', 101, loser, 4, 0, 1, loser, 16, 0, 1, 1))
+                self.assertNotIn((4, 0), self.p.field[loser])
+                self.assertEqual(self.p.grave[loser], [101])
+                self.assertEqual([event['kind'] for event in self.p.public_events(0)], ['attack', 'lp', 'destroy'])
+
     def test_attack_log_uses_latest_query_visibility(self):
         self.p.field[0][(4, 0)] = {'code': 101, 'position': 1}
         boards = [{'zones': {'4': [{'code': 101, 'position': 8}], '8': []}}, {'zones': {'4': [], '8': []}}]
