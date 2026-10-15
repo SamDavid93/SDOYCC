@@ -22,8 +22,15 @@ nicht als vermeintlich zu platzierende Karte verwendet.
 Deutsche Systemhinweise stammen aus der zur Engine passenden
 [Project-Ignis-Sprachdatei](https://github.com/ProjectIgnis/Distribution/blob/54a6e2395c532648ff762540e9615319fac4f51b/config/languages/Deutsch/strings.conf).
 Kurze Effektoptionen erhalten deutsche Beschreibungen. Fehlt deren Übersetzung,
-erscheint der verfügbare deutsche Kartentext ausdrücklich als Kontext und die
-Originalbeschreibung kann zusätzlich aufgeklappt werden. Die Reihenfolge der
+erscheint der verfügbare deutsche Kartentext ausdrücklich als Kontext. Englische
+Rückfälle und aufklappbare Originaltexte werden im Duell nicht angezeigt.
+`description_language` und `effect_language` kennzeichnen die vom Server
+bereitgestellten deutschen Texte; ohne diese Kennzeichnung verwendet das
+Frontend ausschließlich einen deutschen Hinweis auf die fehlende Übersetzung.
+Gemischte Datenquellen werden abschnittsweise bereinigt: englische Pendeltexte
+werden nicht als deutsche Übersetzung ausgegeben, deutsche Monstereffekte bleiben
+erhalten. Die unveränderten Quelldaten bleiben für spätere Übersetzungen erhalten.
+Die Reihenfolge der
 Kartentextsätze wird niemals als Zuordnung zu Engine-Effektkennungen geraten.
 
 Die menschliche Entscheidungszeit beginnt erst, wenn die authentifizierte

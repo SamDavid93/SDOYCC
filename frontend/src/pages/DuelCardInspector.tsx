@@ -3,6 +3,7 @@ import { API_BASE_URL } from '../api/transport'
 import { CardOrigin, TunerBadge } from '../components/CardSymbols'
 import type { EngineCard } from './DuelWorkerTable'
 import type { DuelLocation } from './DuelDecisions'
+import { germanCardText } from './duelGermanText'
 
 const attributes = {1:['ERDE',Mountain],2:['WASSER',Droplets],4:['FEUER',Flame],8:['WIND',Wind],16:['LICHT',Sun],32:['FINSTERNIS',Moon],64:['GÖTTLICH',Sparkles]} as const
 const races: Record<number,string> = {1:'Krieger',2:'Hexer',4:'Fee',8:'Unterweltler',16:'Zombie',32:'Maschine',64:'Aqua',128:'Pyro',256:'Fels',512:'Geflügeltes Ungeheuer',1024:'Pflanze',2048:'Insekt',4096:'Donner',8192:'Drache',16384:'Ungeheuer',32768:'Ungeheuer-Krieger',65536:'Dinosaurier',131072:'Fisch',262144:'Seeschlange',524288:'Reptil',1048576:'Psi',2097152:'Göttliches Ungeheuer',4194304:'Schöpfergott',8388608:'Wyrm',16777216:'Cyberse',33554432:'Illusion'}
@@ -30,7 +31,7 @@ export function DuelCardInspector({ card, effect, origin, seat, close }: {card:E
       <div className="duel-viewer-badges"><TunerBadge type={card.type} />{type&0x1000000 ? <span className="duel-pendulum-scales">Pendel {card.lscale ?? '?'} / {card.rscale ?? '?'}</span>:null}</div>
       {origin && <CardOrigin zone={origin.zone} opponent={origin.owner!==seat} />}
       {effect && <p className="duel-inspector-effect" role="status">{effect}</p>}
-      <small>Kartentext</small><p className="duel-card-description">{card.description || 'Für diese Karte ist kein Text verfügbar.'}</p>
+      <small>Kartentext</small><p className="duel-card-description">{germanCardText(card)}</p>
     </> : <div className="duel-inspector-empty"><span>◇</span><h2>Kartenvorschau</h2><p>Klicke eine sichtbare Karte an, um Bild und Kartentext hier zu lesen.</p></div>}
   </aside>
 }

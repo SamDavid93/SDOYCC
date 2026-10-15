@@ -46,7 +46,7 @@ class NativeAdapter:
             parts = line.split(maxsplit=2)
             if len(parts) == 3 and parts[0] == '!system' and parts[1].isdigit(): self.strings[int(parts[1])] = parts[2]
         german_strings = json.loads((ROOT / 'backend/data/duel-strings-de.json').read_text(encoding='utf8'))
-        self.strings.update({int(key): text for key, text in german_strings['strings'].items()})
+        self.strings = {int(key): 'Ziehphase' if text == 'Draw Phase' else text for key, text in german_strings['strings'].items()}
         self.sources = {'package': json.loads((INTEGRATION / 'sources.lock.json').read_text(encoding='utf8')),
             'strings_sha256': strings_lock['sha256'],
             'cdb_sha256': hashlib.sha256((self.root / 'cards/cards.cdb').read_bytes()).hexdigest(),
@@ -66,7 +66,7 @@ class NativeAdapter:
                     or any(code not in self.catalog for cards in sections.values() for code in cards)):
                 raise HTTPException(409, 'Deckbereiche stimmen nicht mit dem geprueften Engine-Datensatz ueberein.')
 
-    def create(self): return self.process_type(self.sandbox.root, self.sandbox), self.projection_type(self.catalog, self.strings)
+    def create(self): return self.process_type(self.sandbox.root, self.sandbox), self.projection_type(self.catalog, self.strings, display_language='de')
 
     def manifest(self):
         return load_module('process_identity').manifest(self.sandbox.root, self.sandbox.script)
@@ -239,21 +239,25 @@ class WorkerService:
             from app.db.models import Card
             from app.api import translated_text
             from app.modules.duel_rules import canonical
-            from app.modules.duel_localization import german_effect
+            from app.modules.duel_localization import german_effect, german_description, MISSING_GERMAN
+            for entry in self.adapter.catalog.values():
+                entry.setdefault('description_en', entry.get('description', ''))
+                entry['description_de'] = None
             with self.sessions() as db:
                 for card in db.scalars(select(Card).options(joinedload(Card.details)).where(Card.external_provider.in_(['ygoprodeck', 'local-demo']))):
                     code = int(card.external_id) if card.external_id.isdecimal() else None
                     entry = self.adapter.catalog.get(code)
-                    if entry and card.image_url and canonical(card.name) == canonical(entry.get('name_en', entry['name'])):
-                        entry['image_url'] = '/api/cards/' + str(card.id) + '/art/original'
+                    if entry and canonical(card.name) == canonical(entry.get('name_en', entry['name'])):
+                        if card.image_url: entry['image_url'] = '/api/cards/' + str(card.id) + '/art/original'
                         details = card.details
                         entry['fallback_image_url'] = '/api/cards/' + str(card.id) + '/art/de' if details and details.konami_id else None
                         entry.setdefault('name_en', entry['name'])
                         entry.setdefault('description_en', entry.get('description', ''))
                         entry['name'] = (translated_text(details.name_de) if details else None) or entry['name_en']
-                        entry['description'] = (translated_text(details.description_de) if details else None) or entry['description_en']
-                        entry['description_de'] = translated_text(details.description_de) if details else None
+                        entry['description_de'] = german_description(translated_text(details.description_de), entry['description_en']) if details else None
             for entry in self.adapter.catalog.values():
+                entry['description'] = entry.get('description_de') or MISSING_GERMAN
+                entry['description_language'] = 'de'
                 entry.setdefault('options_en', entry.get('options', []))
                 entry['options'] = [german_effect(text, entry.get('description_de'), index) for index, text in enumerate(entry['options_en'])]
 

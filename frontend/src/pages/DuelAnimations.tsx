@@ -5,9 +5,10 @@ import { phaseAnnouncement } from './duelFeedback'
 import { DuelSoundPlayer } from './duelSounds'
 import { DuelEventMotion } from './DuelEventMotion'
 import { bossSummon, DuelSummonCutin } from './DuelSummonCutin'
+import { germanEffectText } from './duelGermanText'
 
 type Location = { owner: number; zone: number; sequence: number; position?: number }
-export type DuelEvent = { id: number; kind: string; winner?: number | null; added?: boolean; delta?: number; affected_cards?: { role: string; name: string }[]; direct?: boolean; card?: EngineCard; effect?: string | null; player?: number; count?: number; value?: number; phase?: number; number?: number; step?: number; code?: number; text?: string; method?: string; values?: number[]; cards?: { name: string }[]; before?: Location & { position?: number }; after?: Location & { position?: number }; source?: Location; target?: Location; attacker?: Location; defender?: Location; location?: Location }
+export type DuelEvent = { id: number; kind: string; winner?: number | null; added?: boolean; delta?: number; affected_cards?: { role: string; name: string }[]; direct?: boolean; card?: EngineCard; effect?: string | null; effect_language?: string | null; player?: number; count?: number; value?: number; phase?: number; number?: number; step?: number; code?: number; text?: string; method?: string; values?: number[]; cards?: { name: string }[]; before?: Location & { position?: number }; after?: Location & { position?: number }; source?: Location; target?: Location; attacker?: Location; defender?: Location; location?: Location }
 type Mode = 'full' | 'fast' | 'reduced'
 export type DuelPlayback = { through: number; idle: boolean; event: DuelEvent | null }
 const captions: Record<string, string> = { draw: 'Karte gezogen', move: 'Karte bewegt', position: 'Position geändert',
@@ -61,7 +62,7 @@ export function DuelAnimations({ events, runId, onEffect, onPlayback, seat, disa
     // The viewer follows confirmed effects immediately, independently of animation playback.
     const effects = unseen.filter(event => event.kind === 'chain' && event.card)
     const latestEffect = effects.at(-1)
-    if (latestEffect?.card && latestEffect.source?.owner === seat) onEffect?.(latestEffect.card, latestEffect.effect)
+    if (latestEffect?.card && latestEffect.source?.owner === seat) onEffect?.(latestEffect.card, latestEffect.effect_language === 'de' ? latestEffect.effect : undefined)
     if (sound) effects.filter(event => event.source?.owner === seat).forEach(event => audio.current?.play(event))
     const shown = unseen.filter(event => {
       if (event.kind === 'information') return false
@@ -128,7 +129,7 @@ export function DuelAnimations({ events, runId, onEffect, onPlayback, seat, disa
     {surrender && <button className="duel-surrender" disabled={disabled} onClick={surrender}>Duell aufgeben</button>}
     <a href={`${import.meta.env.BASE_URL}duel-sounds/CREDITS.md`} target="_blank" rel="noreferrer">Soundquellen</a>
     <button onClick={event => { const field=event.currentTarget.closest('.duel-worker-table'); if (document.fullscreenElement) void document.exitFullscreen(); else if(field) void field.requestFullscreen().catch(()=>{}) }}>Spielfeld im Vollbild</button>
-    <details><summary>Bestätigtes Duellprotokoll</summary><ol className="duel-event-log">{events.filter(event => event.kind !== 'information').map(event => <li key={event.id}>#{event.id} {event.kind === 'summon' ? methods[event.method || 'special'] : event.kind === 'chain_step' ? chainSteps[event.step || 0] || 'Kette' : captions[event.kind] || event.kind}{event.number ? ` · ${event.number}` : ''}{event.value !== undefined ? ` · ${event.value}` : ''}{event.values ? ` · ${event.values.join(', ')}` : ''}{event.text ? ` · ${event.text}` : ''}{event.card ? ` · ${event.card.name}` : ''}{event.affected_cards?.map((card,index) => <span key={index}> · {card.role}: {card.name}</span>)}{event.direct ? ' · Direkter Angriff' : ''}{event.cards ? ` · ${event.cards.map(card => card.name).join(', ')}` : ''}</li>)}</ol></details>
+    <details><summary>Bestätigtes Duellprotokoll</summary><ol className="duel-event-log">{events.filter(event => event.kind !== 'information').map(event => <li key={event.id}>#{event.id} {event.kind === 'summon' ? methods[event.method || 'special'] : event.kind === 'chain_step' ? chainSteps[event.step || 0] || 'Kette' : captions[event.kind] || event.kind}{event.number ? ` · ${event.number}` : ''}{event.value !== undefined ? ` · ${event.value}` : ''}{event.values ? ` · ${event.values.join(', ')}` : ''}{event.text && (event.kind !== 'hint' || event.effect_language === 'de') ? ` · ${event.text}` : ''}{event.card ? ` · ${event.card.name}` : ''}{event.affected_cards?.map((card,index) => <span key={index}> · {card.role}: {card.name}</span>)}{event.direct ? ' · Direkter Angriff' : ''}{event.cards ? ` · ${event.cards.map(card => card.name).join(', ')}` : ''}</li>)}</ol></details>
     </div></details>
     {active && <DuelEventMotion key={`motion:${active.id}`} event={active} mode={mode} seat={seat} />}
     {cutin && active && <DuelSummonCutin key={`cutin:${active.id}`} event={active} compact={decisionPending} mode={mode} />}
@@ -139,11 +140,11 @@ export function DuelAnimations({ events, runId, onEffect, onPlayback, seat, disa
       <div className="duel-effect-orbit" aria-hidden="true" /><b className="duel-chain-number" aria-hidden="true">{active.number || 1}</b>
       <span>{active.source?.owner === seat ? 'Dein Effekt' : 'Gegner aktiviert'} · Kettenglied {active.number}</span>
       {active.card.image_url && <img src={API_BASE_URL.replace(/\/api\/?$/, '') + active.card.image_url} alt={active.card.name} onError={event => { const img=event.currentTarget; if(active.card?.fallback_image_url && !img.dataset.fallback){img.dataset.fallback='1';img.src=API_BASE_URL.replace(/\/api\/?$/, '')+active.card.fallback_image_url}else img.hidden=true }} />}
-      <strong>{active.card.name}</strong>{active.effect && <small>{active.effect}</small>}
+      <strong>{active.card.name}</strong><small>{germanEffectText(active.effect, active.effect_language, active.card)}</small>
     </section>}
     {active && !cutin && !announcement && !(active.kind === 'chain' && active.card) && <div className={`duel-event-stage event-${active?.kind || 'idle'} summon-${active?.method || 'none'}`} key={`event:${active?.id || 'idle'}`} aria-live="polite">
       <span className="duel-event-symbol" aria-hidden="true">{active?.kind === 'attack' ? '⚔' : active?.kind === 'summon' ? '✦' : active?.kind === 'chain' ? '∞' : active?.kind === 'lp' ? '♥' : '◇'}</span>
-      <span>{active ? active.kind === 'summon' ? methods[active.method || 'special'] : captions[active.kind] || 'Spielereignis' : 'Bereit für dein Duell'}{active?.kind === 'lp' && ` · ${active.value?.toLocaleString('de-DE')} LP`}{active?.kind === 'chain_step' && ` · ${active.number ? 'Glied ' + active.number + ': ' : ''}${active.step === 72 ? 'wird aufgelöst' : active.step === 73 ? 'aufgelöst' : active.step === 74 ? 'beendet' : active.step === 75 || active.step === 76 ? 'negiert' : 'fortgesetzt'}`}{active?.values && ` · ${active.values.join(', ')}`}{active?.text && ` · ${active.text}`}{active?.cards && ` · ${active.cards.map(card => card.name).join(', ')}`}</span>
+      <span>{active ? active.kind === 'summon' ? methods[active.method || 'special'] : captions[active.kind] || 'Spielereignis' : 'Bereit für dein Duell'}{active?.kind === 'lp' && ` · ${active.value?.toLocaleString('de-DE')} LP`}{active?.kind === 'chain_step' && ` · ${active.number ? 'Glied ' + active.number + ': ' : ''}${active.step === 72 ? 'wird aufgelöst' : active.step === 73 ? 'aufgelöst' : active.step === 74 ? 'beendet' : active.step === 75 || active.step === 76 ? 'negiert' : 'fortgesetzt'}`}{active?.values && ` · ${active.values.join(', ')}`}{active?.text && (active.kind !== 'hint' || active.effect_language === 'de') && ` · ${active.text}`}{active?.cards && ` · ${active.cards.map(card => card.name).join(', ')}`}</span>
       {active.affected_cards?.length ? <small className="duel-event-cardnames">{[...new Set(active.affected_cards.map(card => card.name))].join(' / ')}</small> : null}
     </div>}
   </aside>

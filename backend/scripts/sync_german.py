@@ -5,6 +5,7 @@ import httpx
 from sqlalchemy import select
 from app.db.models import Card, CardDetails
 from app.db.session import SessionLocal, migrate_local_schema
+from app.modules.duel_localization import german_description
 
 
 def sync_german(english, german, session_factory=SessionLocal):
@@ -27,7 +28,7 @@ def sync_german(english, german, session_factory=SessionLocal):
             translated = de_by_id.get(card.external_id, {})
             details = card.details or CardDetails(card_id=card.id)
             details.name_de = translated.get("name") or details.name_de
-            details.description_de = translated.get("desc") or details.description_de
+            details.description_de = german_description(translated.get("desc"), raw.get("desc")) or details.description_de
             details.race = raw.get("race")
             details.archetype = raw.get("archetype")
             details.level = raw.get("level")

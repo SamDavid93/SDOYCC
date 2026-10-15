@@ -17,8 +17,9 @@ import { TunerBadge } from '../components/CardSymbols'
 import { DuelEffectOptions } from './DuelEffectOptions'
 import { DuelCardInspector } from './DuelCardInspector'
 import './duel-reference-layout.css'
+import { germanEffectText } from './duelGermanText'
 
-export type EngineCard = { race?: number; rank?: number; link?: number; lscale?: number; rscale?: number; attribute?: number; type?: number; level?: number; code: number; name: string; description?: string; image_url?: string; fallback_image_url?: string; atk?: number; defense?: number }
+export type EngineCard = { race?: number; rank?: number; link?: number; lscale?: number; rscale?: number; attribute?: number; type?: number; level?: number; code: number; name: string; description?: string; description_language?: string; image_url?: string; fallback_image_url?: string; atk?: number; defense?: number }
 function imageFailed(event: SyntheticEvent<HTMLImageElement>, card: EngineCard) {
   const image = event.currentTarget
   image.dataset.ready = "false"
@@ -55,7 +56,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     if (event?.kind === 'chain_step' && [73, 74].includes(event.step || 0)) setPreviewEffect(null)
     const effectEvent = event?.kind === 'chain' ? event : event?.kind === 'chain_step' && event.step === 72
       ? latest.current?.board?.events.filter(item => item.kind === 'chain' && item.id <= event.id && item.number === event.number).at(-1) : null
-    if (effectEvent?.card) { setPreview(effectEvent.card); setPreviewEffect(effectEvent.effect || 'Effekt wird aufgelöst'); setPreviewOrigin(effectEvent.source || null) }
+    if (effectEvent?.card) { setPreview(effectEvent.card); setPreviewEffect(germanEffectText(effectEvent.effect, effectEvent.effect_language, effectEvent.card)); setPreviewOrigin(effectEvent.source || null) }
     const newDamage = event?.kind === 'lp' && event.id !== lastDamage.current
     if (newDamage) lastDamage.current = event.id
     setVisualLP(previous => {
@@ -76,7 +77,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   const attackStartedAfter = useRef(0)
   const [previewEffect, setPreviewEffect] = useState<string | null>(null)
   const showEffect = useCallback((card: EngineCard, effect?: string | null) => {
-    setPreview(card); setPreviewEffect(effect || 'Effekt aktiviert')
+    setPreview(card); setPreviewEffect(germanEffectText(effect, 'de', card))
     const event = latest.current?.board?.events.filter(item => item.kind === 'chain' && item.card?.code === card.code).at(-1)
     setPreviewOrigin(event?.source || null)
   }, [])
@@ -198,8 +199,8 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   const activeEffect = lastChainStep?.step === 72
     ? board?.events.filter(event => event.kind === 'chain' && event.number === lastChainStep.number && event.id > chainEnd && event.id < lastChainStep.id).at(-1) : undefined
   const effectCard = prompt?.effect_card || activeEffect?.card
-  const effectText = prompt?.effect_card ? prompt.effect_text || prompt.effect_card.description
-    : activeEffect?.effect || activeEffect?.card?.description
+  const effectText = prompt?.effect_card ? germanEffectText(prompt.effect_text, prompt.effect_language, prompt.effect_card)
+    : germanEffectText(activeEffect?.effect, activeEffect?.effect_language, activeEffect?.card)
   const effectHeading = prompt?.effect_stage === 'offer' ? 'Effekt prüfen' : prompt?.effect_stage === 'activation_cost' ? 'Aktivierung vorbereiten' : 'Effekt auflösen'
   const resolvingEffect = Boolean(prompt && prompt.title !== 'Aktion wählen' && !chainReaction && effectCard)
   const placingCard = prompt?.kind === 'zones' && prompt.placement && !disabled
@@ -261,7 +262,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     if (!effectChosen && requestEffects(index)) return
     setEffectOptions(null)
     const effectChoice = prompt.choices[index]
-    if ((effectChoice?.action === 'activate' || chainReaction) && effectChoice?.card) { setPreview({ ...effectChoice.card, code: effectChoice.card.code ?? 0 }); setPreviewEffect(effectChoice.effect_text || null); setPreviewOrigin(effectChoice.location || null) }
+    if ((effectChoice?.action === 'activate' || chainReaction) && effectChoice?.card) { setPreview({ ...effectChoice.card, code: effectChoice.card.code ?? 0 }); setPreviewEffect(germanEffectText(effectChoice.effect_text, effectChoice.effect_language, effectChoice.card)); setPreviewOrigin(effectChoice.location || null) }
     if (prompt.choices[index]?.action === 'attack') { setActiveLocation(null); setPendingAttack(index); return }
     const choice=prompt.choices[index]
     if(choice?.card && ['summon','special_summon','set_monster','set_spell'].includes(choice.action || '')) {
@@ -325,8 +326,8 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
           {effectOptions && prompt && effectOptions.prompt === prompt.id && <section className="duel-effect-options-popup" role="dialog" aria-label="Effekt auswählen"><h2>{prompt.choices[effectOptions.indices[0]]?.card?.name}: Effekt auswählen</h2><p>Lies die Beschreibungen und wähle den gewünschten Effekt.</p><DuelEffectOptions confirmLabel="Diesen Effekt aktivieren" options={effectOptions.indices.map(index => ({ index, choice: prompt.choices[index] }))} disabled={disabled} choose={index => chooseAction(index, undefined, true)} /><button disabled={disabled} onClick={() => setEffectOptions(null)}>Zurück · Noch keinen Effekt aktivieren</button></section>}
           {showDecision && !effectOptions && result && !terminal(result) && <div className={chainReaction ? 'duel-chain-overlay arena-card-choice-popup' : 'arena-decision-overlay' + (prompt?.kind === 'effect_options' ? ' arena-effect-option-prompt' : '') + (handSelection ? ' arena-hand-choice-popup' : '') + (!selectOnField && prompt?.kind !== 'zones' && (prompt?.select || prompt?.selection_progress) && prompt?.choices.some(choice => choice.card) ? ' arena-card-choice-popup' : '') + (selectOnField || prompt?.kind === 'zones' ? ' arena-field-selection-guide' : '')} role={handSelection ? 'dialog' : chainReaction ? 'region' : undefined} aria-label={handSelection ? 'Handkarten für einen Effekt auswählen' : chainReaction ? 'Kettenreaktion' : undefined}>
             {chainReaction && <div className="duel-chain-notice"><span aria-hidden="true">∞</span><strong>Deine Kettenreaktion</strong>{prompt?.choices.some(choice => choice.label === 'Nicht anketten' && !choice.card && !choice.action && !choice.location) && <small>Rechtsklick: Nicht anketten</small>}</div>}
-            {resolvingEffect && !placingCard && effectCard && <div className="duel-effect-context" role="status"><strong>{effectHeading}: {effectCard.name}</strong><p title={effectText || effectCard.description}>{effectText || effectCard.description || 'Wähle die Karten für diesen Effekt.'}</p></div>}
-            <DuelDecisions onRequestEffects={requestEffects} seat={board.seat} onActivate={(value, text) => { setPreview({ ...value, code: value.code ?? 0 }); setPreviewEffect(text || null) }} onPreview={(value, location) => { setPreview({ ...value, code: value.code ?? 0 }); setPreviewEffect(null); setPreviewOrigin(location || null) }} showOrigins={handSelection} prompt={prompt} disabled={disabled} send={send} zoneSelection={zoneSelection} onZoneSelection={setZoneSelection} hideChoices={selectOnField || prompt?.kind === 'zones'} hideConfirmation={selectOnField && zoneSelection.length > 0} hideSurrender attackTarget={attackFlow && Boolean(prompt?.select)} choiceIndices={prompt?.title === 'Aktion wählen' ? pileChoices.length ? pileChoices : freeChoices : undefined} />
+            {resolvingEffect && !placingCard && effectCard && <div className="duel-effect-context" role="status"><strong>{effectHeading}: {effectCard.name}</strong><p title={effectText}>{effectText || 'Wähle die Karten für diesen Effekt.'}</p></div>}
+            <DuelDecisions onRequestEffects={requestEffects} seat={board.seat} onActivate={(value, text, language) => { setPreview({ ...value, code: value.code ?? 0 }); setPreviewEffect(germanEffectText(text, language, value)) }} onPreview={(value, location) => { setPreview({ ...value, code: value.code ?? 0 }); setPreviewEffect(null); setPreviewOrigin(location || null) }} showOrigins={handSelection} prompt={prompt} disabled={disabled} send={send} zoneSelection={zoneSelection} onZoneSelection={setZoneSelection} hideChoices={selectOnField || prompt?.kind === 'zones'} hideConfirmation={selectOnField && zoneSelection.length > 0} hideSurrender attackTarget={attackFlow && Boolean(prompt?.select)} choiceIndices={prompt?.title === 'Aktion wählen' ? pileChoices.length ? pileChoices : freeChoices : undefined} />
           </div>}
         </DuelArena>
       </div>

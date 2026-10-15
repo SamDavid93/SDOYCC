@@ -14,6 +14,20 @@ CATALOG = {101: {'name': 'Testkarte', 'description': 'Privater Text', 'atk': 100
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_german_display_marks_sources_and_does_not_publish_english_originals(self):
+        self.p = Projection({101: {'name': 'Testkarte', 'description': 'Deutscher Kartentext',
+            'description_language': 'de', 'description_en': 'English source text',
+            'options': ['Ziehe 1 Karte.'], 'options_en': ['Draw 1 card.']}}, display_language='de')
+        self.consume_message(bytes([14, 0, 1]) + struct.pack('<Q', 101 << 4))
+        prompt = self.p.view(0)['prompt']
+        self.assertEqual(prompt['effect_language'], 'de')
+        choice = prompt['choices'][0]
+        self.assertEqual(choice['effect_language'], 'de')
+        self.assertEqual(choice['card']['description_language'], 'de')
+        self.assertNotIn('description_en', choice['card'])
+        self.assertNotIn('options_en', choice['card'])
+        self.assertNotIn('effect_original', choice)
+
     def test_mode_selected_inside_resolution_updates_only_that_chain_link(self):
         self.p.catalog = {101: {**CATALOG[101], 'options': ['Draw a card', 'Destroy a card']}}
         self.p.chain_effects = {1: {'effect_card': self.p.card(101), 'effect_text': 'Choose an effect', 'effect_stage': 'resolution'},

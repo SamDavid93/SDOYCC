@@ -33,9 +33,10 @@ class Reader:
 
 
 class Projection:
-    def __init__(self, catalog, strings=None):
+    def __init__(self, catalog, strings=None, display_language=None):
         self.catalog = catalog
         self.strings = strings or {}
+        self.display_language = display_language
         self.selection_hints = {}
         self.selection_hint_values = {}
         self.lp = [8000, 8000]
@@ -62,7 +63,7 @@ class Projection:
         self.attack_cards = []
 
     def card(self, code):
-        return {'code': code, **{key: value for key, value in self.catalog[code].items() if key not in ('options', 'options_en')}}
+        return {'code': code, **{key: value for key, value in self.catalog[code].items() if key not in ('options', 'options_en', 'description_en')}}
 
     def public_events(self, owner):
         return [{**{key: value for key, value in event.items() if not key.startswith('_')},
@@ -111,7 +112,7 @@ class Projection:
                     self.selection_hint_values[recipient] = value
                 elif kind in (1, 2, 4, 5, 6, 7, 8, 9, 10):
                     text = self.description(value) if kind in (1, 2, 4) else self.catalog.get(value, {}).get('name', str(value))
-                    self.event('hint', text=text, _audience=[recipient])
+                    self.event('hint', text=text, effect_language=self.display_language, _audience=[recipient])
             elif msg in (10, 11):
                 owner = r.read('B'); choices = []
                 groups = range(6) if msg == 11 else range(2)
@@ -130,7 +131,6 @@ class Projection:
                             location={'owner': controller, 'zone': zone, 'sequence': sequence})
                         if effect is not None:
                             choices[-1]['effect_text'] = self.effect_text(effect)
-                            choices[-1]['effect_original'] = self.effect_original(effect)
                 phase_choices = [(6, 'Kampfphase'), (7, 'Zug beenden')] if msg == 11 else [(2, 'Hauptphase 2'), (3, 'Zug beenden')]
                 for number, text in phase_choices:
                     if r.read('B'): choices.append(self.choice(text, struct.pack('<i', number)))
@@ -186,7 +186,6 @@ class Projection:
                     choices.append(self.choice(label, struct.pack('<i', index)))
                     if msg == 14:
                         choices[-1]['effect_text'] = self.effect_text(value)
-                        choices[-1]['effect_original'] = self.effect_original(value)
                         if value >> 4 in self.catalog: choices[-1]['code'] = value >> 4
                 self.new_prompt(owner, 'Zahl ansagen' if msg == 143 else 'Effektoption wählen', choices)
                 if msg == 14: self.prompt['kind'] = 'effect_options'
@@ -278,7 +277,6 @@ class Projection:
                     choices.append(self.choice('Effekt: ' + self.catalog[code]['name'], struct.pack('<i', index), code))
                     choices[-1]['location'] = location
                     choices[-1]['effect_text'] = self.effect_text(description)
-                    choices[-1]['effect_original'] = self.effect_original(description)
                 if not forced: choices.append(self.choice('Nicht anketten', struct.pack('<i', -1)))
                 self.new_prompt(owner, 'Auf die Kette reagieren', choices)
                 if not forced and count == 0:
@@ -343,7 +341,7 @@ class Projection:
                 options = self.catalog.get(code, {}).get('options', [])
                 effect = self.strings.get(description) or (options[description & 15] if description >> 4 == code and description & 15 < len(options) else None)
                 # An activated card is public to both seats; other hidden cards stay private.
-                self.event('chain', source=source, number=number, card=self.card(code), effect=effect)
+                self.event('chain', source=source, number=number, card=self.card(code), effect=effect, effect_language=self.display_language)
                 self.chain_cards[number] = code
                 self.chain_effects[number] = {'effect_card': self.card(code), 'effect_text': effect,
                     'effect_location': source, 'effect_stage': 'resolution'}
@@ -425,13 +423,6 @@ class Projection:
         options = self.catalog.get(code, {}).get('options', [])
         return options[number] if number < len(options) and options[number] else None
 
-    def effect_original(self, value):
-        entry = self.catalog.get(value >> 4, {})
-        options = entry.get('options_en', [])
-        localized = self.effect_text(value)
-        number = value & 15
-        return options[number] if number < len(options) and localized and localized.startswith('Effektoption ') else None
-
     def surrender(self, owner):
         if type(owner) is not int or owner not in (0, 1) or self.ended:
             raise ValueError('Keine gültige Aufgabe möglich')
@@ -444,7 +435,7 @@ class Projection:
 
     def new_prompt(self, owner, title, choices, allow_empty=False):
         if owner not in (0, 1) or (not choices and not allow_empty): raise ValueError('Invalid engine prompt')
-        self.prompt = {'owner': owner, 'title': title, 'choices': choices}
+        self.prompt = {'owner': owner, 'title': title, 'choices': choices, 'effect_language': self.display_language}
         if title == 'Aktion wählen': self.pending_effect = None
         context = self.pending_effect or (self.chain_effects.get(self.resolving_chain) if self.resolving_chain is not None else None)
         if context and title not in ('Aktion wählen', 'Auf die Kette reagieren'):
@@ -516,7 +507,8 @@ class Projection:
 
     def public_choice(self, choice):
         return {'label': choice['label'], 'card': self.card(choice['code']) if choice['code'] else None,
-                **{key: choice[key] for key in ('action', 'location', 'effect_text', 'effect_original') if key in choice}}
+                'effect_language': self.display_language,
+                **{key: choice[key] for key in ('action', 'location', 'effect_text') if key in choice}}
 
     def view(self, owner):
         if self.query_boards is not None:
