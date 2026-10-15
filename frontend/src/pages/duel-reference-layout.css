@@ -29,7 +29,12 @@
 .duel-reference-inspector .duel-inspector-effect { margin: 8px 10px 0; padding: 8px; max-height: 24%; overflow: auto; flex-shrink: 0; font-size: 12px; }
 .duel-worker-table .duel-reference-inspector .duel-card-description { flex: 1; min-height: 65px; overflow: auto; padding: 4px 12px 12px; margin: 5px 0 0; font-size: clamp(13px, 1.08vw, 19px); line-height: 1.55; scrollbar-width: thin; }
 .duel-reference-inspector > :not(.duel-card-description) { flex-shrink: 0; }
-.duel-worker-table .duel-arena .arena-card-stats > strong { display: inline-flex; align-items: baseline; justify-content: center; white-space: nowrap; font-size: min(clamp(14px, 1.55vw, 26px), calc(var(--field-zone-size) * .19)); font-family: Georgia, serif; font-style: italic; line-height: 1; background: transparent; border: 0; box-shadow: none; padding: 0 3px; color: #fff; text-shadow: -1px -1px 2px #000, 1px 1px 2px #000, 0 2px 4px #000, 0 0 6px #000; }
+.duel-worker-table .duel-arena .arena-slot { container-type: inline-size; }
+.duel-worker-table .duel-arena .arena-slot:has(> .arena-card-actions) { z-index: 70; }
+.duel-worker-table .duel-arena .arena-own .arena-hand:has(.placement-open) { position: relative; z-index: 75; }
+.duel-worker-table .duel-arena .arena-card-stats > strong { display: inline-flex; box-sizing: border-box; max-width: 100%; align-items: baseline; justify-content: center; white-space: nowrap; font-size: min(26px, calc(94cqw / var(--stat-units, 7))); font-family: 'DM Mono', monospace; font-style: normal; letter-spacing: 0; line-height: 1.1; background: #06101dcc; border: 0; border-radius: 3px; box-shadow: none; padding: 1px 2px; color: #fff; text-shadow: 0 1px 2px #000; }
+.arena-card-stats .arena-atk { color: #ffe4a0; }
+.arena-card-stats .arena-def { color: #c0e8ff; }
 .arena-card-stats .arena-monster-rating { display: block; color: #ffe6a0; font: 700 12px/1.1 'DM Mono', monospace; background: transparent; text-shadow: 0 1px 3px #000; }
 .duel-arena .arena-card-stats { bottom: -9px; }
 .duel-arena .arena-own .arena-hand-card { position: relative; z-index: calc(20 + var(--hand-index)); transform: translateY(var(--fan-lift)) rotate(var(--fan-angle)); transform-origin: 50% 150%; transition: transform .2s ease; }
@@ -83,10 +88,38 @@
   .duel-inspector-summary > img { height: 145px; }
   .duel-inspector-facts { flex-flow: row wrap; gap: 8px 14px; }
   .duel-worker-table .duel-reference-inspector .duel-card-description { min-height: 60px; font-size: 13px; }
-  .duel-worker-table .duel-arena .arena-card-stats > strong { font-size: 11px; }
+  .duel-worker-table .duel-arena .arena-card-stats > strong { font-size: min(11px, calc(94cqw / var(--stat-units, 7))); }
   .arena-card-stats .arena-monster-rating { font-size: 7px; }
   .duel-arena .arena-own .arena-hand-card:hover, .duel-arena .arena-own .arena-hand-card:focus-within { transform: translateY(-10px); }
   .duel-arena .arena-own .arena-hand-card { transform: none; }
   .duel-arena .arena-own .arena-hand-card > .duel-playing-card:hover:not(:disabled) { transform: none; }
 }
 @media (prefers-reduced-motion: reduce) { .duel-arena .arena-own .arena-hand-card { transition: none; } }
+
+/* Shared action language: icon + label, clear selection and keyboard focus. */
+.duel-worker-table .duel-action-main { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
+.duel-worker-table .duel-action-main svg { flex: 0 0 18px; }
+.duel-worker-table .duel-action-detail { margin-top: 5px; line-height: 1.35; opacity: .85; }
+.duel-worker-table :is(.arena-card-actions, .arena-hand-actions, .arena-phase-options) > button { border-radius: 9px; padding: 10px 14px; min-height: 44px; box-shadow: inset 0 1px #ffffff18, 0 3px 8px #0005; }
+.duel-worker-table .duel-choice-list > button { position: relative; border-width: 2px; border-radius: 9px; padding: 9px; gap: 8px; transition: border-color .15s, background-color .15s; }
+.duel-worker-table .duel-choice-list .duel-choice-caption { display: block; width: 100%; min-width: 0; }
+.duel-worker-table .duel-choice-list .duel-action-main { white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
+.duel-worker-table .duel-choice-list > button[data-duel-action="activate"] { border-color: #64dfb0; background: linear-gradient(150deg, #154e43ed, #0a202be8); }
+.duel-worker-table .duel-choice-list > button[data-duel-action="summon"] { border-color: #edc46e; background: linear-gradient(150deg, #514124ed, #172331ed); }
+.duel-worker-table .duel-choice-list > button[data-duel-action="special_summon"] { border-color: #c4a0ff; background: linear-gradient(150deg, #423460ed, #152339ed); }
+.duel-worker-table .duel-choice-list > button:is([data-duel-action="set_spell"], [data-duel-action="set_monster"]) { border-style: dashed; border-color: #8db5de; background: #182c43ed; }
+.duel-worker-table .duel-choice-list > button[data-duel-action="confirm"] { border-color: #64dfb0; background: #164139df; }
+.duel-worker-table .duel-choice-list > button[data-duel-action="cancel"] { border-color: #c0c9d4; background: #27313edf; }
+.duel-worker-table .duel-choice-list > button[aria-pressed="true"] { border-color: #ffe196; box-shadow: 0 0 0 2px #e3b95470, inset 0 0 22px #efbb4329; }
+.duel-worker-table .duel-choice-list > button[aria-pressed="true"]::after { content: '✓'; position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; background: #ffe196; color: #192233; font: bold 17px/1 sans-serif; }
+.duel-worker-table button:focus-visible { outline: 3px solid #bce9ff; outline-offset: 3px; }
+.duel-worker-table button:disabled { cursor: not-allowed; }
+.duel-worker-table .duel-chain-footer { border-top: 1px solid #8caac43d; padding-top: 10px; margin-top: 10px; }
+.duel-worker-table .duel-decision-control, .duel-worker-table .duel-chain-pass { min-height: 44px; padding: 10px 16px; border: 1px solid #91abc3; border-radius: 8px; margin: 6px 6px 0 0; background: #1b2b3ce8; }
+.duel-worker-table .duel-decision-control[data-duel-action="confirm"] { background: linear-gradient(140deg, #246e56, #153e38); border: 2px solid #83e9bd; color: #e2fff0; font-weight: 700; }
+.duel-worker-table .duel-decision-control[data-duel-action="cancel"] { border-style: dashed; background: #2b2633dc; color: #f3d9df; }
+.duel-worker-table .duel-chain-pass { border-style: dashed; background: #263444df; color: #d5dfeb; }
+.duel-worker-table .duel-effect-option button > span { display: block; border-top: 1px solid #79d8b75c; padding-top: 10px; margin-top: 12px; color: #a3ffdc; font-weight: 700; }
+@media (max-width: 760px) {
+  .duel-worker-table .duel-arena .duel-chain-overlay.arena-card-choice-popup { position: fixed; left: 50%; top: auto; bottom: 12px; width: calc(100vw - 26px); max-height: calc(100dvh - 24px); overflow-y: auto; }
+}

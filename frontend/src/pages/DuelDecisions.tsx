@@ -1,4 +1,4 @@
-import { setActionsLast } from './DuelActionLabel'
+import { DuelActionLabel, duelChoiceAction, setActionsLast } from './DuelActionLabel'
 import { useEffect, useRef, useState } from 'react'
 import { API_BASE_URL } from '../api/transport'
 import { includeChoice, selectionComplete } from './duelSelection'
@@ -71,7 +71,7 @@ export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZo
     {!hideChoices && prompt?.kind === 'effect_options' && <DuelEffectOptions options={cardChoices} disabled={disabled} choose={index => { const choice = prompt.choices[index]; if (choice.card) { onPreview?.(choice.card, choice.location); onActivate?.(choice.card, choice.effect_text, choice.effect_language) } send('answer', { prompt: prompt.id, selected: [index] }) }} />}
     {!hideChoices && prompt?.kind !== 'effect_options' && <div ref={list} className="duel-choice-list">{prompt && cardChoices.slice(0, limit).map(({ choice, index }) => prompt.counter ?
       <label key={index}>{choice.label} · höchstens {prompt.counter_limits?.[index]}<input type="number" min={0} max={prompt.counter_limits?.[index]} value={selection[index] || 0} disabled={disabled} onChange={event => setSelection(old => old.map((value, i) => i === index ? Math.max(0, Math.min(prompt.counter_limits?.[index] || 0, Math.floor(Number(event.target.value)))) : value))} /></label> :
-      <button key={index} title={choice.label} data-duel-action={choice.action} data-choice-zone={choice.location?.zone} data-choice-owner={choice.location?.owner} aria-description={choice.location ? `${seat !== undefined && choice.location.owner !== seat ? 'Gegner: ' : ''}${origin(choice.location.zone)}` : undefined} className={!disabled && (choice.action === 'activate' || (chain && choice.card) || (prompt.effect_location && choice.label === 'Ja')) ? 'effect-available' : undefined} disabled={disabled} aria-pressed={prompt.select ? selection.includes(index) : undefined} onClick={event => {
+      <button key={index} aria-label={`${prompt.ordered && selection.includes(index) ? `${selection.indexOf(index) + 1}. ` : ""}${choice.label}`} title={choice.label} data-duel-action={duelChoiceAction(choice.action, choice.label)} data-choice-zone={choice.location?.zone} data-choice-owner={choice.location?.owner} aria-description={choice.location ? `${seat !== undefined && choice.location.owner !== seat ? 'Gegner: ' : ''}${origin(choice.location.zone)}` : undefined} className={!disabled && (choice.action === 'activate' || (chain && choice.card) || (prompt.effect_location && choice.label === 'Ja')) ? 'effect-available' : undefined} disabled={disabled} aria-pressed={prompt.select ? selection.includes(index) : undefined} onClick={event => {
         if (disabled || event.detail > 1) return
         if (!prompt.select && !prompt.selection_progress && onRequestEffects?.(index)) return
         if (choice.card) onPreview?.(choice.card, choice.location)
@@ -99,14 +99,14 @@ export function DuelDecisions({ prompt, disabled, send, zoneSelection = [], onZo
         if (next.includes(index) && selectionComplete(next, prompt.minimum || 0, prompt.maximum || 0)) send('answer', { prompt: prompt.id, selected: next })
       }}>
         {choice.card?.image_url && <img className="duel-chain-card" src={API_BASE_URL.replace(/\/api\/?$/, '') + choice.card.image_url} alt="" onError={event => { event.currentTarget.hidden = true }} />}
-        <span>{prompt.ordered && selection.includes(index) && `${selection.indexOf(index) + 1}. `}{choice.label}</span>
+        <span className="duel-choice-caption">{prompt.ordered && selection.includes(index) && `${selection.indexOf(index) + 1}. `}<DuelActionLabel action={choice.action} label={choice.label} /></span>
         {choice.card && choice.location && <div className="duel-choice-origin" aria-hidden="true"><CardOrigin zone={choice.location.zone} opponent={seat !== undefined && choice.location.owner !== seat} /></div>}
       </button>)}</div>}
     {cardChoices.length > limit && <button onClick={() => setLimit(old => old + 60)}>Weitere Optionen anzeigen ({cardChoices.length - limit})</button>}
-    {pass && prompt && <div className="duel-chain-footer"><span>Oder mit Rechtsklick passen</span><button className="duel-chain-pass" disabled={disabled} onClick={() => send('answer', { prompt: prompt.id, selected: [pass.index] })}>Nicht anketten</button></div>}
-    {!hideConfirmation && (prompt?.select || prompt?.counter) && <button disabled={disabled || !validCount} onClick={() => send('answer', { prompt: prompt.id, selected: selection })}>{attackTarget ? 'Angriff bestätigen' : 'Auswahl bestätigen'}</button>}
-    {!hideConfirmation && prompt?.select && selection.length > 0 && <button disabled={disabled} onClick={() => setSelection([])}>Auswahl zurücksetzen</button>}
-    {prompt?.cancel && <button disabled={disabled} onClick={() => send('answer', { prompt: prompt.id, selected: [], cancel: true })}>{prompt.selection_progress?.can_finish ? 'Auswahl bestätigen' : 'Auswahl abbrechen'}</button>}
+    {pass && prompt && <div className="duel-chain-footer"><span>Oder mit Rechtsklick passen</span><button className="duel-chain-pass" data-duel-action="pass" disabled={disabled} onClick={() => send('answer', { prompt: prompt.id, selected: [pass.index] })}><DuelActionLabel action="pass" label="Nicht anketten" /></button></div>}
+    {!hideConfirmation && (prompt?.select || prompt?.counter) && <button className="duel-decision-control" data-duel-action="confirm" disabled={disabled || !validCount} onClick={() => send('answer', { prompt: prompt.id, selected: selection })}><DuelActionLabel action="confirm" label={attackTarget ? 'Angriff bestätigen' : 'Auswahl bestätigen'} /></button>}
+    {!hideConfirmation && prompt?.select && selection.length > 0 && <button className="duel-decision-control" data-duel-action="reset" disabled={disabled} onClick={() => setSelection([])}><DuelActionLabel action="reset" label="Auswahl zurücksetzen" /></button>}
+    {prompt?.cancel && <button className="duel-decision-control" data-duel-action={prompt.selection_progress?.can_finish ? "confirm" : "cancel"} disabled={disabled} onClick={() => send('answer', { prompt: prompt.id, selected: [], cancel: true })}><DuelActionLabel action={prompt.selection_progress?.can_finish ? 'confirm' : 'cancel'} label={prompt.selection_progress?.can_finish ? 'Auswahl bestätigen' : 'Auswahl abbrechen'} /></button>}
     {!hideSurrender && <button className="duel-surrender" disabled={disabled} onClick={() => { if (window.confirm('Duell wirklich aufgeben? Dein Gegner gewinnt und die Karten werden wieder freigegeben.')) send('surrender', {}) }}>Duell aufgeben</button>}
   </section>
 }

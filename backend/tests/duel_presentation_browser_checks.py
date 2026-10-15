@@ -30,7 +30,7 @@ def check_effect_context(page):
     expect(page.locator('.duel-card-rating')).to_be_visible()
     slot=page.locator('.arena-own .arena-monster-row .arena-slot').first.bounding_box()
     assert abs(slot['width']-slot['height'])<slot['height']*.12,slot
-    assert page.locator('.arena-card-stats > strong').first.evaluate('e=>parseFloat(getComputedStyle(e).fontSize)')>=24
+    assert page.locator('.arena-card-stats > strong').first.evaluate('e=>parseFloat(getComputedStyle(e).fontSize)')>=16
     hand=page.locator('.arena-own .arena-hand-card')
     assert hand.count()>=3
     assert hand.nth(1).bounding_box()['x']-hand.first.bounding_box()['x']<hand.first.locator('.duel-playing-card').bounding_box()['width']
@@ -124,6 +124,7 @@ window.__currentDecision=()=>({prompt:frame.board.prompt?.id,revision:frame.boar
 window.__clockTick=()=>window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})
 window.__nextGame=()=>{frame.seat=0;frame.match={version:1,game:2,phase:'playing',score:[1,0],ready:[false,false],chooser:null,next_starter:null};frame.board.revision=1;frame.board.seat=0;frame.board.turn=0;frame.board.events=[{id:1,kind:'phase',phase:4,player:0,number:1}];frame.board.boards.forEach(s=>s.lp=8000);frame.clock={remaining:[360,360],active:null,side_remaining:null,readiness_required:true,waiting_for:0,ready_timeout:30};frame.board.prompt={id:1,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__finish=()=>{const id=Math.max(0,...frame.board.events.map(e=>e.id));frame.state='finished';frame.winner_seat=1;frame.board.ended=true;frame.board.prompt=null;frame.board.boards[0].lp=0;frame.board.events.push({id:id+1,kind:'attack',attacker:{owner:1,zone:4,sequence:2},direct:true},{id:id+2,kind:'lp',player:0,value:0,delta:-8000},{id:id+3,kind:'win',winner:1});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__crowdedStats=()=>{window.__scene();frame.board.boards.forEach((side,owner)=>{side.field=Array.from({length:5},(_,sequence)=>({zone:4,sequence,position:1,card:{...card,atk:[4500,4000,100000,2500,0][sequence],defense:[4000,0,100000,3000,700][sequence],type:sequence===4?0x4000001:card.type}}))});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__actions=()=>{window.__scene();frame.board.prompt={id:1500+frame.board.revision,title:'Aktion w\u00e4hlen',choices:['activate','set_spell','summon','special_summon'].map(action=>({label:action,action,card,location:{owner:0,zone:2,sequence:0}}))};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__badImage=()=>{window.__scene();frame.board.boards[1].field[1].card={...card,name:'Visible opponent monster',image_url:'/missing-card-image.png'};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__boss=(overrides={})=>window.__scene({kind:'summon',method:'synchro',player:1,location:{owner:1,zone:4,sequence:2,position:1},card:{...card,name:'Blue-Eyes White Dragon',image_url:'/scene-card.jpg',level:8,type:0x2001,attribute:16,atk:3000,defense:2500},...overrides})
@@ -154,6 +155,32 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                         assert not errors, errors
                         browser.close()
                         print(json.dumps({'effect_context':'passed','metadata_hand_and_field':'passed'}))
+                        return
+                    if os.environ.get('SDOYCC_DUEL_STATS_ONLY') == '1':
+                        expect(page.locator('.duel-arena')).to_be_visible()
+                        page.evaluate('window.__crowdedStats()')
+                        expect(page.locator('.arena-card-stats > strong')).to_have_count(10)
+                        metrics=[]
+                        for width,height,narrow in ((1920,1080,False),(1440,1000,False),(1440,1000,True),(1280,720,False),(390,844,False)):
+                            page.set_viewport_size({'width':width,'height':height})
+                            page.evaluate('(narrow)=>{document.querySelector(".duel-worker-table").style.maxWidth=narrow?"950px":"100%"}',narrow)
+                            page.wait_for_timeout(100)
+                            values=page.locator('.arena-card-stats > strong').evaluate_all("els=>els.map(e=>{const r=e.getBoundingClientRect(),s=e.closest('.arena-slot').getBoundingClientRect();return {text:e.textContent,left:r.left,right:r.right,slotLeft:s.left,slotRight:s.right,scroll:e.scrollWidth,width:e.clientWidth}})")
+                            assert all(v['left']>=v['slotLeft']-1 and v['right']<=v['slotRight']+1 and v['scroll']<=v['width']+1 for v in values),values
+                            assert 'DEF' not in page.locator('.arena-own .arena-monster-row .arena-slot').last.locator('.arena-card-stats > strong').get_attribute('aria-label')
+                            metrics.append({'width':width,'narrow':narrow,'values':values})
+                            page.screenshot(path=str(ROOT/f'artifacts/duel-stats-{width}-{narrow}.png'),full_page=True)
+                        page.set_viewport_size({'width':1440,'height':1000})
+                        page.evaluate('window.__actions()')
+                        page.locator('.arena-own .arena-hand-card').first.click()
+                        expect(page.locator('.arena-hand-actions .duel-action-main svg')).to_have_count(4)
+                        page.wait_for_timeout(250)
+                        assert page.locator('.arena-hand-actions button').evaluate_all("els=>els.every(e=>{const r=e.getBoundingClientRect();return e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))})"),'Hand action is covered by a field card'
+                        page.screenshot(path=str(ROOT/'artifacts/duel-actions-fit.png'),full_page=True)
+                        assert not errors,errors
+                        (ROOT/'artifacts/duel-stats-fit.json').write_text(json.dumps(metrics,indent=2),encoding='utf-8')
+                        browser.close()
+                        print('Crowded monster statistics and action icons passed')
                         return
                     if os.environ.get('SDOYCC_DUEL_LAYOUT_ONLY') == '1':
                         expect(page.locator('.duel-arena')).to_be_visible()
@@ -188,7 +215,7 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     page.set_viewport_size({'width':390,'height':844})
                     page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
                     box = page.locator('.duel-chain-overlay').bounding_box()
-                    assert box and box['x'] >= 0 and box['y'] >= 0 and box['x']+box['width'] <= 390 and box['y']+box['height'] <= 844
+                    assert box and box['x'] >= 0 and box['y'] >= 0 and box['x']+box['width'] <= 390 and box['y']+box['height'] <= 844, box
                     page.screenshot(path=str(ROOT / 'artifacts/duel-chain-mobile.png'))
                     page.locator('.duel-chain-overlay').click(button='right')
                     expect(page.locator('.duel-chain-overlay')).to_have_count(0)
