@@ -56,10 +56,13 @@ class Projection:
         self.query_boards = None
         self.disabled = 0
         self.chain_cards = {}
+        self.chain_effects = {}
+        self.resolving_chain = None
+        self.pending_effect = None
         self.attack_cards = []
 
     def card(self, code):
-        return {'code': code, **{key: value for key, value in self.catalog[code].items() if key != 'options'}}
+        return {'code': code, **{key: value for key, value in self.catalog[code].items() if key not in ('options', 'options_en')}}
 
     def public_events(self, owner):
         return [{**{key: value for key, value in event.items() if not key.startswith('_')},
@@ -173,6 +176,7 @@ class Projection:
                 self.prompt['effect_card'] = self.card(code)
                 self.prompt['effect_location'] = location
                 self.prompt['effect_text'] = self.effect_text(description)
+                self.prompt['effect_stage'] = 'offer'
             elif msg in (14, 143):
                 owner, count = r.read('BB')
                 choices = []
@@ -341,11 +345,20 @@ class Projection:
                 # An activated card is public to both seats; other hidden cards stay private.
                 self.event('chain', source=source, number=number, card=self.card(code), effect=effect)
                 self.chain_cards[number] = code
+                self.chain_effects[number] = {'effect_card': self.card(code), 'effect_text': effect,
+                    'effect_location': source, 'effect_stage': 'resolution'}
+                self.pending_effect = None
             elif msg in (71, 72, 73, 74, 75, 76):
                 number = r.read('B') if msg != 74 else 0
                 codes = [self.chain_cards[number]] if number in self.chain_cards else list(self.chain_cards.values()) if msg == 74 else []
                 self.event('chain_step', step=msg, number=number, _affected=[('Effektkarte', code, {0, 1}) for code in codes])
-                if msg == 74: self.chain_cards.clear()
+                if msg == 72: self.resolving_chain = number
+                elif msg in (73, 74):
+                    self.resolving_chain = None
+                    self.pending_effect = None
+                if msg == 74:
+                    self.chain_cards.clear()
+                    self.chain_effects.clear()
             elif msg == 110:
                 attacker, defender = r.loc(), r.loc()
                 affected = self.named_location('Angreifer', attacker)
@@ -432,6 +445,10 @@ class Projection:
     def new_prompt(self, owner, title, choices, allow_empty=False):
         if owner not in (0, 1) or (not choices and not allow_empty): raise ValueError('Invalid engine prompt')
         self.prompt = {'owner': owner, 'title': title, 'choices': choices}
+        if title == 'Aktion wählen': self.pending_effect = None
+        context = self.pending_effect or (self.chain_effects.get(self.resolving_chain) if self.resolving_chain is not None else None)
+        if context and title not in ('Aktion wählen', 'Auf die Kette reagieren'):
+            self.prompt.update(context)
         if owner in self.selection_hints: self.prompt['hint'] = self.selection_hints.pop(owner)
         self.selection_hint_values.pop(owner, None)
 
@@ -479,6 +496,19 @@ class Projection:
                 if not valid: raise ValueError('Ungültige Materialsumme')
             return struct.pack('<' + 'I' * (2 + len(selected)), 0, len(selected), *selected)
         if len(selected) != 1: raise ValueError('Genau eine Aktion wählen')
+        chosen = p['choices'][selected[0]]
+        if p.get('effect_stage') == 'offer':
+            self.pending_effect = {**{key: p.get(key) for key in ('effect_card', 'effect_text', 'effect_location')},
+                'effect_stage': 'activation_cost'} if chosen['label'] == 'Ja' else None
+        elif chosen.get('action') == 'activate' or p['title'] == 'Auf die Kette reagieren' and chosen.get('code'):
+            self.pending_effect = {'effect_card': self.card(chosen['code']), 'effect_text': chosen.get('effect_text'),
+                'effect_location': chosen.get('location'), 'effect_stage': 'activation_cost'}
+        elif p.get('kind') == 'effect_options' and self.pending_effect:
+            self.pending_effect = {**self.pending_effect, 'effect_text': chosen.get('effect_text')}
+        elif p.get('kind') == 'effect_options' and self.resolving_chain in self.chain_effects:
+            context = self.chain_effects[self.resolving_chain]
+            if chosen.get('effect_text') and chosen.get('code') == context['effect_card']['code']:
+                self.chain_effects[self.resolving_chain] = {**context, 'effect_text': chosen['effect_text']}
         if p['title'] == 'Aktion wählen' and p['choices'][selected[0]]['label'] == 'Zug beenden' and not p.get('_announced_end'):
             self.event('phase_request', player=owner, phase=512, number=self.turn_number)
             p['_announced_end'] = True

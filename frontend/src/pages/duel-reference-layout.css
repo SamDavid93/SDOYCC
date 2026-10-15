@@ -1,0 +1,92 @@
+/* Card presentation follows the reference; the existing arena surface remains. */
+.duel-worker-table { min-width: 0; max-width: 100%; overflow-x: clip; }
+.duel-inspector-heading h2, .duel-reference-inspector .duel-card-description { min-width: 0; overflow-wrap: anywhere; }
+.duel-worker-table .duel-reference-inspector { --card-frame: #b28b43; padding: 0; border-radius: 3px; overflow: hidden; display: flex; flex-direction: column; min-height: 0; text-align: left; }
+.duel-reference-inspector.is-spell { --card-frame: #318b83; }
+.duel-reference-inspector.is-trap { --card-frame: #9c507d; }
+.duel-inspector-heading { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 2px solid var(--card-frame); background: linear-gradient(100deg, color-mix(in srgb, var(--card-frame) 65%, #101820), #101820); }
+.duel-reference-inspector .duel-inspector-heading h2 { color: #fff8e6; font-size: clamp(14px, 1.25vw, 23px); line-height: 1.25; flex: 1; margin: 0; }
+.duel-inspector-heading button { border: 0; background: transparent; color: #e8e6df; font-size: 23px; cursor: pointer; padding: 0 4px; }
+.duel-inspector-summary { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; gap: 10px; padding: 12px; }
+.duel-inspector-summary > img { width: 100%; max-height: 31dvh; object-fit: contain; filter: drop-shadow(0 5px 6px #0008); }
+.duel-inspector-facts { display: flex; flex-direction: column; gap: 12px; padding-top: 4px; min-width: 0; }
+.duel-card-attribute { display: flex; align-items: center; gap: 4px; font-size: clamp(8px, .65vw, 12px); color: #f0e1bd; }
+.duel-card-attribute svg { width: 23px; height: 23px; flex-shrink: 0; padding: 3px; border: 1px solid #a4b4bf; border-radius: 50%; background: #0c1620; }
+.duel-card-rating, .duel-viewer-stat { display: flex; align-items: center; gap: 7px; color: #fff; flex-wrap: wrap; }
+.duel-card-rating > svg { fill: #ffdc53; color: #f99c35; width: 25px; height: 25px; filter: drop-shadow(0 1px 3px #000); }
+.duel-card-rating.is-rank > svg { fill: #151a24; color: #e7d57d; }
+.duel-card-rating.is-link > svg { fill: #224982; color: #a1e8ff; }
+.duel-card-rating b, .duel-viewer-stat b { font: 700 clamp(20px, 1.85vw, 34px)/1 'DM Mono', monospace; letter-spacing: -1px; }
+.duel-card-rating small, .duel-viewer-stat small { color: #b5c5d1; font-size: 8px; }
+.duel-viewer-stat > svg { width: 23px; height: 23px; flex-shrink: 0; color: #cbd9e4; }
+.duel-card-kind { border-block: 1px solid var(--card-frame); background: linear-gradient(90deg, color-mix(in srgb, var(--card-frame) 60%, #13202c), #15202a); padding: 7px 12px; color: #fff2d3; font-size: clamp(11px, .95vw, 17px); }
+.duel-viewer-badges { display: flex; flex-wrap: wrap; gap: 5px; padding: 5px 10px 0; }
+.duel-viewer-badges:empty { display: none; }
+.duel-viewer-badges .card-tuner-symbol { font-size: 10px; padding: 3px 5px; margin: 0; }
+.duel-pendulum-scales { color: #b2dffc; font-size: 11px; }
+.duel-reference-inspector > .card-origin-symbol { margin: 6px 10px 0; align-self: flex-start; font-size: 10px; }
+.duel-reference-inspector > small { margin: 8px 12px 0; flex-shrink: 0; }
+.duel-reference-inspector .duel-inspector-effect { margin: 8px 10px 0; padding: 8px; max-height: 24%; overflow: auto; flex-shrink: 0; font-size: 12px; }
+.duel-worker-table .duel-reference-inspector .duel-card-description { flex: 1; min-height: 65px; overflow: auto; padding: 4px 12px 12px; margin: 5px 0 0; font-size: clamp(13px, 1.08vw, 19px); line-height: 1.55; scrollbar-width: thin; }
+.duel-reference-inspector > :not(.duel-card-description) { flex-shrink: 0; }
+.duel-worker-table .duel-arena .arena-card-stats > strong { display: inline-flex; align-items: baseline; justify-content: center; white-space: nowrap; font-size: min(clamp(14px, 1.55vw, 26px), calc(var(--field-zone-size) * .19)); font-family: Georgia, serif; font-style: italic; line-height: 1; background: transparent; border: 0; box-shadow: none; padding: 0 3px; color: #fff; text-shadow: -1px -1px 2px #000, 1px 1px 2px #000, 0 2px 4px #000, 0 0 6px #000; }
+.arena-card-stats .arena-monster-rating { display: block; color: #ffe6a0; font: 700 12px/1.1 'DM Mono', monospace; background: transparent; text-shadow: 0 1px 3px #000; }
+.duel-arena .arena-card-stats { bottom: -9px; }
+.duel-arena .arena-own .arena-hand-card { position: relative; z-index: calc(20 + var(--hand-index)); transform: translateY(var(--fan-lift)) rotate(var(--fan-angle)); transform-origin: 50% 150%; transition: transform .2s ease; }
+.duel-arena .arena-own .arena-hand-card:hover, .duel-arena .arena-own .arena-hand-card:focus-within, .duel-arena .arena-own .arena-hand-card.placement-open { z-index: 60; transform: translateY(-22px) rotate(0deg); }
+.duel-arena .arena-own .arena-hand-card > .duel-playing-card:hover:not(:disabled) { transform: scale(1.12); }
+.duel-arena .arena-own .arena-hand { isolation: isolate; overflow: visible; }
+.arena-pile-options small { max-height: 5.5em; overflow: auto; }
+.arena-pile > summary .arena-pile-top { position: absolute; height: 86%; width: auto; max-width: 80%; object-fit: contain; left: 50%; top: 50%; translate: -50% -50%; pointer-events: none; box-shadow: 2px 2px #15222d, 3px 3px #bfa263, 5px 5px #111b25; }
+.arena-pile > summary .arena-pile-name, .arena-pile > summary > strong { position: relative; z-index: 1; text-shadow: 0 1px 3px #000, 0 0 5px #000; }
+.arena-pile > summary .arena-pile-name { background: #081725a6; padding-inline: 3px; }
+.arena-pile:has(.arena-pile-top)::before { visibility: hidden; }
+@media (min-width: 761px) {
+  .duel-worker-table .duel-arena-shell { --viewer-width: clamp(230px, 21vw, 345px); grid-template-columns: var(--viewer-width) minmax(0, 1fr); gap: 12px; }
+  .duel-worker-table .duel-reference-inspector { height: calc(100dvh - var(--site-footer-height, 0px) - 44px); max-height: none; position: relative; top: 0; }
+  .duel-worker-table .duel-arena { --arena-height: calc(100dvh - var(--site-footer-height, 0px) - 44px); --hand-height: clamp(105px, 17dvh, 180px); --own-hand-size: calc(var(--hand-height) * .69); --field-zone-size: min(calc((var(--arena-height) - var(--hand-height) - 90px) / 5.3), calc((100vw - clamp(230px, 21vw, 345px) - 130px) / 7.6)); height: var(--arena-height); min-height: 0; padding: 26px 12px 12px; gap: 10px; grid-template-rows: auto var(--field-zone-size) auto; align-content: center; }
+  .duel-worker-table .duel-arena .arena-player { position: static; gap: 10px; }
+  .duel-worker-table .arena-player > header.duel-player-hud { position: absolute; z-index: 12; width: clamp(190px, 19vw, 290px); min-height: 50px; padding: 7px; }
+  .duel-worker-table .arena-opponent > header.duel-player-hud { top: 8px; right: 10px; }
+  .duel-worker-table .arena-settings { left: 12px; right: auto; top: 8px; }
+  .duel-worker-table .arena-settings-content { left: 0; right: auto; }
+  .duel-worker-table .arena-hud { left: 54px; right: 310px; }
+  .duel-worker-table .arena-own > header.duel-player-hud { bottom: 8px; left: 10px; }
+  .duel-worker-table .duel-life-panel { width: auto; }
+  .duel-worker-table .arena-player .duel-life { font-size: clamp(25px, 2.5vw, 44px); }
+  .duel-worker-table .duel-player-identity > span { font-size: 8px; }
+  .duel-worker-table .duel-player-emblem { display: none; }
+  .duel-worker-table .arena-layout, .duel-worker-table .arena-extra-row { width: min(100%, calc(var(--field-zone-size) * 7 + 60px)); justify-self: center; align-self: center; margin-inline: auto; gap: 10px; }
+  .duel-worker-table .arena-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 5fr) minmax(0, 1fr); }
+  .duel-worker-table .arena-monster-row, .duel-worker-table .arena-spell-row { gap: 10px; }
+  .duel-worker-table .arena-main-zones { gap: 14px; }
+  .duel-worker-table .arena-slot, .duel-worker-table .arena-extra-row > .arena-slot { aspect-ratio: 1; height: var(--field-zone-size); max-width: none; }
+  .duel-worker-table .arena-slot > .duel-playing-card { height: 92%; max-width: 94%; margin-top: 0; }
+  .duel-worker-table .arena-slot.defense-position > .duel-playing-card { height: 68%; }
+  .duel-worker-table .arena-zone-label { font-size: clamp(5px, .5vw, 8px); top: 3px; }
+  .duel-worker-table .arena-slot:has(> .duel-playing-card) > .arena-zone-label { visibility: hidden; }
+  .duel-worker-table .duel-arena .arena-opponent .arena-hand { height: 34px; padding: 0; gap: 0; flex-wrap: nowrap; }
+  .duel-worker-table .arena-opponent .arena-hand-card { width: 38px; }
+  .duel-worker-table .arena-opponent .arena-hand-card > .duel-playing-card { width: 48px; transform: translateY(-18px); }
+  .duel-worker-table .duel-arena .arena-own .arena-hand { height: var(--hand-height); max-width: calc(var(--field-zone-size) * 5); margin: 0 auto; }
+  .duel-worker-table .arena-own .arena-hand-card { width: min(calc(var(--own-hand-size) * .76), calc((100% - var(--own-hand-size)) / max(1, calc(var(--hand-count) - 1)))); height: var(--hand-height); }
+  .duel-worker-table .arena-own .arena-hand-card:last-child { width: var(--own-hand-size); }
+  .duel-worker-table .arena-extra-row { padding: 0; }
+  .duel-worker-table .arena-flank:last-child { max-height: calc(var(--field-zone-size) * 2 + 14px); }
+  .duel-worker-table .arena-flank:first-child { display: grid; grid-template-rows: repeat(2, minmax(0, 1fr)); }
+  .duel-worker-table .arena-own .arena-flank:last-child > .arena-deck { grid-row: 3; }
+  .duel-worker-table .arena-deck > img { height: min(100%, calc(var(--field-zone-size) * .75)); max-width: 70%; object-fit: contain; }
+}
+@media (max-width: 760px) {
+  .duel-worker-table .duel-reference-inspector { max-height: 360px; width: 100%; overflow: auto; }
+  .duel-inspector-summary { grid-template-columns: 100px minmax(0, 1fr); padding: 8px; }
+  .duel-inspector-summary > img { height: 145px; }
+  .duel-inspector-facts { flex-flow: row wrap; gap: 8px 14px; }
+  .duel-worker-table .duel-reference-inspector .duel-card-description { min-height: 60px; font-size: 13px; }
+  .duel-worker-table .duel-arena .arena-card-stats > strong { font-size: 11px; }
+  .arena-card-stats .arena-monster-rating { font-size: 7px; }
+  .duel-arena .arena-own .arena-hand-card:hover, .duel-arena .arena-own .arena-hand-card:focus-within { transform: translateY(-10px); }
+  .duel-arena .arena-own .arena-hand-card { transform: none; }
+  .duel-arena .arena-own .arena-hand-card > .duel-playing-card:hover:not(:disabled) { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .duel-arena .arena-own .arena-hand-card { transition: none; } }

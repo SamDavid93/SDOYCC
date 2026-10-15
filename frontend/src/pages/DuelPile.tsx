@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { API_BASE_URL } from '../api/transport'
 import type { EngineCard } from './DuelWorkerTable'
 import type { DuelLocation, WorkerPrompt } from './DuelDecisions'
+import cardBack from '../assets/card-back.jpg'
 
 export function DuelPile({ owner, zone, label, values, prompt, disabled, activeLocation, card, chooseAction }: {
   owner:number;zone:number;label:string;values:(EngineCard|null)[];prompt?:WorkerPrompt|null;disabled:boolean;
@@ -28,7 +29,7 @@ export function DuelPile({ owner, zone, label, values, prompt, disabled, activeL
   },[open])
   const options=view==='effects'?effects:summons
   return <details ref={ref} open={open} onToggle={event=>setOpen(event.currentTarget.open)} className={'arena-pile'+(!disabled && choices.length?' action-available':'')+(!disabled && effects.length?' effect-available':'')} data-duel-owner={owner} data-duel-zone={zone}>
-    <summary onClick={event=>{event.preventDefault();setView('menu');setOpen(!open)}}>{label}{!disabled && actionable && <span className="arena-effect-label">{summons.length?`${summons.length} Beschwörung${summons.length===1?'':'en'}`:'✦ Effekt verfügbar'}</span>}<strong>{values.length}</strong></summary>
+    <summary onClick={event=>{event.preventDefault();setView('menu');setOpen(!open)}}>{values.length>0 && <img className="arena-pile-top" src={zone===64 || !values.at(-1)?.image_url ? cardBack : API_BASE_URL.replace(/\/api\/?$/,'')+values.at(-1)!.image_url} alt="" onError={event=>{event.currentTarget.src=cardBack}} />}<span className="arena-pile-name">{label}</span>{!disabled && actionable && <span className="arena-effect-label">{summons.length?`${summons.length} Beschwörung${summons.length===1?'':'en'}`:'✦ Effekt verfügbar'}</span>}<strong>{values.length}</strong></summary>
     <div className="arena-pile-content arena-pile-browser" role="region" aria-label={`${label}: Aktionen und Karten`}>
       <header><strong>{label}</strong><button aria-label={`${label} schließen`} onClick={()=>setOpen(false)}>×</button></header>
       {view!=='cards' && actionable ? <>
@@ -37,7 +38,7 @@ export function DuelPile({ owner, zone, label, values, prompt, disabled, activeL
         {view==='effects' && <><button className="arena-pile-back" onClick={()=>setView('menu')}>← Zurück</button><h3>Aktivierbare Karten</h3></>}
         <div className="arena-pile-options">{options.map(choice=><button key={choice.index} data-duel-action={choice.action} disabled={disabled} aria-label={choice.label} onClick={()=>{chooseAction(choice.index);setOpen(false)}}>
           {choice.card?.image_url && <img src={API_BASE_URL.replace(/\/api\/?$/,'')+choice.card.image_url} alt="" onError={event=>{event.currentTarget.hidden=true}} />}
-          <span><strong>{choice.card?.name || choice.label}</strong><small>{choice.action==='special_summon'?'Spezialbeschwören':choice.label}</small></span><b aria-hidden="true">→</b>
+          <span><strong>{choice.card?.name || choice.label}</strong><small>{choice.action==='special_summon'?'Spezialbeschwören':choice.effect_text || choice.card?.description || 'Effektbeschreibung vor der Aktivierung ansehen'}</small></span><b aria-hidden="true">→</b>
         </button>)}</div>
         <button className="arena-pile-inspect" onClick={()=>setView('cards')}>{label} ansehen · {values.length} Karten</button>
       </> : <>

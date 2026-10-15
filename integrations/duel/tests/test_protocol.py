@@ -14,6 +14,63 @@ CATALOG = {101: {'name': 'Testkarte', 'description': 'Privater Text', 'atk': 100
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_mode_selected_inside_resolution_updates_only_that_chain_link(self):
+        self.p.catalog = {101: {**CATALOG[101], 'options': ['Draw a card', 'Destroy a card']}}
+        self.p.chain_effects = {1: {'effect_card': self.p.card(101), 'effect_text': 'Choose an effect', 'effect_stage': 'resolution'},
+            2: {'effect_card': self.p.card(101), 'effect_text': 'Other link', 'effect_stage': 'resolution'}}
+        self.p.resolving_chain = 1
+        self.consume_message(bytes([14, 0, 2]) + struct.pack('<QQ', 101 << 4, (101 << 4) | 1))
+        self.p.respond(0, self.p.prompt['id'], [1])
+        self.p.new_prompt(0, 'Ziel wählen', [self.p.choice('Ziel', b'target', 101)])
+        self.assertEqual(self.p.prompt['effect_text'], 'Destroy a card')
+        self.assertEqual(self.p.chain_effects[2]['effect_text'], 'Other link')
+
+    def test_offer_and_confirmed_costs_do_not_borrow_another_resolving_effect(self):
+        self.p.catalog = {101: {**CATALOG[101], 'options': ['Old effect']}, 102: {'name': 'Other card', 'description': 'Other text', 'options': ['Offered effect']}}
+        self.p.chain_effects[1] = {'effect_card': self.p.card(101), 'effect_text': 'Old effect', 'effect_stage': 'resolution'}
+        self.p.resolving_chain = 1
+        self.consume_message(bytes([12]) + struct.pack('<BIBBIIQ', 0, 102, 0, 16, 0, 1, 102 << 4))
+        self.assertEqual(self.p.prompt['effect_card']['code'], 102)
+        self.assertEqual(self.p.prompt['effect_text'], 'Offered effect')
+        self.assertEqual(self.p.prompt['effect_stage'], 'offer')
+        self.p.respond(0, self.p.prompt['id'], [0])
+        self.p.new_prompt(0, 'Kosten wählen', [self.p.choice('Kosten', b'cost', 101)])
+        self.assertEqual(self.p.prompt['effect_card']['code'], 102)
+        self.assertEqual(self.p.prompt['effect_text'], 'Offered effect')
+        self.assertEqual(self.p.prompt['effect_stage'], 'activation_cost')
+
+    def test_resolution_context_uses_exact_chain_link_and_clears_when_completed(self):
+        self.p.catalog = {101: {**CATALOG[101], 'options': ['Draw one card.', 'Destroy one card.'], 'options_en': ['private source strings']}}
+        for number, effect in ((1, 0), (2, 1)):
+            self.consume_message(bytes([70]) + struct.pack('<IBBIIBBIQI', 101, 0, 16, 0, 1, 0, 16, 0, (101 << 4) | effect, number))
+        for number, text in ((2, 'Destroy one card.'), (1, 'Draw one card.')):
+            self.consume_message(bytes([72, number]))
+            self.p.new_prompt(0, 'Karten auswählen', [self.p.choice('Ziel', b'target', 101)])
+            self.assertEqual(self.p.prompt['effect_text'], text)
+            self.assertEqual(self.p.prompt['effect_stage'], 'resolution')
+            self.assertEqual(self.p.prompt['effect_location']['zone'], 16)
+            self.assertNotIn('options_en', self.p.prompt['effect_card'])
+            self.assertIsNone(self.p.view(1)['prompt'])
+            self.consume_message(bytes([73, number]))
+        self.p.new_prompt(0, 'Karten auswählen', [self.p.choice('Ziel', b'target', 101)])
+        self.assertNotIn('effect_card', self.p.prompt)
+
+    def test_only_confirmed_activation_supplies_cost_context(self):
+        self.p.new_prompt(0, 'Aktion wählen', [self.p.choice('Aktivieren', b'activate', 101)])
+        self.p.prompt['id'] = 20
+        self.p.prompt['choices'][0].update(action='activate', effect_text='Confirmed effect', location={'owner': 0, 'zone': 16, 'sequence': 0})
+        self.assertNotIn('effect_card', self.p.prompt)
+        with self.assertRaises(ValueError): self.p.respond(1, 20, [0])
+        self.assertIsNone(self.p.pending_effect)
+        self.p.respond(0, 20, [0])
+        self.p.new_prompt(0, 'Kosten wählen', [self.p.choice('Kosten', b'cost', 101)])
+        self.assertEqual(self.p.prompt['effect_text'], 'Confirmed effect')
+        self.assertEqual(self.p.prompt['effect_stage'], 'activation_cost')
+        self.p.new_prompt(0, 'Auf die Kette reagieren', [self.p.choice('Angebot', b'other', 101)])
+        self.assertNotIn('effect_card', self.p.prompt)
+        self.p.new_prompt(0, 'Aktion wählen', [self.p.choice('Aktion', b'next')])
+        self.assertIsNone(self.p.pending_effect)
+
     def test_zone_selection_uses_exact_card_hint_and_is_private(self):
         self.consume_message(bytes([2, 3, 0]) + struct.pack('<Q', 101))
         self.consume_message(bytes([18, 0, 1]) + struct.pack('<I', 0xfffffffe))

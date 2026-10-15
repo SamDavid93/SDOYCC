@@ -9,6 +9,38 @@ from playwright.sync_api import sync_playwright, expect
 from browser_smoke import ROOT, free_port, wait_ready
 
 
+def check_effect_context(page):
+    page.evaluate('window.__resolutionContext("resolution")')
+    expect(page.locator('.duel-effect-context')).to_contain_text('Erste Effektkarte',timeout=10000)
+    expect(page.locator('.duel-effect-context')).to_contain_text('Ziehe zwei Karten.')
+    expect(page.locator('.duel-effect-context')).not_to_contain_text('Anderer Effekt.')
+    expect(page.locator('.duel-card-rating')).to_have_attribute('aria-label','Stufe 4')
+    expect(page.locator('.duel-card-attribute')).to_contain_text('LICHT')
+    expect(page.locator('.duel-card-kind')).to_contain_text('Drache')
+    page.evaluate('window.__resolutionContext("offer")')
+    expect(page.locator('.duel-effect-context')).to_contain_text('Effekt prüfen: Zweite Effektkarte',timeout=10000)
+    expect(page.locator('.duel-effect-context')).to_contain_text('Nur angebotener Effekt.')
+    expect(page.locator('.duel-effect-context')).not_to_contain_text('Ziehe zwei Karten.')
+    page.evaluate('window.__resolutionContext("completed")')
+    page.wait_for_function('window.__readyFrames.at(-1)?.prompt===window.__currentDecision().prompt')
+    expect(page.locator('.duel-effect-context')).to_have_count(0,timeout=10000)
+    page.set_viewport_size({'width':1920,'height':1080})
+    page.evaluate('window.__scene()')
+    page.locator('.arena-own .arena-slot[data-duel-zone="4"] .duel-playing-card').first.click()
+    expect(page.locator('.duel-card-rating')).to_be_visible()
+    slot=page.locator('.arena-own .arena-monster-row .arena-slot').first.bounding_box()
+    assert abs(slot['width']-slot['height'])<slot['height']*.12,slot
+    assert page.locator('.arena-card-stats > strong').first.evaluate('e=>parseFloat(getComputedStyle(e).fontSize)')>=24
+    hand=page.locator('.arena-own .arena-hand-card')
+    assert hand.count()>=3
+    assert hand.nth(1).bounding_box()['x']-hand.first.bounding_box()['x']<hand.first.locator('.duel-playing-card').bounding_box()['width']
+    before_hover=hand.first.locator('.duel-playing-card').bounding_box()
+    hand.first.hover()
+    page.wait_for_timeout(250)
+    assert hand.first.locator('.duel-playing-card').bounding_box()['y']<before_hover['y']
+    page.screenshot(path=str(ROOT/'artifacts/duel-reference-1920.png'),full_page=True)
+
+
 def run():
     port = free_port()
     url = f'http://127.0.0.1:{port}'
@@ -30,7 +62,7 @@ import '../src/master-duel-theme.css'
 import '../src/master-duel-content.css'
 import '../src/master-duel-game.css'
 sessionStorage.setItem('hub-session', 'synthetic-presentation-token')
-const card = {code:1,type:0x1000 | 1,name:'Testkarte',description:'Deutscher Kartentext',image_url:'/test-card.svg',atk:1000,defense:1000}
+const card = {code:1,type:0x1000 | 1,level:4,attribute:16,race:8192,name:'Testkarte',description:'Deutscher Kartentext',image_url:'/test-card.svg',atk:1000,defense:1000}
 const side = {lp:8000,deck:30,hand:[],grave:[],field:[]}
 const frame = {id:'presentation',state:'running',seat:0,clock:{remaining:[360,360],active:null,side_remaining:null,readiness_required:true,waiting_for:0,ready_timeout:30},board:{revision:1,seat:0,turn:0,turn_number:1,phase:4,ended:false,events:[],
 boards:[{...side,field:[{zone:4,sequence:0,position:8,card},{zone:8,sequence:0,position:8,card},{zone:8,sequence:1,position:8,card}]},
@@ -70,11 +102,12 @@ window.__extra=(owners,seat,offer=false)=>{frame.board.seat=frame.seat=seat;fram
 window.__pileFlow=()=>{window.__scene();const extra={...card,name:'Synchro-Test',type:0x2001};frame.board.boards[0].extra=[{...card,name:'Nicht beschwoerbar'},extra,{...card,name:'Fusion-Test'}];frame.board.prompt={id:1100+frame.board.revision,title:'Aktion wählen',choices:[{label:'Zug beenden',card:null},{label:'Spezialbeschwören: Synchro-Test',card:extra,action:'special_summon',location:{owner:0,zone:64,sequence:1}},{label:'Aktivieren: Synchro-Test',card:extra,action:'activate',location:{owner:0,zone:64,sequence:1}},{label:'Spezialbeschwören: Fusion-Test',card:{...card,name:'Fusion-Test'},action:'special_summon',location:{owner:0,zone:64,sequence:2}}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__pileStep=(stage)=>{frame.board.prompt={id:1200+frame.board.revision,title:stage==='materials'?'Materialien wählen':stage==='zones'?'Zone wählen':'Aktion wählen',...(stage==='materials'?{select:true,minimum:2,maximum:2}:stage==='zones'?{kind:'zones',placement:true,placement_card:{...card,name:'Effekt-Zielmonster'}}:{}),choices:stage==='materials'?[0,1].map(sequence=>({label:'Material '+sequence,card,location:{owner:0,zone:4,sequence}})):stage==='zones'?[6,2].map(sequence=>({label:'Zone '+sequence,card:null,location:{owner:0,zone:4,sequence}})):[{label:'Zug beenden',card:null}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__clock=(active=null,seat=0)=>{frame.seat=seat;frame.clock={remaining:[180,300],active,side_remaining:null,readiness_required:true,waiting_for:null,ready_timeout:null};frame.board.prompt=null;frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
-window.__syncedEffect=()=>{const id=Math.max(0,...frame.board.events.map(e=>e.id));frame.board.events.push({id:id+1,kind:'turn_end',player:1},{id:id+2,kind:'phase',phase:2,player:0,number:2});frame.board.turn=0;frame.board.phase=2;frame.board.prompt={id:9000,title:'Karten auswählen',hint:'Ziehe 1 Karte.',effect_card:{...card,name:'Standby-Monster'},select:true,minimum:1,maximum:1,choices:[{label:'Effektziel',card,location:{owner:0,zone:1,sequence:0}}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__syncedEffect=()=>{const id=Math.max(0,...frame.board.events.map(e=>e.id));frame.board.events.push({id:id+1,kind:'turn_end',player:1},{id:id+2,kind:'phase',phase:2,player:0,number:2});frame.board.turn=0;frame.board.phase=2;frame.board.prompt={id:9000,title:'Karten auswählen',hint:'Auswahlhinweis',effect_text:'Ziehe 1 Karte.',effect_card:{...card,name:'Standby-Monster'},select:true,minimum:1,maximum:1,choices:[{label:'Effektziel',card,location:{owner:0,zone:1,sequence:0}}]};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__mixedOrigins=()=>{window.__pick(1,1,false,1,5);frame.board.prompt.choices.forEach((c,i)=>{c.location={owner:i===3?1:0,zone:[16,2,1,32,64][i],sequence:0}});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__wideChain=(forced=false)=>{const choices=Array.from({length:20},(_,i)=>({label:'Ketteneffekt '+(i+1)+': Sehr langer Karteneffekt mit mehreren lesbaren Worten',card,location:{owner:0,zone:[2,16,1,32][i%4],sequence:i}}));if(!forced)choices.splice(2,0,{label:'Nicht anketten',card:null});frame.board.prompt={id:9900+frame.board.revision,title:'Auf die Kette reagieren',kind:'chain',choices};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__multiEffects=()=>{window.__wideChain();frame.board.prompt.choices=frame.board.prompt.choices.slice(0,3);frame.board.prompt.choices[1].location={...frame.board.prompt.choices[0].location};frame.board.prompt.choices[0].effect_text='Draw one card.';frame.board.prompt.choices[1].effect_text='Destroy one card.';window.__clockTick()}
 window.__lowClock=(seconds,active=0)=>{frame.seat=frame.board.seat=0;frame.board.prompt=null;frame.clock={remaining:[seconds,200],active,readiness_required:true,waiting_for:null};frame.board.revision++;window.__clockTick()}
+window.__resolutionContext=(mode)=>{window.__scene();const id=Math.max(0,...frame.board.events.map(e=>e.id));const first={...card,code:101,name:'Erste Effektkarte'};const second={...card,code:102,name:'Zweite Effektkarte'};frame.board.events.push({id:id+1,kind:'chain',number:1,card:first,effect:'Ziehe zwei Karten.',source:{owner:0,zone:16,sequence:0}},{id:id+2,kind:'chain',number:2,card:second,effect:'Anderer Effekt.',source:{owner:1,zone:4,sequence:0}},{id:id+3,kind:'chain_step',step:72,number:1});if(mode==='completed')frame.board.events.push({id:id+4,kind:'chain_step',step:73,number:1},{id:id+5,kind:'chain_step',step:74,number:0});frame.board.prompt={id:5000+frame.board.revision,title:'Karten auswählen',select:true,minimum:1,maximum:1,choices:[{label:'Zielkarte',card}],...(mode==='offer'?{effect_card:second,effect_text:'Nur angebotener Effekt.',effect_stage:'offer'}:{})};frame.board.revision++;window.__clockTick()}
 window.__currentDecision=()=>({prompt:frame.board.prompt?.id,revision:frame.board.revision})
 window.__clockTick=()=>window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})
 window.__nextGame=()=>{frame.seat=0;frame.match={version:1,game:2,phase:'playing',score:[1,0],ready:[false,false],chooser:null,next_starter:null};frame.board.revision=1;frame.board.seat=0;frame.board.turn=0;frame.board.events=[{id:1,kind:'phase',phase:4,player:0,number:1}];frame.board.boards.forEach(s=>s.lp=8000);frame.clock={remaining:[360,360],active:null,side_remaining:null,readiness_required:true,waiting_for:0,ready_timeout:30};frame.board.prompt={id:1,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
@@ -103,6 +136,28 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     artwork=ROOT/'cache/cards-original/89631139.img'
                     page.route('**/scene-card.jpg', lambda route: route.fulfill(content_type='image/jpeg', body=artwork.read_bytes()) if artwork.exists() else route.fulfill(content_type='image/svg+xml',body='<svg xmlns="http://www.w3.org/2000/svg" width="80" height="120"><rect width="80" height="120" fill="teal"/></svg>'))
                     page.goto(url + '/' + folder.name + '/index.html')
+                    if os.environ.get('SDOYCC_DUEL_EFFECT_SOURCE_ONLY') == '1':
+                        expect(page.locator('.duel-arena')).to_be_visible()
+                        check_effect_context(page)
+                        assert not errors, errors
+                        browser.close()
+                        print(json.dumps({'effect_context':'passed','metadata_hand_and_field':'passed'}))
+                        return
+                    if os.environ.get('SDOYCC_DUEL_LAYOUT_ONLY') == '1':
+                        expect(page.locator('.duel-arena')).to_be_visible()
+                        page.evaluate('window.__scene()')
+                        if os.environ.get('SDOYCC_DUEL_LAYOUT_BAD_IMAGE') == '1': page.evaluate('window.__badImage();window.__clock(0,1)')
+                        metrics=[]
+                        for width,height in ((1920,1080),(1440,1000),(1280,720),(390,844)):
+                            page.set_viewport_size({'width':width,'height':height})
+                            page.locator('.arena-own .arena-slot[data-duel-zone="4"] .duel-playing-card').first.click()
+                            page.screenshot(path=str(ROOT/f'artifacts/duel-reference-{width}.png'),full_page=True)
+                            metrics.append(page.evaluate('''()=>({width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight,arena:document.querySelector('.duel-arena').getBoundingClientRect().toJSON(),overflow:Array.from(document.querySelectorAll('*')).filter(e=>{const r=e.getBoundingClientRect();return r.left< -1||r.right>innerWidth+1}).slice(0,15).map(e=>({tag:e.tagName,cls:e.className,rect:e.getBoundingClientRect().toJSON()}))})'''))
+                        (ROOT/'artifacts/duel-reference-layout.json').write_text(json.dumps(metrics,indent=2),encoding='utf-8')
+                        print(json.dumps(metrics))
+                        browser.close()
+                        return
+
                     expect(page.locator('.duel-chain-overlay')).to_be_visible()
                     for owner in (0,1):
                         monster = page.locator(f'.arena-slot[data-duel-owner="{owner}"][data-duel-zone="4"][data-duel-sequence="0"] .duel-playing-card')
@@ -213,6 +268,17 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     page.locator('.arena-own .arena-pile[data-duel-zone="16"] summary').click()
                     page.locator('.arena-own .arena-pile[data-duel-zone="16"]').get_by_role('button',name='Effekt aktivieren',exact=False).click()
                     page.get_by_role('button',name='Aktivieren: Testkarte 16',exact=True).click()
+                    confirm=page.locator('.duel-effect-options-popup')
+                    expect(confirm).to_be_visible()
+                    expect(confirm).to_contain_text('Deutscher Kartentext')
+                    before_confirm=page.evaluate('window.__answers.length')
+                    confirm.get_by_role('button',name='Zurück',exact=False).click()
+                    assert page.evaluate('window.__answers.length')==before_confirm
+                    pile_again=page.locator('.arena-own .arena-pile[data-duel-zone="16"]')
+                    pile_again.locator('summary').click()
+                    pile_again.get_by_role('button',name='Effekt aktivieren',exact=False).click()
+                    page.get_by_role('button',name='Aktivieren: Testkarte 16',exact=True).click()
+                    confirm.locator('.duel-effect-option-list button').first.click()
                     assert page.evaluate('window.__answers.at(-1).selected') == [3]
                     expect(page.locator('.effect-available')).to_have_count(0)
                     page.evaluate('window.__feedback(true)')
@@ -528,6 +594,17 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     expect(removed.locator('.arena-pile-options>button')).to_have_count(1)
                     page.screenshot(path=str(ROOT/'artifacts/duel-pile-effects.png'))
                     removed.get_by_role('button',name='Aktivieren: Testkarte 32',exact=True).click()
+                    confirm=page.locator('.duel-effect-options-popup')
+                    expect(confirm).to_be_visible()
+                    expect(confirm).to_contain_text('Deutscher Kartentext')
+                    before_confirm=page.evaluate('window.__answers.length')
+                    confirm.get_by_role('button',name='Zurück',exact=False).click()
+                    assert page.evaluate('window.__answers.length')==before_confirm
+                    pile_again=page.locator('.arena-own .arena-pile[data-duel-zone="32"]')
+                    pile_again.locator('summary').click()
+                    pile_again.get_by_role('button',name='Effekt aktivieren',exact=False).click()
+                    removed.get_by_role('button',name='Aktivieren: Testkarte 32',exact=True).click()
+                    confirm.locator('.duel-effect-option-list button').first.click()
                     assert page.evaluate('window.__answers.at(-1).selected') == [4]
                     for width,height in ((1440,1000),(390,844)):
                         page.set_viewport_size({'width':width,'height':height})
@@ -649,7 +726,7 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                         phase=page.locator('.arena-phase-orb').bounding_box()
                         assert dial and phase and dial['x']>=0 and dial['x']+dial['width']<zones.first.bounding_box()['x'],(dial,phase)
                         assert abs(dial['y']+dial['height']/2-(phase['y']+phase['height']/2))<20,(dial,phase)
-                        assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+                        assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'), page.evaluate('({width:innerWidth,scroll:document.documentElement.scrollWidth,overflow:Array.from(document.querySelectorAll("*")).filter(e=>e.getBoundingClientRect().right>innerWidth+1).slice(-10).map(e=>({cls:e.className,width:e.getBoundingClientRect().width,right:e.getBoundingClientRect().right}))})')
                         page.screenshot(path=str(ROOT/f'artifacts/duel-timer-{width}.png'))
                     page.set_viewport_size({'width':1440,'height':1000})
                     oscillator_before=page.evaluate('window.__oscillatorStarts')
@@ -736,6 +813,8 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     expect(page.locator('.arena-card-choice-popup .card-origin-symbol')).to_contain_text('Deck')
                     page.wait_for_function('window.__readyFrames.at(-1).prompt===9000')
                     page.screenshot(path=str(ROOT/'artifacts/duel-synced-effect-context.png'),full_page=True)
+                    assert not errors, errors
+                    check_effect_context(page)
                     assert not errors, errors
                     browser.close()
                 print(json.dumps({'browser':'passed','checks':['card orientation','chain image and keyboard focus','original answer indexes preserved','chain overlay on mobile','phase dial right of extra zone 2','battle/main 2/end transitions','opponent turn disabled','circular mobile dial and menu fit','Escape restores focus','sapphire own turn and ruby opponent turn','legal attacker highlight','cancel before attack sends no answer','field target and adjacent confirmation','own effect updates viewer immediately without center animation; opponent effect remains visible','named cards and chain resolution in duel log','gold effect glow on all locations','grave activation keeps original answer index','large ordered phase banners and pending turn end','real sound buffer playback and persistent mute','mobile feedback and reduced motion','eight summon portals without hidden card faces','location-accurate attack and direct attack','player LP delta and authoritative final LP','card travel uses original back','user-selected reduction disables SVG travel','larger arena fits 720p and 1080p including footer allowance','premium mobile has no horizontal overflow','victory defeat and draw use engine winner','negated activation announcement','one-card double-click submits exactly once','incomplete multi-selection stays open','maximum selection cannot be exceeded','double-click preserves original selection order','step selection auto-finishes only after engine confirms completion','double-click selects own hand cards','larger own hand fits mobile','required-card count remains visible on mobile','periodic clock state cannot acknowledge a pending action','two shared extra zones retain physical identity across controller and prompt changes for both seats and viewports','occupied shared zones stay visible and placement preserves original indexes','extra deck lists only legal summons and separates browsing','grave and banished action lists preserve original engine indexes','summon guidance keeps card method and material or zone step visible','pile menus fit mobile and close with Escape','opponent boss summon cut-ins with attribute-matched original sound','own weak and covered monsters never trigger a cut-in','decisions compact the cut-in without blocking chain answers','desktop mobile reduced-motion and cut-in disable controls','hand effect choices automatically open a focused popup with shared selection','mobile hand popup retains visible confirmation and supports double-click'],'right_click_chain_skip_and_forced_guard':'passed','global_context_menu_and_selection_policy':'passed','decision_ready_deduplicated':'passed','left_middle_timer_and_paused_clock':'passed','terminal_attack_damage_result_order':'passed','failed_opponent_image_keeps_occupied_zone_visible':'passed','console_errors':errors}))

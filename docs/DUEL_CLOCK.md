@@ -51,12 +51,24 @@ Entscheidungszeit. Bereits bedienbare Entscheidungen erhalten keine zusätzliche
 Zeit durch rein dekorative, von der Ereigniswiedergabe unabhängige Effekte.
 
 Effektauswahlen nennen die vom Regelkern übermittelte Effektkarte beziehungsweise
-die Karte des aktuell aufgelösten Kettenglieds. Der verfügbare Engine-Effekttext
-oder Auswahlhinweis steht daneben; andernfalls dient der Kartentext als Rückfall.
+die Karte des aktuell aufgelösten Kettenglieds. Karte, Effekttext und Herkunft
+werden als zusammengehöriger Kontext geführt. Der Server bindet die Auflösung
+an die konkrete Kettengliednummer (`MSG_CHAIN_SOLVING`) und verwirft den Kontext
+nach deren Abschluss. Die zuletzt aktivierte Karte oder eine angebotene
+Aktivierung dient niemals als Ersatz für das aktuell aufgelöste Kettenglied.
+Bestätigte Aktivierungen liefern einen separaten Kontext für Aktivierungskosten;
+Ja/Nein-Angebote erscheinen ausdrücklich als „Effekt prüfen“.
+Fehlt der konkrete Effekttext, dient ausschließlich der Kartentext derselben
+Effektkarte als Rückfall. Ein allgemeiner Auswahlhinweis wird nicht als
+vermeintlicher Effekttext einer anderen Karte angezeigt.
 Der linke Viewer folgt dieser Quelle und kann durch Anklicken einer Auswahlkarte
 zum Nachlesen gewechselt werden. Das horizontale Auswahlfenster liegt transparent
 auf der eigenen Spielfeldhälfte. Gegnerische Aktivierungen aktualisieren den
 Viewer erst mit ihrem Wiedergabeereignis; eigene behalten ihre direkte Anzeige.
+
+Aktivierungen aus Friedhof, Verbannt und Extra-Deck öffnen auch bei nur einer
+Option zunächst eine Beschreibung. Erst die bewusste Auswahl bestätigt den
+unveränderten Engine-Index. „Zurück“ oder Escape aktivieren keinen Effekt.
 
 Jede angebotene Karte zeigt ihren tatsächlichen Herkunftsort aus
 `choice.location.zone` als Symbol und Beschriftung. Gleiche Kartencodes in Hand,

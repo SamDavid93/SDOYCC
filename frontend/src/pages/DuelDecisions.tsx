@@ -9,7 +9,7 @@ import { DuelEffectOptions } from './DuelEffectOptions'
 
 export type DuelLocation = { owner: number; zone: number; sequence: number }
 export type WorkerPrompt = { id: number; title: string; kind?: string; placement?: boolean; hint?: string; select?: boolean; ordered?: boolean; cancel?: boolean;
-  effect_location?: DuelLocation; effect_text?: string | null;
+  effect_stage?: 'offer' | 'activation_cost' | 'resolution'; effect_location?: DuelLocation; effect_text?: string | null;
   placement_card?: EngineCard;
   selection_progress?: { minimum: number; maximum: number; selected: number; can_finish: boolean };
   effect_card?: { code: number; name: string; image_url?: string; description?: string };
