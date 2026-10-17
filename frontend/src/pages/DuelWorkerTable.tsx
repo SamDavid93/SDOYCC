@@ -48,6 +48,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
   const [timerWarning, setTimerWarning] = useState<{ seconds: number; serial: number } | null>(null)
   const warnTimer = useCallback((seconds: number) => setTimerWarning(old => ({ seconds, serial: (old?.serial || 0) + 1 })), [])
   const [visualLP, setVisualLP] = useState<number[] | null>(null)
+  const [announcedResultGame, setAnnouncedResultGame] = useState<number | null>(null)
   const lastDamage = useRef<number | null>(null)
   const onPlayback = useCallback((next: DuelPlayback) => {
     if ((latest.current?.match?.game || 1) !== currentGame) return
@@ -58,6 +59,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     if (!boards) return
     const caughtUp = next.idle && next.through >= Math.max(0, ...(latest.current?.board?.events.map(event => event.id) || []))
     const event = next.event
+    if (event?.kind === 'win') setAnnouncedResultGame(currentGame)
     if (event?.kind === 'chain_step' && [73, 74].includes(event.step || 0)) setPreviewEffect(null)
     const effectEvent = event?.kind === 'chain' ? event : event?.kind === 'chain_step' && event.step === 72
       ? latest.current?.board?.events.filter(item => item.kind === 'chain' && item.id <= event.id && item.number === event.number).at(-1) : null
@@ -307,7 +309,7 @@ export function DuelWorkerTable({ runId, onExit }: { runId: string; onExit: () =
     <p className="duel-connection-status" role="status">{connected ? result?.practice ? 'Admin-Testduell · Test-KI · Keine Belohnungen' : 'Mit dem Duell verbunden' : resultVisible ? 'Duell abgeschlossen' : result && terminal(result) ? 'Letzte Spielaktionen werden angezeigt' : 'Duellverbindung herstellen …'}</p>
     {error && !result && <button onClick={onExit}>Zur Lobby-Übersicht</button>}
     {!result && <p role="status">Privaten Spielstand laden …</p>}
-    {result && resultVisible && <div className="deck-panel duel-worker-result" role="status"><h2>{result.state === 'finished' ? result.winner_seat === null ? 'Unentschieden' : result.winner_seat === result.seat ? 'Du hast gewonnen' : 'Du hast verloren' : result.state === 'recovery_required' ? 'Betriebsprüfung erforderlich' : 'Testduell abgebrochen'}</h2><p>{result.state === 'recovery_required' ? 'Die Worker-Verbindung wurde nach einem Serverwechsel nicht übernommen. Karten bleiben bis zur sicheren Prozessprüfung reserviert.' : result.reason === 'surrender' ? 'Das Duell wurde durch Aufgabe beendet. Kartenreservierungen sind aufgehoben.' : result.state === 'aborted' ? 'Das Duell wird nicht gewertet. Der Worker wurde gestoppt und die Karten wurden freigegeben.' : 'Der Regelkern hat das Duell beendet. Deine Karten bleiben erhalten.'}</p><button onClick={onExit}>Zur Lobby-Übersicht</button></div>}
+    {result && resultVisible && <div className="deck-panel duel-worker-result" role={result.state === 'finished' && announcedResultGame === currentGame ? undefined : 'status'}>{(result.state !== 'finished' || announcedResultGame !== currentGame) && <h2>{result.state === 'finished' ? result.winner_seat === null ? 'Unentschieden' : result.winner_seat === result.seat ? 'Du hast gewonnen' : 'Du hast verloren' : result.state === 'recovery_required' ? 'Betriebsprüfung erforderlich' : 'Testduell abgebrochen'}</h2>}<p>{result.state === 'recovery_required' ? 'Die Worker-Verbindung wurde nach einem Serverwechsel nicht übernommen. Karten bleiben bis zur sicheren Prozessprüfung reserviert.' : result.reason === 'surrender' ? 'Das Duell wurde durch Aufgabe beendet. Kartenreservierungen sind aufgehoben.' : result.state === 'aborted' ? 'Das Duell wird nicht gewertet. Der Worker wurde gestoppt und die Karten wurden freigegeben.' : 'Der Regelkern hat das Duell beendet. Deine Karten bleiben erhalten.'}</p><button onClick={onExit}>Zur Lobby-Übersicht</button></div>}
     {result?.match && <p className="duel-turn-line">Match bis zum zweiten Sieg · Spiel {result.match.game} · Du {result.match.score[result.seat]} : {result.match.score[1 - result.seat]} Gegner</p>}
     {result?.match?.phase === 'sideboarding' && result.clock?.side_remaining != null && <p role="timer">Sideboarding: noch {Math.ceil(result.clock.side_remaining)} s</p>}
     {result?.match?.phase === 'sideboarding' && <DuelSideboard match={result.match} seat={result.seat} disabled={busy || !connected} send={send} />}

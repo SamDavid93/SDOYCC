@@ -33,8 +33,9 @@ export function DuelAnimations({ events, runId, onEffect, onPlayback, seat, disa
   const watermark = useRef<number | null>(null), audio = useRef<DuelSoundPlayer | null>(null)
   const completed = useRef(0)
   const queuedThrough = useRef(0)
+  const resultSeen = useRef(false)
   const lastSound = useRef<number | null>(null), lastPhase = useRef<string | null>(null)
-  useEffect(() => { watermark.current = null; lastSound.current=null; lastPhase.current=null; audio.current?.stop(); setQueue([]); setActive(null) }, [runId])
+  useEffect(() => { watermark.current = null; resultSeen.current=false; lastSound.current=null; lastPhase.current=null; audio.current?.stop(); setQueue([]); setActive(null) }, [runId])
   useEffect(() => {
     audio.current ||= new DuelSoundPlayer()
     const player=audio.current
@@ -53,12 +54,13 @@ export function DuelAnimations({ events, runId, onEffect, onPlayback, seat, disa
       watermark.current = newest
       completed.current = newest
       queuedThrough.current = newest
-      if (phase) setQueue([{id:-1,kind:'phase',phase,player:turn,number:turnNumber}])
+      resultSeen.current = events.some(event => event.kind === 'win')
+      if (phase && !resultSeen.current) setQueue([{id:-1,kind:'phase',phase,player:turn,number:turnNumber}])
       return
     }
     const unseen = events.filter(event => event.id > watermark.current!).sort((a, b) => a.id - b.id)
     watermark.current = Math.max(watermark.current, newest)
-    if (document.hidden) { completed.current = newest; queuedThrough.current = newest; return }
+    if (document.hidden) { resultSeen.current ||= unseen.some(event => event.kind === 'win'); completed.current = newest; queuedThrough.current = newest; return }
     // The viewer follows confirmed effects immediately, independently of animation playback.
     const effects = unseen.filter(event => event.kind === 'chain' && event.card)
     const latestEffect = effects.at(-1)
@@ -66,6 +68,11 @@ export function DuelAnimations({ events, runId, onEffect, onPlayback, seat, disa
     if (sound) effects.filter(event => event.source?.owner === seat).forEach(event => audio.current?.play(event))
     const shown = unseen.filter(event => {
       if (event.kind === 'information') return false
+      if (event.kind === 'win') {
+        if (resultSeen.current) return false
+        resultSeen.current = true
+        return true
+      }
       if (event.kind === 'chain' && event.source?.owner === seat) return false
       if (event.kind !== 'phase') return true
       const phase = event.phase && event.phase >= 8 && event.phase <= 128 ? 8 : event.phase
@@ -142,7 +149,7 @@ export function DuelAnimations({ events, runId, onEffect, onPlayback, seat, disa
       {active.card.image_url && <img src={API_BASE_URL.replace(/\/api\/?$/, '') + active.card.image_url} alt={active.card.name} onError={event => { const img=event.currentTarget; if(active.card?.fallback_image_url && !img.dataset.fallback){img.dataset.fallback='1';img.src=API_BASE_URL.replace(/\/api\/?$/, '')+active.card.fallback_image_url}else img.hidden=true }} />}
       <strong>{active.card.name}</strong><small>{germanEffectText(active.effect, active.effect_language, active.card)}</small>
     </section>}
-    {active && !cutin && !announcement && !(active.kind === 'chain' && active.card) && <div className={`duel-event-stage event-${active?.kind || 'idle'} summon-${active?.method || 'none'}`} key={`event:${active?.id || 'idle'}`} aria-live="polite">
+    {active && active.kind !== 'win' && !cutin && !announcement && !(active.kind === 'chain' && active.card) && <div className={`duel-event-stage event-${active?.kind || 'idle'} summon-${active?.method || 'none'}`} key={`event:${active?.id || 'idle'}`} aria-live="polite">
       <span className="duel-event-symbol" aria-hidden="true">{active?.kind === 'attack' ? '⚔' : active?.kind === 'summon' ? '✦' : active?.kind === 'chain' ? '∞' : active?.kind === 'lp' ? '♥' : '◇'}</span>
       <span>{active ? active.kind === 'summon' ? methods[active.method || 'special'] : captions[active.kind] || 'Spielereignis' : 'Bereit für dein Duell'}{active?.kind === 'lp' && ` · ${active.value?.toLocaleString('de-DE')} LP`}{active?.kind === 'chain_step' && ` · ${active.number ? 'Glied ' + active.number + ': ' : ''}${active.step === 72 ? 'wird aufgelöst' : active.step === 73 ? 'aufgelöst' : active.step === 74 ? 'beendet' : active.step === 75 || active.step === 76 ? 'negiert' : 'fortgesetzt'}`}{active?.values && ` · ${active.values.join(', ')}`}{active?.text && (active.kind !== 'hint' || active.effect_language === 'de') && ` · ${active.text}`}{active?.cards && ` · ${active.cards.map(card => card.name).join(', ')}`}</span>
       {active.affected_cards?.length ? <small className="duel-event-cardnames">{[...new Set(active.affected_cards.map(card => card.name))].join(' / ')}</small> : null}

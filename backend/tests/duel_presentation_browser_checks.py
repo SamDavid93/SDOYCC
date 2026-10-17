@@ -9,6 +9,49 @@ from playwright.sync_api import sync_playwright, expect
 from browser_smoke import ROOT, free_port, wait_ready
 
 
+def check_result_announcements(page):
+    clean_url=page.url.split('?')[0]
+    page.evaluate("localStorage.setItem('duel-sound','on')")
+    for winner,label in ((0,'Sieg'),(1,'Niederlage'),(None,'Unentschieden')):
+        page.goto(clean_url)
+        page.wait_for_function('window.__readyFrames.length>0')
+        page.evaluate('(winner)=>window.__resultBatch(winner)',winner)
+        banner=page.get_by_role('status',name='Duellergebnis')
+        expect(banner).to_contain_text(label)
+        expect(page.locator('.duel-event-stage.event-win')).to_have_count(0)
+        page.evaluate('window.__resultDuplicate();window.__clockTick();window.__clockTick()')
+        expect(page.locator('.duel-worker-result')).to_be_visible(timeout=4000)
+        expect(page.locator('.duel-worker-result h2')).to_have_count(0)
+        assert page.locator('.duel-worker-result').get_attribute('role') is None
+        assert page.evaluate('window.__resultBanners')==1
+        assert page.evaluate('window.__resultSounds')==1
+        page.evaluate('window.__resultDuplicate()')
+        page.wait_for_timeout(250)
+        expect(banner).to_have_count(0)
+        assert page.evaluate('window.__resultBanners')==1
+        assert page.evaluate('window.__resultSounds')==1
+    page.goto(clean_url)
+    page.wait_for_function('window.__readyFrames.length>0')
+    page.evaluate('window.__resultBatch(0,false)')
+    expect(page.get_by_role('status',name='Duellergebnis')).to_contain_text('Sieg')
+    expect(page.get_by_role('status',name='Duellergebnis')).to_have_count(0,timeout=4000)
+    page.evaluate('window.__nextGame()')
+    page.wait_for_function('window.__readyFrames.at(-1)?.prompt===1 && window.__readyFrames.at(-1)?.revision===1')
+    page.evaluate('window.__resultBatch(0)')
+    expect(page.get_by_role('status',name='Duellergebnis')).to_contain_text('Sieg')
+    expect(page.locator('.duel-worker-result')).to_be_visible(timeout=4000)
+    assert page.evaluate('window.__resultBanners')==2
+    assert page.evaluate('window.__resultSounds')==2
+    page.goto(clean_url+'?finished=1')
+    expect(page.locator('.duel-worker-result h2')).to_have_text('Du hast gewonnen')
+    expect(page.get_by_role('status',name='Duellergebnis')).to_have_count(0)
+    page.evaluate('window.__resultDuplicate();window.__clockTick()')
+    page.wait_for_timeout(250)
+    assert page.evaluate('window.__resultBanners')==0
+    assert page.evaluate('window.__resultSounds')==0
+    page.goto(clean_url)
+
+
 def check_placement_layout(page):
     page.reload()
     page.wait_for_function('window.__readyFrames.length>0')
@@ -154,6 +197,11 @@ window.__answers=[]
 window.__readyFrames=[]
 window.__bossSounds=[]
 window.__timerWarnings=[]
+window.__resultSounds=0;window.__resultBanners=0
+const originalResultSound=DuelSoundPlayer.prototype.play
+DuelSoundPlayer.prototype.play=function(event){if(event.kind==='win')window.__resultSounds++;return originalResultSound.call(this,event)}
+new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node instanceof Element){if(node.matches('.duel-result-announcement'))window.__resultBanners++;window.__resultBanners+=node.querySelectorAll('.duel-result-announcement').length}}))).observe(document.getElementById('root'),{childList:true,subtree:true})
+
 const originalTimerWarning=DuelSoundPlayer.prototype.playTimerWarning
 DuelSoundPlayer.prototype.playTimerWarning=function(seconds){window.__timerWarnings.push(seconds);return originalTimerWarning.call(this,seconds)}
 const originalBossSound=DuelSoundPlayer.prototype.playBossSummon
@@ -194,6 +242,8 @@ window.__englishLeak=(mode)=>{const bad={...card,description_language:'en',descr
 window.__currentDecision=()=>({prompt:frame.board.prompt?.id,revision:frame.board.revision})
 window.__clockTick=()=>window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})
 window.__nextGame=()=>{frame.seat=0;frame.match={version:1,game:2,phase:'playing',score:[1,0],ready:[false,false],chooser:null,next_starter:null};frame.board.revision=1;frame.board.seat=0;frame.board.turn=0;frame.board.events=[{id:1,kind:'phase',phase:4,player:0,number:1}];frame.board.boards.forEach(s=>s.lp=8000);frame.clock={remaining:[360,360],active:null,side_remaining:null,readiness_required:true,waiting_for:0,ready_timeout:30};frame.board.prompt={id:1,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__resultBatch=(winner=0,terminal=true)=>{const id=Math.max(0,...frame.board.events.map(e=>e.id));frame.state=terminal?'finished':'running';frame.winner_seat=winner;frame.board.ended=true;frame.board.prompt=null;frame.board.events.push(...[1,2,3].map(n=>({id:id+n,kind:'win',winner})));frame.board.revision++;window.__clockTick()}
+window.__resultDuplicate=()=>{const id=Math.max(0,...frame.board.events.map(e=>e.id));frame.board.events.push({id:id+1,kind:'win',winner:frame.winner_seat});frame.board.revision++;window.__clockTick()}
 window.__finish=()=>{const id=Math.max(0,...frame.board.events.map(e=>e.id));frame.state='finished';frame.winner_seat=1;frame.board.ended=true;frame.board.prompt=null;frame.board.boards[0].lp=0;frame.board.events.push({id:id+1,kind:'attack',attacker:{owner:1,zone:4,sequence:2},direct:true},{id:id+2,kind:'lp',player:0,value:0,delta:-8000},{id:id+3,kind:'win',winner:1});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__placementBoth=(seat)=>{window.__scene();frame.seat=frame.board.seat=seat;frame.board.turn=seat;frame.board.prompt={id:17000+frame.board.revision,title:'Zone w\u00e4hlen',kind:'zones',placement:true,minimum:1,maximum:1,placement_card:{...card,name:'Effekt-Zielmonster'},choices:[6,5].map(sequence=>({label:'Extra-Zone '+sequence,card:null,location:{owner:seat,zone:4,sequence}}))};frame.board.revision++;window.__clockTick()}
 window.__battleBaseline=()=>{window.__scene();frame.board.boards.forEach((side,owner)=>{side.field=[{zone:4,sequence:0,position:1,card:{...card,name:owner?'Verteidiger':'Angreifer'}}];side.grave=[];side.lp=8000});frame.board.events=[];frame.board.prompt={id:15000+frame.board.revision,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};frame.board.revision++;window.__clockTick()}
@@ -204,6 +254,7 @@ window.__crowdedStats=()=>{window.__scene();frame.board.boards.forEach((side,own
 window.__actions=()=>{window.__scene();frame.board.prompt={id:1500+frame.board.revision,title:'Aktion w\u00e4hlen',choices:['activate','set_spell','summon','special_summon'].map(action=>({label:action,action,card,location:{owner:0,zone:2,sequence:0}}))};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__badImage=()=>{window.__scene();frame.board.boards[1].field[1].card={...card,name:'Visible opponent monster',image_url:'/missing-card-image.png'};frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__boss=(overrides={})=>window.__scene({kind:'summon',method:'synchro',player:1,location:{owner:1,zone:4,sequence:2,position:1},card:{...card,name:'Blue-Eyes White Dragon',image_url:'/scene-card.jpg',level:8,type:0x2001,attribute:16,atk:3000,defense:2500},...overrides})
+if(new URLSearchParams(location.search).has('finished')){frame.state='finished';frame.winner_seat=0;frame.board.ended=true;frame.board.prompt=null;frame.board.events=[{id:1,kind:'win',winner:0}]}
 createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelWorkerTable runId="presentation" onExit={()=>{}} /></>)
 ''', encoding='utf8')
         env = {**os.environ, 'VITE_BASE_PATH': '/'}
@@ -225,6 +276,12 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     artwork=ROOT/'cache/cards-original/89631139.img'
                     page.route('**/scene-card.jpg', lambda route: route.fulfill(content_type='image/jpeg', body=artwork.read_bytes()) if artwork.exists() else route.fulfill(content_type='image/svg+xml',body='<svg xmlns="http://www.w3.org/2000/svg" width="80" height="120"><rect width="80" height="120" fill="teal"/></svg>'))
                     page.goto(url + '/' + folder.name + '/index.html')
+                    if os.environ.get('SDOYCC_DUEL_RESULT_ONLY') == '1':
+                        check_result_announcements(page)
+                        assert not errors,errors
+                        browser.close()
+                        print(json.dumps({'single_result_banner_and_sound':'passed','duplicate_frames_and_events':'passed','win_loss_draw_new_game_and_reconnect':'passed'}))
+                        return
                     if os.environ.get('SDOYCC_DUEL_PLACEMENT_ONLY') == '1':
                         check_placement_layout(page)
                         assert not errors,errors
@@ -508,6 +565,8 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                             page.evaluate('document.documentElement.style.removeProperty("--site-footer-height")')
                     page.set_viewport_size({'width':1440,'height':1000})
                     for winner,title in ((0,'Sieg'),(1,'Niederlage'),(None,'Unentschieden')):
+                        page.reload()
+                        page.wait_for_function('window.__readyFrames.length>0')
                         page.evaluate('(winner)=>window.__scene({kind:"win",winner})',winner)
                         expect(page.get_by_role('status',name='Duellergebnis')).to_contain_text(title)
                         expect(page.get_by_role('status',name='Duellergebnis')).to_have_count(0,timeout=5000)
@@ -915,7 +974,7 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     expect(page.get_by_role('status',name='Duellergebnis')).to_be_visible()
                     expect(page.locator('.duel-worker-result')).to_have_count(0)
                     expect(page.locator('.duel-worker-result')).to_be_visible(timeout=4000)
-                    expect(page.locator('.duel-worker-result')).to_contain_text('Du hast verloren')
+                    expect(page.locator('.duel-worker-result h2')).to_have_count(0)
                     page.evaluate('window.__finish()')
                     expect(page.locator('.duel-event-stage.event-attack')).to_be_visible()
                     page.get_by_label('Duellmen\u00fc',exact=True).click()
@@ -947,6 +1006,7 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     page.screenshot(path=str(ROOT/'artifacts/duel-synced-effect-context.png'),full_page=True)
                     assert not errors, errors
                     check_effect_context(page)
+                    check_result_announcements(page)
                     check_placement_layout(page)
                     check_battle_order(page)
                     assert not errors, errors
