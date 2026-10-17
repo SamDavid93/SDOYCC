@@ -1,4 +1,5 @@
 import { duelCardRating } from './duelCardRating'
+import type { ReactNode } from 'react'
 import { Flame, Droplets, Wind, Mountain, Sun, Moon, Sparkles, Star, Swords, Shield, Hexagon } from 'lucide-react'
 import { API_BASE_URL } from '../api/transport'
 import { CardOrigin, TunerBadge } from '../components/CardSymbols'
@@ -9,7 +10,7 @@ import { germanCardText } from './duelGermanText'
 const attributes = {1:['ERDE',Mountain],2:['WASSER',Droplets],4:['FEUER',Flame],8:['WIND',Wind],16:['LICHT',Sun],32:['FINSTERNIS',Moon],64:['GÖTTLICH',Sparkles]} as const
 const races: Record<number,string> = {1:'Krieger',2:'Hexer',4:'Fee',8:'Unterweltler',16:'Zombie',32:'Maschine',64:'Aqua',128:'Pyro',256:'Fels',512:'Geflügeltes Ungeheuer',1024:'Pflanze',2048:'Insekt',4096:'Donner',8192:'Drache',16384:'Ungeheuer',32768:'Ungeheuer-Krieger',65536:'Dinosaurier',131072:'Fisch',262144:'Seeschlange',524288:'Reptil',1048576:'Psi',2097152:'Göttliches Ungeheuer',4194304:'Schöpfergott',8388608:'Wyrm',16777216:'Cyberse',33554432:'Illusion'}
 
-export function DuelCardInspector({ card, effect, origin, seat, close }: {card:EngineCard|null;effect:string|null;origin:DuelLocation|null;seat:number;close:()=>void}) {
+export function DuelCardInspector({ card, effect, origin, seat, close, notice }: {card:EngineCard|null;effect:string|null;origin:DuelLocation|null;seat:number;close:()=>void;notice?:ReactNode}) {
   const type=card?.type || 0, monster=Boolean(type&1), link=Boolean(type&0x4000000), xyz=Boolean(type&0x800000)
   const rating=card ? duelCardRating(card) : undefined
   const attribute=attributes[card?.attribute as keyof typeof attributes]
@@ -17,6 +18,7 @@ export function DuelCardInspector({ card, effect, origin, seat, close }: {card:E
   const subtype=monster?null:type&0x10000?'Schnellzauber':type&0x20000?'Permanent':type&0x40000?'Ausrüstung':type&0x80000?'Spielfeld':type&0x100000?'Konter':type&0x80?null:'Normal'
   const kinds=[monster ? races[card?.race || 0] : type&2?'Zauber':'Falle',subtype,type&0x40?'Fusion':null,type&0x2000?'Synchro':null,xyz?'Xyz':null,link?'Link':null,type&0x80?'Ritual':null,type&0x1000000?'Pendel':null,type&0x1000?'Empfänger':null,type&0x20?'Effekt':type&0x10?'Normal':null].filter(Boolean)
   return <aside className={'duel-card-inspector duel-reference-inspector '+(type&2?'is-spell':type&4?'is-trap':'is-monster')} aria-label="Kartenvorschau">
+    {notice}
     {card ? <>
       <header className="duel-inspector-heading"><h2>{card.name}</h2><button aria-label="Vorschau schließen" title="Vorschau schließen" onClick={close}>×</button></header>
       <div className="duel-inspector-summary">

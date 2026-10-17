@@ -21,13 +21,12 @@
 .duel-worker-table .duel-arena :is(.arena-decision-overlay, .duel-chain-overlay, .duel-effect-options-popup) .duel-decisions { background: transparent; }
 .duel-worker-table .duel-arena .duel-effect-option-list .duel-effect-option > button { background: #14344b99; }
 .duel-worker-table .duel-arena :is(.arena-decision-overlay, .duel-chain-overlay, .duel-effect-options-popup) :is(h2, p, strong, small, span) { text-shadow: 0 1px 3px #000, 0 0 5px #000; }
-.arena-placement-preview { position: absolute; z-index: 45; left: 50%; top: 46%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 16px; width: min(440px, 65%); pointer-events: none; filter: drop-shadow(0 6px 14px #000b); }
-.arena-placement-preview > img { width: auto; height: clamp(120px, 25dvh, 260px); max-width: 43%; object-fit: contain; }
-.arena-placement-preview > div { padding: 12px; background: #091e32a6; border-left: 2px solid #f4d484; border-radius: 6px; }
+.arena-placement-preview { margin: 8px; padding: 12px; pointer-events: none; background: #122e42; border: 1px solid #8bbfdf; border-left: 3px solid #f4d484; border-radius: 6px; }
 .arena-placement-preview strong, .arena-placement-preview span { display: block; color: #ffe2a3; font-size: 15px; }
 .arena-placement-preview span { color: #fff; font-size: 20px; margin-top: 5px; }
 .arena-placement-preview p { color: #edf6ff; font-size: 12px; margin-bottom: 0; }
-@media (max-width: 760px) { .arena-placement-preview { gap: 7px; width: 72%; } .arena-placement-preview > div { padding: 7px; } .arena-placement-preview strong { font-size: 11px; } .arena-placement-preview span { font-size: 14px; } .arena-placement-preview p { font-size: 10px; } }
+@media (max-width: 760px) { .arena-placement-preview { margin: 5px; padding: 7px; } .arena-placement-preview strong { font-size: 11px; } .arena-placement-preview span { font-size: 14px; } .arena-placement-preview p { font-size: 10px; } }
+.duel-reference-inspector .arena-summon-guide { position: static; transform: none; width: auto; margin: 8px; flex-shrink: 0; }
 .arena-card-choice-popup:has(.duel-effect-context) .duel-decisions > p { display: none; }
 .duel-arena .arena-card-choice-popup .duel-choice-list > button { background: #102d426b; }
 .duel-effect-context { padding: 6px 8px; border-left: 2px solid #eed292; background: #10243866; margin-bottom: 5px; }

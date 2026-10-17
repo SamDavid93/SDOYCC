@@ -9,6 +9,44 @@ from playwright.sync_api import sync_playwright, expect
 from browser_smoke import ROOT, free_port, wait_ready
 
 
+def check_placement_layout(page):
+    page.reload()
+    page.wait_for_function('window.__readyFrames.length>0')
+    for width,height in ((1920,1080),(1440,1000),(1280,720),(390,844)):
+        page.set_viewport_size({'width':width,'height':height})
+        for seat in (0,1):
+            for sequence,index in ((6,0),(5,1)):
+                page.evaluate('(seat)=>window.__placementBoth(seat)',seat)
+                notice=page.get_by_role('status',name='Karte platzieren')
+                expect(notice).to_contain_text('Effekt-Zielmonster')
+                expect(page.locator('.duel-inspector-heading h2')).to_have_text('Effekt-Zielmonster')
+                expect(page.locator('.duel-arena .arena-placement-preview')).to_have_count(0)
+                assert notice.evaluate("e=>!!e.closest('.duel-card-inspector')")
+                if width>760:
+                    viewer=page.locator('.duel-card-inspector').bounding_box()
+                    arena=page.locator('.duel-arena').bounding_box()
+                    assert viewer['x']+viewer['width']<=arena['x'],(viewer,arena)
+                expect(page.locator('.arena-extra-row > .arena-slot')).to_have_count(2)
+                target=page.locator(f'.arena-extra-row > .arena-slot[data-duel-owner="{seat}"][data-duel-sequence="{sequence}"] .arena-zone-choice')
+                target.scroll_into_view_if_needed()
+                assert target.evaluate('e=>{const r=e.getBoundingClientRect();return e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))}'),'Extra zone is covered'
+                if seat==0 and sequence==6:
+                    page.screenshot(path=str(ROOT/f'artifacts/duel-placement-left-{width}.png'),full_page=True)
+                target.click()
+                assert page.evaluate('window.__answers.at(-1).selected')==[index]
+    page.set_viewport_size({'width':1440,'height':1000})
+    page.evaluate('window.__pileFlow()')
+    extra=page.locator('.arena-own .arena-pile[data-duel-zone="64"]')
+    extra.locator('summary').click()
+    extra.get_by_role('button',name='Spezialbeschw\u00f6ren: Synchro-Test',exact=True).click()
+    page.evaluate('window.__pileStep("materials")')
+    expect(page.locator('.duel-card-inspector .arena-summon-guide')).to_contain_text('Synchro-Test')
+    expect(page.locator('.duel-arena .arena-summon-guide')).to_have_count(0)
+    page.evaluate('window.__pileStep("idle")')
+    expect(page.get_by_role('status',name='Karte platzieren')).to_have_count(0)
+    expect(page.locator('.arena-summon-guide')).to_have_count(0)
+
+
 def check_battle_order(page):
     for losers,split,width,terminal in (([0],False,1440,False),([1],False,1440,False),([0,1],False,1440,False),([1],True,390,False),([0],False,1440,True)):
         page.set_viewport_size({'width':width,'height':1000 if width>400 else 844})
@@ -157,6 +195,7 @@ window.__currentDecision=()=>({prompt:frame.board.prompt?.id,revision:frame.boar
 window.__clockTick=()=>window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})
 window.__nextGame=()=>{frame.seat=0;frame.match={version:1,game:2,phase:'playing',score:[1,0],ready:[false,false],chooser:null,next_starter:null};frame.board.revision=1;frame.board.seat=0;frame.board.turn=0;frame.board.events=[{id:1,kind:'phase',phase:4,player:0,number:1}];frame.board.boards.forEach(s=>s.lp=8000);frame.clock={remaining:[360,360],active:null,side_remaining:null,readiness_required:true,waiting_for:0,ready_timeout:30};frame.board.prompt={id:1,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
 window.__finish=()=>{const id=Math.max(0,...frame.board.events.map(e=>e.id));frame.state='finished';frame.winner_seat=1;frame.board.ended=true;frame.board.prompt=null;frame.board.boards[0].lp=0;frame.board.events.push({id:id+1,kind:'attack',attacker:{owner:1,zone:4,sequence:2},direct:true},{id:id+2,kind:'lp',player:0,value:0,delta:-8000},{id:id+3,kind:'win',winner:1});frame.board.revision++;window.__socket.onmessage({data:JSON.stringify({type:'state',result:frame})})}
+window.__placementBoth=(seat)=>{window.__scene();frame.seat=frame.board.seat=seat;frame.board.turn=seat;frame.board.prompt={id:17000+frame.board.revision,title:'Zone w\u00e4hlen',kind:'zones',placement:true,minimum:1,maximum:1,placement_card:{...card,name:'Effekt-Zielmonster'},choices:[6,5].map(sequence=>({label:'Extra-Zone '+sequence,card:null,location:{owner:seat,zone:4,sequence}}))};frame.board.revision++;window.__clockTick()}
 window.__battleBaseline=()=>{window.__scene();frame.board.boards.forEach((side,owner)=>{side.field=[{zone:4,sequence:0,position:1,card:{...card,name:owner?'Verteidiger':'Angreifer'}}];side.grave=[];side.lp=8000});frame.board.events=[];frame.board.prompt={id:15000+frame.board.revision,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};frame.board.revision++;window.__clockTick()}
 window.__battleStrike=(split)=>{frame.board.prompt=null;frame.board.events.push({id:1,kind:'attack',attacker:{owner:0,zone:4,sequence:0},defender:{owner:1,zone:4,sequence:0}});frame.board.revision++;if(split)window.__clockTick()}
 window.__battleResolve=(losers,terminal=false)=>{frame.board.boards[losers[0]].lp=7500;frame.board.events.push({id:2,kind:'lp',player:losers[0],value:7500,delta:-500});losers.forEach((owner,i)=>{const entry=frame.board.boards[owner].field[0];frame.board.boards[owner].grave=[entry.card];frame.board.boards[owner].field=[];frame.board.events.push({id:3+i,kind:'destroy',before:{owner,zone:4,sequence:0,position:1},after:{owner,zone:16,sequence:0,position:1}})});frame.board.prompt={id:16000+frame.board.revision,title:'Aktion w\u00e4hlen',choices:[{label:'Zug beenden',card:null}]};if(terminal){frame.state='finished';frame.winner_seat=1;frame.board.ended=true;frame.board.prompt=null;frame.board.events.push({id:10,kind:'win',winner:1})};frame.board.revision++;window.__clockTick()}
@@ -186,6 +225,12 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     artwork=ROOT/'cache/cards-original/89631139.img'
                     page.route('**/scene-card.jpg', lambda route: route.fulfill(content_type='image/jpeg', body=artwork.read_bytes()) if artwork.exists() else route.fulfill(content_type='image/svg+xml',body='<svg xmlns="http://www.w3.org/2000/svg" width="80" height="120"><rect width="80" height="120" fill="teal"/></svg>'))
                     page.goto(url + '/' + folder.name + '/index.html')
+                    if os.environ.get('SDOYCC_DUEL_PLACEMENT_ONLY') == '1':
+                        check_placement_layout(page)
+                        assert not errors,errors
+                        browser.close()
+                        print(json.dumps({'left_viewer_placement':'passed','both_extra_zones_both_seats_four_viewports':'passed','material_guide_and_cleanup':'passed'}))
+                        return
                     if os.environ.get('SDOYCC_DUEL_BATTLE_SYNC_ONLY') == '1':
                         check_battle_order(page)
                         assert not errors,errors
@@ -665,7 +710,8 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     placing=page.get_by_role('status',name='Karte platzieren')
                     expect(placing).to_contain_text('Effekt-Zielmonster')
                     expect(placing).to_contain_text('Zielfeld wählen')
-                    assert placing.locator('img').bounding_box()['height']>=120
+                    assert page.locator('.duel-inspector-summary > img').bounding_box()['height']>=120
+                    assert placing.evaluate("e=>!!e.closest('.duel-card-inspector')")
                     assert placing.evaluate('e=>getComputedStyle(e).pointerEvents')=='none'
                     assert page.locator('.arena-field-selection-guide').evaluate('e=>getComputedStyle(e).backdropFilter')=='none'
                     page.screenshot(path=str(ROOT/'artifacts/duel-summon-guidance.png'))
@@ -901,6 +947,7 @@ createRoot(document.getElementById('root')).render(<><InteractionPolicy /><DuelW
                     page.screenshot(path=str(ROOT/'artifacts/duel-synced-effect-context.png'),full_page=True)
                     assert not errors, errors
                     check_effect_context(page)
+                    check_placement_layout(page)
                     check_battle_order(page)
                     assert not errors, errors
                     browser.close()
