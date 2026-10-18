@@ -18,6 +18,9 @@ import { MyPacksPage } from './pages/MyPacksPage'
 import { RegistrationPage } from './pages/RegistrationPage'
 import { BattlePassPage, BoosterDetailPage, BoosterHistoryPage, BoostersPage, CardDetailPage, CatalogPage, InventoryPage, SetDetailPage, SetsPage, TradePage } from './pages/WorkspacePages'
 
+const CraftingPage = lazy(() => import('./pages/CraftingPage').then(module => ({ default: module.CraftingPage })))
+const AdminCrafting = lazy(() => import('./pages/AdminCrafting').then(module => ({ default: module.AdminCrafting })))
+
 const DeckBuilder = lazy(() => import('./pages/DeckBuilder').then(module => ({ default: module.DeckBuilder })))
 const DuelZone = lazy(() => import('./pages/DuelZone').then(module => ({ default: module.DuelZone })))
 const DeckTemplatePage = lazy(() => import('./pages/DeckSharing').then(module => ({ default: module.DeckTemplatePage })))
@@ -30,6 +33,7 @@ const navItems = [
   { label: 'Meine Decks', path: '/decks', icon: Layers3 },
   { label: 'DuelZone', path: '/duel-zone', icon: Swords },
   { label: 'Kartenkatalog', path: '/cards', icon: BookOpen },
+  { label: 'Crafting', path: '/crafting', icon: Sparkles },
   { label: 'Handel', path: '/trade', icon: Tags },
   { label: 'Saisonpass', path: '/battle-pass', icon: Swords },
 ]
@@ -66,6 +70,8 @@ export default function App() {
   else if (path === '/sets') page = <SetsPage />
   else if (/^\/cards\/\d+$/.test(path)) page = <CardDetailPage cardId={Number(path.split('/')[2])} />
   else if (/^\/sets\/\d+$/.test(path)) page = <SetDetailPage setId={Number(path.split('/')[2])} />
+  else if (path === '/crafting') page = <CraftingPage />
+  else if (path === '/admin/crafting') page = <AdminCrafting />
   else if (path === '/inventory') page = <CollectionPage />
   else if (path === '/decks') page = <DeckBuilder />
   else if (path === '/duel-zone') page = <DuelZone />

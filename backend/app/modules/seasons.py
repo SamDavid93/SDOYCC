@@ -23,8 +23,19 @@ class Level(Command):
 
 class Quest(Command):
     period: Literal["daily", "weekly"]
-    openings: int = Field(ge=1, le=100, strict=True)
-    xp: int = Field(ge=1, le=100000, strict=True)
+    mission_type: Literal["open_boosters", "dismantle_card", "craft_card", "craft_rarity", "earn_crafting_currency", "spend_crafting_currency"] = "open_boosters"
+    openings: int = Field(default=1, ge=1, le=100, strict=True)
+    target: int = Field(default=1, ge=1, le=1000000, strict=True)
+    rarity_key: str | None = Field(default=None, max_length=120)
+    currency_key: str | None = Field(default=None, max_length=100)
+    xp: int = Field(default=0, ge=0, le=100000, strict=True)
+
+    @model_validator(mode="after")
+    def mission_rules(self):
+        if self.mission_type == "open_boosters" and self.xp < 1: raise ValueError("Öffnungsaufgaben benötigen XP.")
+        if self.mission_type != "open_boosters" and self.xp != 0: raise ValueError("Crafting-Aufgaben vergeben keine automatischen XP.")
+        if self.mission_type == "craft_rarity" and not self.rarity_key: raise ValueError("Raritätsaufgabe benötigt eine Rarität.")
+        return self
 
 class SeasonDraft(AdminCommand):
     name: str = Field(min_length=3, max_length=120)
@@ -34,7 +45,7 @@ class SeasonDraft(AdminCommand):
     claim_until: datetime
     opening_xp: int = Field(ge=1, le=10000, strict=True)
     levels: list[Level] = Field(min_length=1, max_length=100)
-    quests: list[Quest] = Field(default_factory=list, max_length=2)
+    quests: list[Quest] = Field(default_factory=list, max_length=20)
 
     @field_validator("starts_at", "ends_at", "claim_until")
     @classmethod
@@ -47,7 +58,7 @@ class SeasonDraft(AdminCommand):
         if not self.starts_at < self.ends_at <= self.claim_until or self.claim_until - self.starts_at > timedelta(days=400):
             raise ValueError("Start, Ende und Abholfrist müssen geordnet sein; maximal 400 Tage.")
         if [x.xp for x in self.levels] != sorted({x.xp for x in self.levels}): raise ValueError("XP-Schwellen müssen streng steigen.")
-        if len({q.period for q in self.quests}) != len(self.quests): raise ValueError("Nur eine Aufgabe je Periode.")
+        if len({(q.period, q.mission_type, q.rarity_key, q.currency_key) for q in self.quests}) != len(self.quests): raise ValueError("Gleiche Aufgabe nur einmal je Periode.")
         return self
 
 def status(season, now=None):
@@ -63,12 +74,12 @@ def season_json(row):
         "starts_at": row.starts_at.isoformat()+"Z", "ends_at": row.ends_at.isoformat()+"Z", "claim_until": row.claim_until.isoformat()+"Z", **json.loads(row.rules_json)}
 
 def budget(payload):
-    totals = {k: sum(i.quantity for level in payload.levels for i in level.items if i.kind == k) for k in ["points", "card", "special", "pack"]}
+    totals = {k: sum(i.quantity for level in payload.levels for i in level.items if i.kind == k) for k in ["points", "card", "special", "pack", "crafting_currency"]}
     example = []
     for per_day in [1, 2, 5]:
         days = max(1, (payload.ends_at-payload.starts_at).days)
         xp = days * per_day * payload.opening_xp
-        xp += sum((days if q.period == "daily" else days//7) * q.xp for q in payload.quests if per_day * (1 if q.period == "daily" else 7) >= q.openings)
+        xp += sum((days if q.period == "daily" else days//7) * q.xp for q in payload.quests if q.mission_type == "open_boosters" and per_day * (1 if q.period == "daily" else 7) >= q.openings)
         example.append({"openings_per_day": per_day, "xp": xp, "level": sum(xp >= l.xp for l in payload.levels)})
     return {"per_user": totals, "examples": example, "note": "Beispiele rechnen mit Standardboostern zu 100 Punkten. Aufgabenperioden richten sich nach UTC; angebrochene Perioden können abweichen."}
 
@@ -166,6 +177,7 @@ def process_opening(db, opening):
     rules = json.loads(season.rules_json)
     award_xp(db, season, user.id, f"opening:{opening.id}", rules["opening_xp"])
     for quest in rules["quests"]:
+        if quest.get("mission_type", "open_boosters") != "open_boosters": continue
         start = period_start(opening.created_at, quest["period"]); end = start + timedelta(days=1 if quest["period"] == "daily" else 7)
         count = db.scalar(select(func.count(BoosterOpening.id)).where(BoosterOpening.user_id == user.id,
             BoosterOpening.created_at >= max(start, season.starts_at), BoosterOpening.created_at < min(end, season.ends_at)))
@@ -189,8 +201,21 @@ def progress_payload(db, user, season):
     for q in rules["quests"]:
         start = period_start(min(now, season.ends_at-timedelta(microseconds=1)), q["period"])
         end = start+timedelta(days=1 if q["period"] == "daily" else 7)
-        count = db.scalar(select(func.count(BoosterOpening.id)).where(BoosterOpening.user_id == user.id,
-            BoosterOpening.created_at >= max(start, season.starts_at), BoosterOpening.created_at < min(end, season.ends_at)))
+        if q.get("mission_type", "open_boosters") == "open_boosters":
+            count = db.scalar(select(func.count(BoosterOpening.id)).where(BoosterOpening.user_id == user.id,
+                BoosterOpening.created_at >= max(start, season.starts_at), BoosterOpening.created_at < min(end, season.ends_at)))
+        else:
+            from app.db.models import HubEvent
+            event_type = {"dismantle_card": "card_dismantled", "craft_card": "card_crafted", "craft_rarity": "card_crafted",
+                "earn_crafting_currency": "crafting_currency_earned", "spend_crafting_currency": "crafting_currency_spent"}[q["mission_type"]]
+            events = db.scalars(select(HubEvent).where(HubEvent.user_id == user.id, HubEvent.event_type == event_type,
+                HubEvent.created_at >= max(start, season.starts_at), HubEvent.created_at < min(end, season.ends_at)))
+            count = 0
+            for event in events:
+                data = json.loads(event.payload_json)
+                if q.get("rarity_key") and data.get("rarity") != q["rarity_key"]: continue
+                if q.get("currency_key") and data.get("currency_key") != q["currency_key"]: continue
+                count += data.get("quantity", 0) if event_type.startswith("card_") else data.get("currency_amount", 0)
         result["quest_progress"].append({**q, "count": count, "resets_at": min(end, season.ends_at).isoformat()+"Z"})
     return result
 

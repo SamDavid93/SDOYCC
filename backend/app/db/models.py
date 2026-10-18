@@ -6,6 +6,93 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.session import Base
 
 
+class CraftingCurrency(Base):
+    __tablename__ = "crafting_currencies"
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    display_name: Mapped[str] = mapped_column(String(120))
+
+
+class CraftingControl(Base):
+    __tablename__ = "crafting_control"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    crafting_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    dismantling_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    bulk_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    max_quantity: Mapped[int] = mapped_column(Integer, default=1000)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class CraftingRarityRule(Base):
+    __tablename__ = "crafting_rarity_rules"
+    __table_args__ = (CheckConstraint("dismantle_value >= 0 AND craft_cost > 0 AND craft_cost > dismantle_value"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    rarity_key: Mapped[str] = mapped_column(String(120), unique=True)
+    currency_key: Mapped[str] = mapped_column(ForeignKey("crafting_currencies.key"))
+    display_name: Mapped[str] = mapped_column(String(120))
+    dismantle_value: Mapped[int] = mapped_column(Integer, default=10)
+    craft_cost: Mapped[int] = mapped_column(Integer, default=30)
+    crafting_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    dismantling_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class UserCraftingBalance(Base):
+    __tablename__ = "user_crafting_balances"
+    __table_args__ = (UniqueConstraint("user_id", "currency_key"), CheckConstraint("balance >= 0"))
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    currency_key: Mapped[str] = mapped_column(ForeignKey("crafting_currencies.key"))
+    balance: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class UserCraftingSettings(Base):
+    __tablename__ = "user_crafting_settings"
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    keep_one: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class UserCardPreference(Base):
+    __tablename__ = "user_card_preferences"
+    __table_args__ = (UniqueConstraint("user_id", "card_printing_id"), CheckConstraint("protected_quantity >= 0"))
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    card_printing_id: Mapped[int] = mapped_column(ForeignKey("card_printings.id"))
+    protected_quantity: Mapped[int] = mapped_column(Integer, default=0)
+    favorite: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class CraftingTransaction(Base):
+    __tablename__ = "crafting_transactions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    type: Mapped[str] = mapped_column(String(30))
+    card_printing_id: Mapped[int | None] = mapped_column(ForeignKey("card_printings.id"), nullable=True)
+    rarity_key: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    currency_key: Mapped[str] = mapped_column(ForeignKey("crafting_currencies.key"))
+    card_quantity: Mapped[int] = mapped_column(Integer, default=0)
+    currency_amount: Mapped[int] = mapped_column(Integer)
+    balance_before: Mapped[int] = mapped_column(Integer)
+    balance_after: Mapped[int] = mapped_column(Integer)
+    source_ref: Mapped[str] = mapped_column(String(180), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class HubEvent(Base):
+    __tablename__ = "hub_events"
+    __table_args__ = (UniqueConstraint("event_type", "source_ref"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    event_type: Mapped[str] = mapped_column(String(60), index=True)
+    source_ref: Mapped[str] = mapped_column(String(180))
+    payload_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 def now() -> datetime:
     return datetime.utcnow()
 
@@ -362,6 +449,7 @@ class VariantInventory(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     variant_id: Mapped[int] = mapped_column(ForeignKey("card_variants.id"), index=True)
+    card_printing_id: Mapped[int | None] = mapped_column(ForeignKey("card_printings.id"), nullable=True, index=True)
     quantity: Mapped[int] = mapped_column(Integer, default=0)
     reserved: Mapped[int] = mapped_column(Integer, default=0)
     bound: Mapped[bool] = mapped_column(Boolean, default=False)

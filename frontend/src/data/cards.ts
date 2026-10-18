@@ -1,5 +1,5 @@
 export type CardRarity = string
-export type OwnedVariant = { id: number | null; rarity: string | null; legacy: boolean; source: string | null; quantity: number; reserved: number; available: number; bound: boolean }
+export type OwnedVariant = { printing_id?: number | null; id: number | null; rarity: string | null; legacy: boolean; source: string | null; quantity: number; reserved: number; available: number; bound: boolean }
 
 export type CardRecord = {
   image_available?: boolean

@@ -30,15 +30,21 @@ router = APIRouter(prefix="/api/admin/grants", dependencies=[Depends(admin_reade
 
 class Position(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    kind: Literal["points", "card", "pack", "special"]
+    kind: Literal["points", "card", "pack", "special", "crafting_currency"]
     quantity: int = Field(ge=1, le=1000000, strict=True)
     card_id: int | None = Field(None, ge=1, strict=True)
     booster_id: int | None = Field(None, ge=1, strict=True)
     rarity: str | None = Field(None, max_length=80)
     bound: bool = Field(False, strict=True)
+    currency_key: str | None = Field(None, max_length=100)
 
     @model_validator(mode="after")
     def check_fields(self):
+        if self.kind == "crafting_currency":
+            if not self.currency_key or self.card_id or self.booster_id or self.rarity or self.bound:
+                raise ValueError("Crafting-Währung benötigt ausschließlich Währung und Menge.")
+        elif self.currency_key:
+            raise ValueError("Crafting-Währung ist nur bei CP-Belohnungen zulässig.")
         if self.kind == "special" and (not self.card_id or self.booster_id or self.rarity):
             raise ValueError("Sonderkarte benötigt nur Karten-ID, Menge und Bindung.")
         if self.kind == "points" and (self.card_id or self.booster_id or self.rarity or self.bound):
@@ -82,7 +88,8 @@ def require_granter(actor):
 
 
 def limits(actor):
-    return {"points": 1000000, "card": 1000, "pack": 100} if actor.role == "super_admin" else {
+    return {"points": 1000000, "card": 1000, "pack": 100, "crafting_currency": 1000000} if actor.role == "super_admin" else {
+        "crafting_currency": 10000,
         "points": settings.admin_grant_points_limit, "card": settings.admin_grant_cards_limit, "pack": settings.admin_grant_packs_limit}
 
 
@@ -107,18 +114,24 @@ def preview(database, actor, payload: Draft, system=False):
         raise HTTPException(400, "Vergaben benötigen ein aktives Twitch-Konto.")
     if not system and actor.role != "super_admin" and (user.role != "user" or user.id == actor.id):
         raise HTTPException(403, "Administratoren dürfen nur an normale Nutzer vergeben.")
-    budget = {"points": 1000000, "card": 1000, "pack": 100} if system else limits(actor)
+    budget = {"points": 1000000, "card": 1000, "pack": 100, "crafting_currency": 1000000} if system else limits(actor)
     totals = {kind: sum(item.quantity for item in payload.items if item.kind == kind or (kind == "card" and item.kind == "special")) for kind in budget}
     if any(totals[kind] > maximum for kind, maximum in budget.items()):
         raise HTTPException(400, "Die Vergabe überschreitet dein Mengenlimit pro Vorgang.")
     seen, rows = set(), []
     for item in payload.items:
-        identity = (item.kind, item.card_id, item.booster_id, item.rarity, item.bound)
+        identity = (item.kind, item.card_id, item.booster_id, item.rarity, item.bound, item.currency_key)
         if identity in seen:
             raise HTTPException(400, "Gleiche Positionen bitte zu einer Menge zusammenfassen.")
         seen.add(identity)
         row = item.model_dump()
-        if item.kind == "points":
+        if item.kind == "crafting_currency":
+            from app.db.models import CraftingCurrency, UserCraftingBalance
+            currency = database.get(CraftingCurrency, item.currency_key)
+            if not currency: raise HTTPException(400, "Unbekannte Crafting-Währung.")
+            before = database.scalar(select(UserCraftingBalance.balance).where(UserCraftingBalance.user_id == user.id, UserCraftingBalance.currency_key == item.currency_key)) or 0
+            row.update(name=currency.display_name, before=before, after=before + item.quantity)
+        elif item.kind == "points":
             row.update(name="Sammelpunkte", before=user.credits, after=user.credits + item.quantity)
         elif item.kind == "special":
             special = database.scalar(select(SpecialCard).where(SpecialCard.card_id == item.card_id))
@@ -177,7 +190,10 @@ def apply_grant(database, user, actor, draft, snapshot, fingerprint, source="adm
     for index, item in enumerate(draft.items):
         reference = f"grant:{grant.id}:{index}"
         line = GrantItem(grant_id=grant.id, kind=item.kind, quantity=item.quantity, bound=item.bound)
-        if item.kind == "points":
+        if item.kind == "crafting_currency":
+            from app.modules.crafting import book_currency
+            book_currency(database, user.id, item.currency_key, item.quantity, reference, "reward")
+        elif item.kind == "points":
             book_diamonds(database, user, item.quantity, "season_reward" if source == "season" else "admin_grant", reference)
         elif item.kind in {"card", "special"}:
             if item.kind == "special":

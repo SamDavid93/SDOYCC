@@ -26,6 +26,11 @@ def migrate_local_schema() -> None:
     """Apply small additive migrations for the local development database."""
     Base.metadata.create_all(bind=engine)
     inspector = inspect(engine)
+    stock_columns = {column['name'] for column in inspector.get_columns('variant_inventory')}
+    if 'card_printing_id' not in stock_columns:
+        with engine.begin() as connection:
+            connection.execute(text('ALTER TABLE variant_inventory ADD COLUMN card_printing_id INTEGER REFERENCES card_printings(id)'))
+            connection.execute(text('CREATE INDEX IF NOT EXISTS ix_variant_inventory_card_printing_id ON variant_inventory(card_printing_id)'))
     alert_columns = {column['name'] for column in inspector.get_columns('rare_pull_announcements')}
     if 'revealed_at' not in alert_columns:
         with engine.begin() as connection:

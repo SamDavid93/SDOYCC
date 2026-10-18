@@ -23,6 +23,8 @@ async def lifespan(app: FastAPI):
         import_structure_decks(database)
         from app.modules.inventory import migrate_inventory
         migrate_inventory(database)
+        from app.modules.crafting import seed_crafting
+        seed_crafting(database)
         database.commit()
     import asyncio
     from app.modules.maintenance import maintenance_loop, maintain
@@ -139,3 +141,7 @@ app.include_router(deck_templates_router)
 
 from app.modules.duel_history import router as duel_history_router
 app.include_router(duel_history_router)
+
+from app.modules.crafting import router as crafting_router, admin_router as crafting_admin_router
+app.include_router(crafting_router)
+app.include_router(crafting_admin_router)
