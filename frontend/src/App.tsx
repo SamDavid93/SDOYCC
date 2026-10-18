@@ -4,6 +4,7 @@ import { AdvancedAdmin } from './pages/AdvancedAdmin'
 import { Notifications } from './components/Notifications'
 import { SiteFooter } from './components/SiteFooter'
 import { CraftingIcon } from './components/CraftingSymbols'
+import { CraftRevealHost } from './components/CraftReveal'
 import logoUrl from './assets/sdoycc-logo.png'
 import bannerUrl from './assets/sdoycc-banner.png'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
@@ -88,7 +89,7 @@ export default function App() {
   else if (path === '/account') page = <AccountPage />
   else if (path === '/admin') page = <AdminPage />
   else if (/^\/admin\/users\/\d+$/.test(path)) page = <AdminPage userId={Number(path.split('/')[3])} />
-  return <div className="app-shell">
+  return <div className="app-shell"><CraftRevealHost key={user.id}/>
     <aside id="hub-navigation" className={`sidebar ${menuOpen ? 'is-open' : ''}`}>
       <div className="brand-row brand-art-row"><NavLink to="/" className="brand-home" aria-label="SDOYCC – Zur Startseite" onClick={() => setMenuOpen(false)}><img className="brand-logo" src={logoUrl} width="1254" height="1254" alt="SDOYCC – SamDavidOfficial’s Yu-Gi-Oh Card Collector" /><span className="brand-wordmark" aria-hidden="true"><strong>SDOYCC</strong><small>COLLECT · BUILD · DUEL</small></span></NavLink><button className="icon-button mobile-close" onClick={() => setMenuOpen(false)} aria-label="Menü schließen"><X size={18} /></button></div>
       <div className="profile-chip"><div className="avatar">{user.display_name.slice(0, 2).toUpperCase()}</div><div className="profile-copy"><strong>{user.display_name}</strong><span>{user.twitch_id ? '@' + user.username : 'Lokales Demo-Konto'}</span></div></div>

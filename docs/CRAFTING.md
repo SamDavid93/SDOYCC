@@ -11,6 +11,13 @@ bleibt erhalten. Gesperrte Aktionen erklären fehlendes Guthaben oder fehlende f
 Exemplare. Farbige CP-Abzeichen und unterschiedliche Aktionssymbole erscheinen
 auch in Werkstatt, Bestätigungen und Verwaltung.
 
+Nach einer bestätigten Herstellung entsteht die Karte in einer kurzen Animation
+und wandert mit Mengenanzeige in die Sammlung. Das gilt auch im Deckeditor.
+Die drei synthetisierten Soundeffekte lassen sich dauerhaft stummschalten;
+Animation und Ton sind überspringbar. Die Systemeinstellung für reduzierte
+Bewegung wird berücksichtigt. Fehler oder doppelte Erfolgsantworten spielen
+keine zusätzliche Herstellungsanimation ab.
+
 ## Wirtschaft und Bedienung
 
 Jede bereits gepflegte, normalisierte Rarität erhält eine eigene CP-Währung.

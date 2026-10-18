@@ -46,6 +46,10 @@ def run():
                     page=browser.new_page(viewport={'width':1440,'height':1000})
                     errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
                     page.add_init_script(f"sessionStorage.setItem('hub-session',{json.dumps(fixture.tokens[3]['Authorization'][7:])})")
+                    page.add_init_script('''window.__craftSoundStarts=0;
+                        const start=OscillatorNode.prototype.start;
+                        OscillatorNode.prototype.start=function(...args){window.__craftSoundStarts++;return start.apply(this,args)};
+                        window.addEventListener('hub-card-crafted-reveal',event=>window.__lastCraftReveal=event.detail);''')
                     page.route('**/api/cards/*/art/original',lambda route:route.fulfill(content_type='image/svg+xml',body='<svg xmlns="http://www.w3.org/2000/svg" width="160" height="232"><rect width="160" height="232" fill="#286474"/><text x="12" y="110" fill="white">Testkarte</text></svg>'))
                     page.goto(ui_url+'/#/crafting?tab=dismantle')
                     expect(page.get_by_role('heading',name='Crafting',exact=True)).to_be_visible()
@@ -62,8 +66,33 @@ def run():
                     target=page.locator('[data-printing-id="2"]')
                     target.get_by_role('button',name='Herstellen',exact=True).click()
                     expect(dialog.locator('.craft-quote')).to_contain_text('90 → 60')
+                    # A rejected craft must never reveal a card or play a cue.
+                    page.route('**/api/crafting/craft',lambda route:route.fulfill(status=409,json={'detail':'Crafting-Test: Angebot geändert'}))
                     dialog.get_by_role('button',name='Karten herstellen',exact=True).click()
+                    expect(dialog.get_by_role('alert')).to_contain_text('Crafting-Test')
+                    expect(page.locator('.craft-reveal')).to_have_count(0)
+                    assert page.evaluate('window.__craftSoundStarts')==0
+                    page.unroute('**/api/crafting/craft')
+                    dialog.get_by_role('button',name='Karten herstellen',exact=True).click()
+                    reveal=page.get_by_role('dialog',name='Neue Karte hergestellt',exact=True)
+                    expect(reveal).to_be_visible()
+                    expect(reveal).to_contain_text('Zielkarte')
+                    expect(reveal).to_have_attribute('data-phase','reveal')
+                    assert page.evaluate('window.__craftSoundStarts')>=7
+                    page.screenshot(path=str(ROOT/'artifacts/crafting-reveal-desktop.png'))
+                    reveal.get_by_role('button',name='Crafting-Ton ausschalten',exact=True).click()
+                    silent_count=page.evaluate('window.__craftSoundStarts')
+                    page.set_viewport_size({'width':390,'height':844})
+                    assert reveal.evaluate('(e)=>e.scrollWidth<=innerWidth&&e.scrollHeight<=innerHeight')
+                    page.screenshot(path=str(ROOT/'artifacts/crafting-reveal-mobile.png'))
+                    expect(reveal).to_have_attribute('data-phase','collected')
+                    expect(reveal).to_contain_text('Jetzt 1× diese Ausgabe im Besitz')
+                    assert page.evaluate('window.__craftSoundStarts')==silent_count
                     expect(dialog).to_have_count(0)
+                    # A duplicate success event may not replay the sequence.
+                    page.evaluate("window.dispatchEvent(new CustomEvent('hub-card-crafted-reveal',{detail:window.__lastCraftReveal}))")
+                    expect(reveal).to_have_count(0)
+                    page.set_viewport_size({'width':1440,'height':1000})
                     expect(target).to_contain_text('Im Besitz: 1')
                     page.locator('[data-printing-id="3"]').get_by_role('button',name='Herstellen',exact=True).click()
                     dialog.get_by_label('Menge',exact=True).fill('3')
@@ -110,10 +139,19 @@ def run():
                     workshop.get_by_label('Ausgabe / Rarität',exact=True).select_option('2')
                     expect(workshop.locator('[data-currency="rare_cp"]')).to_be_visible()
                     expect(workshop).to_contain_text('1× diese Ausgabe')
+                    deck_silent_count=page.evaluate('window.__craftSoundStarts')
+                    page.emulate_media(reduced_motion='reduce')
                     workshop.get_by_role('button').filter(has_text='Herstellen').click()
                     expect(dialog.locator('.craft-quote')).to_contain_text('80 → 50')
                     dialog.get_by_role('button',name='Karten herstellen',exact=True).click()
+                    expect(reveal).to_be_visible()
+                    expect(reveal).to_have_attribute('data-reduced','true')
+                    expect(reveal).to_have_attribute('data-phase','collected')
+                    expect(reveal.get_by_role('button',name='Crafting-Ton einschalten',exact=True)).to_be_visible()
+                    assert page.evaluate('window.__craftSoundStarts')==deck_silent_count
+                    reveal.press('Escape')
                     expect(dialog).to_have_count(0)
+                    page.emulate_media(reduced_motion='no-preference')
                     expect(workshop).to_contain_text('2× diese Ausgabe')
                     expect(page.locator('.deck-inspector-budget')).to_contain_text('Besessen 2')
                     workshop.get_by_role('button').filter(has_text='Zerlegen').click()
@@ -172,7 +210,7 @@ def run():
                         assert not db.scalars(select(SeasonProgress)).all()
                         assert len(db.scalars(select(AdminAuditEvent)).all())==3
                     browser.close()
-                    print(json.dumps({'real_api_craft_dismantle_bulk_protection':'passed','trade_locks_and_disabled_choices':'passed','deck_editor_craft_dismantle_stock_refresh':'passed','printing_currency_icons_and_unchanged_deck':'passed','admin_rules_balance_and_settings':'passed','desktop_mobile_and_no_console_errors':'passed'}))
+                    print(json.dumps({'real_api_craft_dismantle_bulk_protection':'passed','trade_locks_and_disabled_choices':'passed','deck_editor_craft_dismantle_stock_refresh':'passed','printing_currency_icons_and_unchanged_deck':'passed','craft_reveal_server_confirmation_audio_mute_and_deduplication':'passed','craft_reveal_reduced_motion_escape_and_viewport':'passed','admin_rules_balance_and_settings':'passed','desktop_mobile_and_no_console_errors':'passed'}))
             finally:
                 frontend.terminate();frontend.wait(timeout=10)
     finally:
