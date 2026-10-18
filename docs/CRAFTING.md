@@ -4,6 +4,13 @@ Spieler erreichen die Werkstatt unter `/#/crafting`, die Verwaltung unter
 `/#/admin/crafting`. Auch Sammlung, Kartenansicht und Inventardetails verlinken
 auf die passende Karte beziehungsweise Druckversion.
 
+Im Deckeditor zeigt die ausgewählte Karte eine integrierte Kartenwerkstatt.
+Nach Auswahl der Druckversion lassen sich Karten direkt herstellen oder zerlegen;
+Besitz, Katalog und Deckprüfung werden danach aktualisiert. Der Deckentwurf selbst
+bleibt erhalten. Gesperrte Aktionen erklären fehlendes Guthaben oder fehlende freie
+Exemplare. Farbige CP-Abzeichen und unterschiedliche Aktionssymbole erscheinen
+auch in Werkstatt, Bestätigungen und Verwaltung.
+
 ## Wirtschaft und Bedienung
 
 Jede bereits gepflegte, normalisierte Rarität erhält eine eigene CP-Währung.

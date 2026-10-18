@@ -14,7 +14,7 @@ from sqlalchemy import select
 from browser_smoke import ROOT, free_port, wait_ready
 from test_crafting import CraftingTests
 from app.main import app
-from app.db.models import AdminAuditEvent, InventoryItem, InventoryReservation, SeasonProgress, VariantInventory
+from app.db.models import AdminAuditEvent, InventoryItem, InventoryReservation, PlayerDeck, SeasonProgress, VariantInventory
 
 
 def run():
@@ -100,6 +100,42 @@ def run():
                     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
                     page.screenshot(path=str(ROOT/'artifacts/crafting-mobile.png'),full_page=True)
                     page.set_viewport_size({'width':1440,'height':1000})
+                    # Same server and wallet, now directly inside a real deck draft.
+                    with fixture.sessions() as db:
+                        db.add(PlayerDeck(id='cfa10000-0000-4000-8000-000000000001',user_id=3,name='Crafting im Deck',entries_json=json.dumps([{'card_id':2,'section':'main','quantity':1}])))
+                        db.commit()
+                    page.goto(ui_url+'/#/decks/cfa10000-0000-4000-8000-000000000001')
+                    page.get_by_role('button',name='Zielkarte ansehen',exact=True).first.click()
+                    workshop=page.get_by_role('region',name='Kartenwerkstatt im Deckeditor')
+                    workshop.get_by_label('Ausgabe / Rarität',exact=True).select_option('2')
+                    expect(workshop.locator('[data-currency="rare_cp"]')).to_be_visible()
+                    expect(workshop).to_contain_text('1× diese Ausgabe')
+                    workshop.get_by_role('button').filter(has_text='Herstellen').click()
+                    expect(dialog.locator('.craft-quote')).to_contain_text('80 → 50')
+                    dialog.get_by_role('button',name='Karten herstellen',exact=True).click()
+                    expect(dialog).to_have_count(0)
+                    expect(workshop).to_contain_text('2× diese Ausgabe')
+                    expect(page.locator('.deck-inspector-budget')).to_contain_text('Besessen 2')
+                    workshop.get_by_role('button').filter(has_text='Zerlegen').click()
+                    expect(dialog.locator('.craft-quote')).to_contain_text('50 → 60')
+                    dialog.get_by_role('button',name='Karten zerlegen',exact=True).click()
+                    expect(dialog).to_have_count(0)
+                    expect(workshop).to_contain_text('1× diese Ausgabe')
+                    expect(workshop.get_by_role('button').filter(has_text='Zerlegen')).to_be_disabled()
+                    workshop.get_by_label('Ausgabe / Rarität',exact=True).select_option('3')
+                    expect(workshop.locator('[data-currency="ultra_rare_cp"]')).to_be_visible()
+                    expect(workshop.get_by_role('button').filter(has_text='Zerlegen')).to_be_disabled()
+                    page.screenshot(path=str(ROOT/'artifacts/deck-crafting-desktop.png'),full_page=True)
+                    page.set_viewport_size({'width':390,'height':844})
+                    page.wait_for_timeout(350)
+                    page.locator('.deck-mobile-tabs').get_by_role('button',name='Karte',exact=True).click()
+                    expect(workshop).to_be_visible()
+                    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+                    page.screenshot(path=str(ROOT/'artifacts/deck-crafting-mobile.png'),full_page=True)
+                    with fixture.sessions() as db:
+                        deck=db.get(PlayerDeck,'cfa10000-0000-4000-8000-000000000001')
+                        assert json.loads(deck.entries_json)==[{'card_id':2,'section':'main','quantity':1}]
+                    page.set_viewport_size({'width':1440,'height':1000})
                     page.evaluate('(token)=>{sessionStorage.setItem("hub-session",token);window.dispatchEvent(new Event("hub-session-changed"));location.hash="/admin/crafting"}',fixture.tokens[2]['Authorization'][7:])
                     page.get_by_role('button',name='Raritätsregeln',exact=True).click()
                     rule=page.locator('details.content-panel').filter(has=page.locator('summary').filter(has_text='Rare · rare_cp'))
@@ -136,7 +172,7 @@ def run():
                         assert not db.scalars(select(SeasonProgress)).all()
                         assert len(db.scalars(select(AdminAuditEvent)).all())==3
                     browser.close()
-                    print(json.dumps({'real_api_craft_dismantle_bulk_protection':'passed','trade_locks_and_disabled_choices':'passed','admin_rules_balance_and_settings':'passed','desktop_mobile_and_no_console_errors':'passed'}))
+                    print(json.dumps({'real_api_craft_dismantle_bulk_protection':'passed','trade_locks_and_disabled_choices':'passed','deck_editor_craft_dismantle_stock_refresh':'passed','printing_currency_icons_and_unchanged_deck':'passed','admin_rules_balance_and_settings':'passed','desktop_mobile_and_no_console_errors':'passed'}))
             finally:
                 frontend.terminate();frontend.wait(timeout=10)
     finally:

@@ -3,6 +3,7 @@ import { SeasonHub } from './pages/SeasonHub'
 import { AdvancedAdmin } from './pages/AdvancedAdmin'
 import { Notifications } from './components/Notifications'
 import { SiteFooter } from './components/SiteFooter'
+import { CraftingIcon } from './components/CraftingSymbols'
 import logoUrl from './assets/sdoycc-logo.png'
 import bannerUrl from './assets/sdoycc-banner.png'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
@@ -33,7 +34,7 @@ const navItems = [
   { label: 'Meine Decks', path: '/decks', icon: Layers3 },
   { label: 'DuelZone', path: '/duel-zone', icon: Swords },
   { label: 'Kartenkatalog', path: '/cards', icon: BookOpen },
-  { label: 'Crafting', path: '/crafting', icon: Sparkles },
+  { label: 'Crafting', path: '/crafting', icon: CraftingIcon },
   { label: 'Handel', path: '/trade', icon: Tags },
   { label: 'Saisonpass', path: '/battle-pass', icon: Swords },
 ]
