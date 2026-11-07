@@ -14,7 +14,7 @@ from sqlalchemy import select
 from browser_smoke import ROOT, free_port, wait_ready
 from test_crafting import CraftingTests
 from app.main import app
-from app.db.models import AdminAuditEvent, InventoryItem, InventoryReservation, PlayerDeck, SeasonProgress, VariantInventory
+from app.db.models import AdminAuditEvent, GrantBatch, GrantBatchRow, InventoryItem, InventoryReservation, PlayerDeck, SeasonProgress, User, VariantInventory
 
 
 def run():
@@ -209,6 +209,52 @@ def run():
                         assert db.scalar(select(InventoryItem.quantity).where(InventoryItem.user_id==3,InventoryItem.card_id==2))==1
                         assert not db.scalars(select(SeasonProgress)).all()
                         assert len(db.scalars(select(AdminAuditEvent)).all())==3
+                        db.add(AdminAuditEvent(actor_id=2,target_id=2,action='special_state',source='isolated-fixture',details_json=json.dumps({'before':'draft','after':'active','reason':'Zustandsanzeige prüfen'})))
+                        db.add(AdminAuditEvent(actor_id=2,target_id=2,action='duel_restriction',source='isolated-fixture',details_json=json.dumps({'before':False,'after':True,'reason':'Boolesche Werte prüfen'})))
+                        db.commit()
+                    page.evaluate('location.hash="/admin"')
+                    expect(page.get_by_role('heading',name='Deine Community im Blick',exact=True)).to_be_visible()
+                    audit=page.locator('.admin-audit')
+                    audit.get_by_label('Aktion filtern',exact=True).select_option('crafting_settings')
+                    entry=audit.locator('.admin-audit-entry').first
+                    expect(entry).to_contain_text('Crafting-Einstellungen geändert')
+                    entry.locator('summary').click()
+                    expect(entry).to_contain_text('Herstellen aktiv: Nein')
+                    expect(entry).not_to_contain_text('Unbekannte Rolle')
+                    audit.get_by_label('Aktion filtern',exact=True).select_option('special_state')
+                    expect(entry).to_contain_text('Sonderkartenstatus geändert')
+                    entry.locator('summary').click()
+                    expect(entry).to_contain_text('Vorher: Entwurf')
+                    expect(entry).to_contain_text('Nachher: Aktiv')
+                    audit.get_by_label('Aktion filtern',exact=True).select_option('duel_restriction')
+                    expect(entry).to_contain_text('Duellsperre geändert')
+                    entry.locator('summary').click()
+                    expect(entry).to_contain_text('Vorher: Nein')
+                    expect(entry).to_contain_text('Nachher: Ja')
+                    with fixture.sessions() as db:
+                        db.get(User,4).role='admin'
+                        for bid,actor in ((910,2),(911,4)):
+                            db.add(GrantBatch(id=bid,actor_id=actor,reason=f'Rollenprüfung {bid}',items_json=json.dumps([{'kind':'points','quantity':1}])))
+                            db.flush()
+                            db.add(GrantBatchRow(batch_id=bid,user_id=3))
+                        db.commit()
+                    def role_login(uid):
+                        page.evaluate('(token)=>{sessionStorage.setItem("hub-session",token);window.dispatchEvent(new Event("hub-session-changed"));location.hash="/admin/advanced"}',fixture.tokens[uid]['Authorization'][7:])
+                        expect(page.locator('.profile-copy strong')).to_have_text(f'Craft {uid}')
+                        page.locator('.workflow-nav').get_by_role('button',name='Sammelvergaben',exact=True).click()
+                    role_login(5)
+                    expect(page.get_by_role('heading',name='Belohnung für mehrere Konten',exact=True)).to_have_count(0)
+                    page.get_by_role('button',name='#910 · Rollenprüfung 910',exact=True).click()
+                    expect(page.get_by_label('Dein Administrator-Passwort',exact=True)).to_have_count(0)
+                    role_login(4)
+                    page.get_by_role('button',name='#910 · Rollenprüfung 910',exact=True).click()
+                    expect(page.get_by_label('Dein Administrator-Passwort',exact=True)).to_have_count(0)
+                    page.get_by_role('button',name='#911 · Rollenprüfung 911',exact=True).click()
+                    expect(page.get_by_label('Dein Administrator-Passwort',exact=True)).to_be_visible()
+                    role_login(2)
+                    page.get_by_role('button',name='#910 · Rollenprüfung 910',exact=True).click()
+                    expect(page.get_by_label('Dein Administrator-Passwort',exact=True)).to_be_visible()
+                    assert not errors,errors
                     browser.close()
                     print(json.dumps({'real_api_craft_dismantle_bulk_protection':'passed','trade_locks_and_disabled_choices':'passed','deck_editor_craft_dismantle_stock_refresh':'passed','printing_currency_icons_and_unchanged_deck':'passed','craft_reveal_server_confirmation_audio_mute_and_deduplication':'passed','craft_reveal_reduced_motion_escape_and_viewport':'passed','admin_rules_balance_and_settings':'passed','desktop_mobile_and_no_console_errors':'passed'}))
             finally:

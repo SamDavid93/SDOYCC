@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from app.core.config import settings
 from app.core.auth import create_session
-from app.db.models import User, BoosterPoolEntry, BoosterOpening, RarePullAnnouncement, InventoryItem, UserBooster, Card
+from app.db.models import User, BoosterPoolEntry, BoosterOpening, BoosterOpeningCard, RarePullAnnouncement, InventoryItem, UserBooster, Card
 from test_economy import HubTestCase
 
 
@@ -152,6 +152,25 @@ class RarePullTests(HubTestCase):
                         {'Sec-Fetch-Site': 'cross-site'}]:
             self.assertEqual(local.post('/api/stream-overlay/claim', headers=headers, json={}).status_code, 403)
         self.assertEqual(self.client.post('/api/stream-overlay/claim', json={}).status_code, 403)
+
+    def test_overlay_counts_provider_rarity_spelling_consistently(self):
+        from fastapi.testclient import TestClient
+        from app.main import app
+        settings.rare_pull_delivery = 'overlay'
+        with self.sessions() as db:
+            db.scalar(select(BoosterPoolEntry)).rarity = 'Ultra Rare'
+            db.commit()
+        result = self.open_pack(reveal=False)
+        with self.sessions() as db:
+            for index, card in enumerate(db.scalars(select(BoosterOpeningCard))):
+                card.rarity = ('Ultra Rare', 'ULTRA_RARE', 'ultra_rare')[index % 3]
+            db.commit()
+        self.reveal(result.json(), list(range(len(result.json()['cards']))))
+        local = TestClient(app, base_url='http://127.0.0.1:8002', client=('127.0.0.1', 32100))
+        self.addCleanup(local.close)
+        item = local.post('/api/stream-overlay/claim', json={}).json()['announcement']
+        self.assertEqual(item['quantity'], len(result.json()['cards']))
+        self.assertEqual(item['rarity'], 'Ultraselten')
 
     def test_queue_failure_rolls_back_opening_and_inventory(self):
         self.assertEqual(self.buy().status_code, 200)

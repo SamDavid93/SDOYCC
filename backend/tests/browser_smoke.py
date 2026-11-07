@@ -34,6 +34,28 @@ def wait_ready(url, process, timeout=30):
     raise RuntimeError(f"Server did not start: {url}")
 
 
+def check_summary_pages(opening, total, bonus=None):
+    """Long Structure Deck openings paginate to fit the viewport."""
+    import re
+    expect(opening.locator('.opening-heading')).to_contain_text(f'{total} Karten sind jetzt')
+    count=rare=0
+    while True:
+        cards=opening.locator('.opening-summary-grid .card-visual')
+        navigation=opening.get_by_role('navigation',name='Packkarten-Seiten')
+        text=navigation.locator('span').inner_text()
+        start,end,reported=map(int,re.search(r'Karten (\d+)–(\d+) von (\d+)',text).groups())
+        assert reported==total
+        expect(cards).to_have_count(end-start+1)
+        count+=cards.count()
+        rare+=opening.locator('.summary-card.rarity-prismatic').count()
+        button=navigation.get_by_role('button',name='Weiter',exact=True)
+        if button.is_disabled():break
+        button.click()
+        expect(navigation.locator('span')).not_to_have_text(text)
+    assert count==total
+    if bonus is not None:assert rare==bonus
+
+
 def run():
     import sys
     sys.stdout.reconfigure(encoding="utf-8")
@@ -154,7 +176,7 @@ def run():
                     expect(opening.locator('.is-revealed')).to_have_count(1)
                     assert not any('/open' in url for url in api_requests[requests_before_preview:]), 'Preview must not open another pack'
                     opening.get_by_role("button", name="Alle aufdecken", exact=True).click()
-                    expect(opening.locator(".opening-summary-grid .card-visual")).to_have_count(5)
+                    expect(opening.locator(".opening-summary-grid .card-visual")).to_have_count(9)
                     summary_cards = opening.locator('.summary-card')
                     summary_cards.nth(1).click()
                     preview = page.locator('dialog.opening-card-preview')
@@ -172,16 +194,16 @@ def run():
                     expect(preview.locator('.opening-preview-description')).to_have_text('Für diese Karte liegt noch kein Kartentext vor.')
                     expect(preview.locator('.opening-preview-language')).to_have_count(0)
                     preview.get_by_role('button', name='Kartenvorschau schließen').click()
-                    expect(opening.locator('.opening-summary-grid .card-visual')).to_have_count(5)
+                    expect(opening.locator('.opening-summary-grid .card-visual')).to_have_count(9)
                     page.set_viewport_size({'width': 1440, 'height': 1000})
                     page.unroute('**/api/boosters/1/open', opening_text_fixture)
                     opening.get_by_role("button", name="Zurück zum Hub", exact=True).click()
                     expect(opening).to_have_count(0)
                     expect(page.get_by_role("heading", name="Deine gezogenen Karten")).to_be_visible()
-                    expect(page.locator(".result-cards .card-visual")).to_have_count(5)
+                    expect(page.locator(".result-cards .card-visual")).to_have_count(9)
                     expect(page.locator(".currency")).to_contain_text("2.350 Sammelpunkte")
                     page.get_by_role("link", name="Zur Sammlung", exact=True).click()
-                    expect(page.locator(".inventory-summary")).to_contain_text("22")
+                    expect(page.locator(".inventory-summary")).to_contain_text("26")
                     expect(page.locator(".collection-grid .card-visual")).to_have_count(6)
                     page.locator('.variant-details').first.locator('summary').click()
                     expect(page.locator('.variant-details').first).to_contain_text('frei verfügbar')
@@ -268,16 +290,18 @@ def run():
                     def official_pack_fixture(route):
                         response = route.fetch()
                         payload = response.json()
-                        payload[0]['name'] = 'Legend of Blue Eyes White Dragon Booster'
+                        payload[0]['name'] = 'Immortal Phoenix Booster'
                         route.fulfill(response=response, json=payload)
                     page.route('**/api/boosters', official_pack_fixture)
                     page.reload()
-                    expect(page.locator('.booster-cover img').first).to_have_attribute('alt', 'Offizielles Cover: Legend of Blue Eyes White Dragon Booster')
-                    page.wait_for_function("document.querySelector('.booster-cover img').naturalWidth >= 240")
+                    cover=page.get_by_role('img',name='Offizielles Cover: Immortal Phoenix Booster',exact=True).first
+                    expect(cover).to_be_visible()
+                    source=cover.locator('image').get_attribute('href') if cover.evaluate('e=>e.tagName.toLowerCase()')=='svg' else cover.get_attribute('src')
+                    assert page.request.get(ui_url+source).status==200,'Official local cover must be available'
                     page.screenshot(path=str(ROOT / 'artifacts/official-pack-cover-desktop.png'), full_page=True)
                     page.route('**/booster-covers/*', lambda route: route.abort())
                     page.reload()
-                    expect(page.locator('.sdoycc-pack-art').first).to_have_attribute('aria-label', 'SDOYCC-Cover: Legend of Blue Eyes White Dragon Booster')
+                    expect(page.locator('.sdoycc-pack-art').first).to_have_attribute('aria-label', 'SDOYCC-Cover: Immortal Phoenix Booster')
                     page.unroute('**/booster-covers/*')
                     page.unroute('**/api/boosters')
                     page.reload()
@@ -299,7 +323,7 @@ def run():
                     page.set_viewport_size({"width": 1440, "height": 1000})
                     page.get_by_role("link", name="Übersicht", exact=True).click()
                     expect(page.get_by_role("link", name="Übersicht", exact=True)).to_have_attribute("aria-current", "page")
-                    expect(page.locator(".stats-grid")).to_contain_text("22")
+                    expect(page.locator(".stats-grid")).to_contain_text("26")
                     page.screenshot(path=str(screenshot_dir / "overview-desktop.png"), full_page=True, animations="disabled")
                     page.get_by_role("button", name="Abmelden", exact=True).click()
                     expect(page.get_by_role("button", name="Lokale Demo öffnen")).to_be_visible()
@@ -340,12 +364,12 @@ def run():
                     opening = page.get_by_role("dialog")
                     expect(opening.get_by_role("button", name="Karte 1 aufdecken", exact=True)).to_be_visible()
                     opening.get_by_role("button", name="Animation überspringen").click()
-                    expect(opening.locator(".opening-summary-grid .card-visual")).to_have_count(5)
+                    expect(opening.locator(".opening-summary-grid .card-visual")).to_have_count(9)
                     opening.get_by_role("button", name="Zurück zum Hub", exact=True).click()
                     page.emulate_media(reduced_motion="no-preference")
-                    expect(page.locator(".result-cards .card-visual")).to_have_count(5)
+                    expect(page.locator(".result-cards .card-visual")).to_have_count(9)
                     page.get_by_role("link", name="Zur Sammlung", exact=True).click()
-                    expect(page.locator(".inventory-summary strong").first).to_have_text("5")
+                    expect(page.locator(".inventory-summary strong").first).to_have_text("9")
                     page.get_by_role("button", name="Abmelden", exact=True).click()
                     page.get_by_label("Twitch-Benutzername").fill("browserviewer")
                     page.get_by_label("Passwort", exact=True).fill("Browser-Test-Passwort-123!")
@@ -354,7 +378,7 @@ def run():
                     page.get_by_role("link", name="Übersicht", exact=True).click()
                     expect(page.get_by_role("heading", name="Willkommen, BrowserViewer.")).to_be_visible()
                     expect(page.locator(".currency")).to_contain_text("0 Sammelpunkte")
-                    expect(page.locator(".stats-grid")).to_contain_text("5")
+                    expect(page.locator(".stats-grid")).to_contain_text("9")
                     page.locator('.main-nav a[href="#/my-packs"]').click()
                     expect(page.locator(".vault-stack")).to_have_count(0)
                     expect(page.get_by_role("heading", name="Hier beginnt deine nächste Öffnung.")).to_be_visible()
@@ -391,26 +415,26 @@ def run():
                     expect(page.locator(".vault-quantity")).to_contain_text("×3")
                     page.get_by_role("button", name="Menü öffnen").click()
                     page.get_by_role("link", name="Meine Sammlung", exact=True).click()
-                    expect(page.locator(".inventory-summary strong").first).to_have_text("27")
-                    # Isolated database only: a three-card pool must show and grant three.
+                    expect(page.locator(".inventory-summary strong").first).to_have_text("35")
+                    # A three-card pool still grants nine cards, allowing repeated pulls.
                     with sqlite3.connect(Path(temporary) / 'browser.db') as db:
                         db.execute('DELETE FROM booster_pool_entries WHERE booster_id = 1 AND card_id NOT IN (SELECT card_id FROM booster_pool_entries WHERE booster_id = 1 ORDER BY card_id LIMIT 3)')
                     db.close()
                     page.set_viewport_size({"width": 1440, "height": 1000})
                     page.goto(ui_url + '/#/my-packs')
                     page.reload()
-                    expect(page.locator('.vault-stack-copy .eyebrow')).to_contain_text('3 KARTEN PRO PACK')
-                    expect(page.locator('.vault-stack-copy')).to_contain_text('9 Karten warten')
+                    expect(page.locator('.vault-stack-copy .eyebrow')).to_contain_text('9 KARTEN PRO PACK')
+                    expect(page.locator('.vault-stack-copy')).to_contain_text('27 Karten warten')
                     page.get_by_role('button', name='Pack öffnen', exact=True).click()
                     page.get_by_role('dialog').get_by_role('button', name='Animation überspringen').click()
-                    expect(page.locator('.opening-summary-grid .card-visual')).to_have_count(3)
+                    expect(page.locator('.opening-summary-grid .card-visual')).to_have_count(9)
                     opening = page.get_by_role('dialog')
                     expect(opening.locator('.opening-summary-footer')).to_contain_text('2 Packs dieser Edition')
                     before_next = api_requests.count(api_url + '/api/boosters/1/open')
                     page.route('**/api/boosters/1/open', lambda route: route.fulfill(status=400, content_type='application/json', body='{"detail":"Test: Folgepack abgelehnt"}'))
                     opening.get_by_role('button', name='N\u00e4chstes Pack \u00f6ffnen', exact=True).click()
                     expect(opening.get_by_role('alert')).to_contain_text('Folgepack abgelehnt')
-                    expect(opening.locator('.opening-summary-grid .card-visual')).to_have_count(3)
+                    expect(opening.locator('.opening-summary-grid .card-visual')).to_have_count(9)
                     expect(opening.locator('.opening-summary-footer')).to_contain_text('2 Packs dieser Edition')
                     page.unroute('**/api/boosters/1/open')
                     # Two synchronous clicks must consume only one pack.
@@ -434,7 +458,7 @@ def run():
                     opening.get_by_role('button', name='Zur\u00fcck zum Hub', exact=True).click()
 
                     page.get_by_role('link', name='Meine Sammlung', exact=True).click()
-                    expect(page.locator('.inventory-summary strong').first).to_have_text('36')
+                    expect(page.locator('.inventory-summary strong').first).to_have_text('62')
                     # Fixed deck, purchase cap, and a long opening on mobile (isolated data).
                     with sqlite3.connect(Path(temporary) / 'browser.db') as db:
                         db.execute("INSERT INTO booster_packs (id,key,name,cards_per_pack,product_type,cost,active) VALUES (2000,'structure-test','Structure Deck: Test',42,'structure_deck',600,1)")
@@ -456,7 +480,7 @@ def run():
                     page.get_by_role('button', name='Kostenlos öffnen', exact=True).click()
                     opening = page.get_by_role('dialog')
                     opening.get_by_role('button', name='Animation überspringen').click()
-                    expect(opening.locator('.opening-summary-grid .card-visual')).to_have_count(42)
+                    check_summary_pages(opening,42)
                     assert opening.evaluate('e => e.scrollWidth <= e.clientWidth'), 'Structure opening mobile overflow'
                     opening.get_by_role('button', name='Zurück zum Hub', exact=True).click()
                     page.reload()
@@ -478,8 +502,7 @@ def run():
                     page.get_by_role('button', name='Kostenlos öffnen', exact=True).click()
                     opening = page.get_by_role('dialog')
                     opening.get_by_role('button', name='Animation überspringen').click()
-                    expect(opening.locator('.opening-summary-grid .card-visual')).to_have_count(43)
-                    expect(opening.locator('.summary-card.rarity-prismatic')).to_have_count(1)
+                    check_summary_pages(opening,43,bonus=1)
                     opening.get_by_role('button', name='Zurück zum Hub', exact=True).click()
                     page.goto(ui_url + '/#/')
                     expect(page.locator('.hub-brand-banner')).to_be_visible()

@@ -217,7 +217,7 @@ def batches(database: Database, page: Page = 1, page_size: PageSize = 20):
 def batch_detail(batch_id: int, database: Database):
     batch = database.get(GrantBatch, batch_id)
     if not batch: raise HTTPException(404, "Sammelvergabe fehlt.")
-    return {"id": batch.id, "reason": batch.reason, "items": json.loads(batch.items_json), "rows": [
+    return {"id": batch.id, "actor_id": batch.actor_id, "reason": batch.reason, "items": json.loads(batch.items_json), "rows": [
         {"id": row.id, "user_id": row.user_id, "username": name, "state": row.state, "result": json.loads(row.result_json)}
         for row, name in database.execute(select(GrantBatchRow, User.username).join(User).where(GrantBatchRow.batch_id == batch_id).order_by(GrantBatchRow.id))]}
 

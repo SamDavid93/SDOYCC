@@ -135,7 +135,7 @@ def claim_next(database, overlay=False):
         card = card_payload(database.get(Card, record.card_id))
         quantity = database.scalar(select(func.count()).select_from(BoosterOpeningCard).where(
             BoosterOpeningCard.opening_id == opening.id, BoosterOpeningCard.card_id == record.card_id,
-            BoosterOpeningCard.rarity == record.rarity))
+            func.lower(func.replace(BoosterOpeningCard.rarity, ' ', '_')) == record.rarity))
         result['announcement'].update(card=card, username=user.username, booster_name=opening.booster.name,
             rarity=HIGH_RARITIES.get(record.rarity, record.rarity), quantity=quantity or 1)
     database.commit()
